@@ -25,29 +25,46 @@ def detect_plants(image, **kwargs):
         if step is not None:
             details = '{}_{}'.format(step, details)
         if step > 2 or (debug and step is None):
-            details = '{}_morph={}'.format(details, morph_amount)
+            '{}_morph={}'.format(details, morph_amount)
         filename = '{}_{}.png'.format(name, details)
         print "Image saved: {}".format(filename)
         return filename
+
+    def annotate(img):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        line0 = "blur kernel size = {}".format(blur_amount)
+        line1 = "HSV green lower bound = {}".format(lower_green)
+        line2 = "HSV green upper bound = {}".format(upper_green)
+        line3 = "kernel type = ellipse"
+        line4 = "kernel size = {}".format(morph_amount)
+        line5 = "morphological transformation = close"
+        h = img.shape[0]; w = img.shape[1]
+        try:
+            c = img.shape[2]
+            new_shape = (h + 70, w, c)
+        except IndexError:
+            new_shape = (h + 70, w)
+        annotated_image = np.zeros(new_shape, np.uint8)
+        annotated_image[70:, :] = img
+        for o, line in enumerate([line0, line1, line2, line3, line4, line5]):
+            cv2.putText(annotated_image, line, (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
+        return annotated_image
     
     print "\nProcessing image: {}".format(image)
     
-    # Load image
+    # Load image and create blurred image
     img = cv2.imread(image, 1)
-    blur = cv2.medianBlur(img, 5)
+    blur_amount = 5 # must be odd
+    blur = cv2.medianBlur(img, blur_amount)
     if debug:
         img2 = img.copy()
         cv2.imwrite(imsavename(0, 'blurred'), blur)
 
-    # Decide color range to detect
-    green = np.uint8([[[0, 255, 0]]])
-    hsv_green = cv2.cvtColor(green, cv2.COLOR_BGR2HSV)
-    H = hsv_green[0, 0, 0]
+    # Create HSV image and select HSV color bounds for mask
+    # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    bound = 30
-    minimum = 50
-    lower_green = np.array([H - bound, minimum, minimum])
-    upper_green = np.array([H + bound, 255, 255])
+    lower_green = np.array([30, 50, 50])
+    upper_green = np.array([90, 255, 255])
 
     # Create plant mask
     mask = cv2.inRange(hsv, lower_green, upper_green)
@@ -58,14 +75,16 @@ def detect_plants(image, **kwargs):
 
     # Process mask to try to make plants more coherent
     if morph_amount is None: morph_amount = 5
-    kernel = np.ones((morph_amount, morph_amount), np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_amount, morph_amount))
     proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     if debug:
-        cv2.imwrite(imsavename(3, 'processed-mask'), proc)
+        proc2 = annotate(proc)
+        cv2.imwrite(imsavename(3, 'processed-mask'), proc2)
         res2 = cv2.bitwise_and(img, img, mask=proc)
+        res2 = annotate(res2)
         cv2.imwrite(imsavename(4, 'processed-masked'), res2)
 
-    # Find contours (hopefully of outside edges of weeds)
+    # Find contours (hopefully of outside edges of plants)
     contours, hierarchy = cv2.findContours(proc, 1, 2)
     print "{} plants detected in image.".format(len(contours))
 
@@ -92,7 +111,9 @@ def detect_plants(image, **kwargs):
             cv2.drawContours(img2, [cnt], 0, (255,255,255), 3)
 
     if debug:
+        proc = annotate(proc)
         cv2.imwrite(imsavename(5, 'contours'), proc)
+        img2 = annotate(img2)
         cv2.imwrite(imsavename(6, 'img-contours'), img2)
 
     # Save soil image with plants marked
