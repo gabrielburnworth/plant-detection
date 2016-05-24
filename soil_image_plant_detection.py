@@ -15,14 +15,27 @@ def detect_plants(image, **kwargs):
            debug (boolean): output debug images
            morph (int): amount of filtering (default = 5)
            iterations (int): number of morphological iterations (default = 1)
+           array (list): list of morphs to run
+               [[morph kernel size, morph kernel type, morph type, iterations]]
+               example: array=[[3, 'cross', 'dilate', 2],
+                               [5, 'rect',  'erode',  1]]
+       Examples:
+           detect_plants('soil_image.jpg')
+           detect_plants('soil_image.jpg', morph=3, iterations=10, debug=True)
+           detect_plants('soil_image.jpg', array=[[3, 'cross', 'dilate', 2],
+                     [5, 'rect', 'erode', 1],
+                     [5, 'cross', 'erode', 1],
+                     [5, 'ellipse', 'open', 1]], debug=True)
     """
     debug = False
     morph_amount = None
     iterations = None
+    array = None
     for key in kwargs:
         if key == 'debug': debug = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
         if key == 'iterations': iterations = kwargs[key]
+        if key == 'array': array = kwargs[key]
 
     def imsavename(step, description):
         name = image[:-4]
@@ -40,14 +53,18 @@ def detect_plants(image, **kwargs):
         lines = [
                  "blur kernel size = {}".format(blur_amount),
                  "HSV green lower bound = {}".format(lower_green),
-                 "HSV green upper bound = {}".format(upper_green),
+                 "HSV green upper bound = {}".format(upper_green)]
+        if array is None:
+            lines = lines + [
                  "kernel type = {}".format(kernel_type),
                  "kernel size = {}".format(morph_amount),
                  "morphological transformation = {}".format(morph_type),
-                 "number of iterations = {}".format(iterations)
-                 ]
+                 "number of iterations = {}".format(iterations)]
         h = img.shape[0]; w = img.shape[1]
         add = 10 + 10 * len(lines)
+        if array is not None:
+            add_1 = add
+            add += 10 + 10 * len(array)
         try:
             c = img.shape[2]
             new_shape = (h + add, w, c)
@@ -58,6 +75,10 @@ def detect_plants(image, **kwargs):
         for o, line in enumerate(lines):
             cv2.putText(annotated_image, line, 
                 (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
+        if array is not None:
+            for o, line in enumerate(array):
+                cv2.putText(annotated_image, str(line), 
+                    (10, add_1 + o * 10), font, 0.3, (255,255,255), 1)
         return annotated_image
     
     print "\nProcessing image: {}".format(image)
@@ -82,7 +103,7 @@ def detect_plants(image, **kwargs):
         cv2.imwrite(imsavename(1, 'mask'), mask)
         res = cv2.bitwise_and(img, img, mask=mask)
         cv2.imwrite(imsavename(2, 'masked'), res)
-
+    
     # Create dictionaries of morph types
     kt = {} # morph kernel type
     kt['ellipse'] = cv2.MORPH_ELLIPSE
@@ -91,14 +112,31 @@ def detect_plants(image, **kwargs):
     mt = {} # morph type
     mt['close'] = cv2.MORPH_CLOSE
     mt['open'] = cv2.MORPH_OPEN
-
-    # Process mask to try to make plants more coherent
-    if morph_amount is None: morph_amount = 5
-    kernel_type = 'ellipse'
-    kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
-    if iterations is None: iterations = 1
-    morph_type = 'close'
-    proc = cv2.morphologyEx(mask, mt[morph_type], kernel, iterations=iterations)
+    
+    if array is None:
+        # Process mask to try to make plants more coherent
+        if morph_amount is None: morph_amount = 5
+        kernel_type = 'ellipse'
+        kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
+        if iterations is None: iterations = 1
+        morph_type = 'close'
+        proc = cv2.morphologyEx(mask, mt[morph_type], kernel, iterations=iterations)
+    else:
+        # Array processing
+        processes = array
+        proc = mask
+        for p, process in enumerate(processes):
+            morph_amount = process[0]; kernel_type = process[1]
+            morph_type = process[2]; iterations = process[3]
+            kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
+            if morph_type == 'erode':
+                proc = cv2.erode(proc, kernel, iterations=iterations)
+            elif morph_type == 'dilate':
+                proc = cv2.dilate(proc, kernel, iterations=iterations)
+            else:
+                proc = cv2.morphologyEx(proc, mt[morph_type], kernel, iterations=iterations)
+            proc_step = annotate(proc)
+            cv2.imwrite(imsavename('p{}'.format(p), 'processed-mask'), proc_step)
     if debug:
         proc2 = annotate(proc)
         cv2.imwrite(imsavename(3, 'processed-mask'), proc2)
@@ -151,3 +189,4 @@ if __name__ == "__main__":
         images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
         for image in images:
             detect_plants(image, morph=3, iterations=10, debug=True)
+
