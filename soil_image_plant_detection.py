@@ -28,7 +28,7 @@ def detect_plants(image, **kwargs):
         name = image[:-4]
         details = description
         if step is not None:
-            details = '{}_{}'.format(step, details)
+            details = 'debug-{}_{}'.format(step, details)
         if step > 2 or (debug and step is None):
             '{}_morph={}'.format(details, morph_amount)
         filename = '{}_{}.png'.format(name, details)
@@ -41,9 +41,9 @@ def detect_plants(image, **kwargs):
                  "blur kernel size = {}".format(blur_amount),
                  "HSV green lower bound = {}".format(lower_green),
                  "HSV green upper bound = {}".format(upper_green),
-                 "kernel type = ellipse",
+                 "kernel type = {}".format(kernel_type),
                  "kernel size = {}".format(morph_amount),
-                 "morphological transformation = close",
+                 "morphological transformation = {}".format(morph_type),
                  "number of iterations = {}".format(iterations)
                  ]
         h = img.shape[0]; w = img.shape[1]
@@ -56,7 +56,8 @@ def detect_plants(image, **kwargs):
         annotated_image = np.zeros(new_shape, np.uint8)
         annotated_image[add:, :] = img
         for o, line in enumerate(lines):
-            cv2.putText(annotated_image, line, (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
+            cv2.putText(annotated_image, line, 
+                (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
         return annotated_image
     
     print "\nProcessing image: {}".format(image)
@@ -82,11 +83,22 @@ def detect_plants(image, **kwargs):
         res = cv2.bitwise_and(img, img, mask=mask)
         cv2.imwrite(imsavename(2, 'masked'), res)
 
+    # Create dictionaries of morph types
+    kt = {} # morph kernel type
+    kt['ellipse'] = cv2.MORPH_ELLIPSE
+    kt['rect'] = cv2.MORPH_RECT
+    kt['cross'] = cv2.MORPH_CROSS
+    mt = {} # morph type
+    mt['close'] = cv2.MORPH_CLOSE
+    mt['open'] = cv2.MORPH_OPEN
+
     # Process mask to try to make plants more coherent
     if morph_amount is None: morph_amount = 5
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_amount, morph_amount))
+    kernel_type = 'ellipse'
+    kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
     if iterations is None: iterations = 1
-    proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=iterations)
+    morph_type = 'close'
+    proc = cv2.morphologyEx(mask, mt[morph_type], kernel, iterations=iterations)
     if debug:
         proc2 = annotate(proc)
         cv2.imwrite(imsavename(3, 'processed-mask'), proc2)
@@ -95,7 +107,8 @@ def detect_plants(image, **kwargs):
         cv2.imwrite(imsavename(4, 'processed-masked'), res2)
 
     # Find contours (hopefully of outside edges of plants)
-    contours, hierarchy = cv2.findContours(proc, 1, 2)
+    contours, hierarchy = cv2.findContours(proc, 
+        cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     print "{} plants detected in image.".format(len(contours))
 
     # Loop through contours
@@ -137,4 +150,4 @@ if __name__ == "__main__":
     else: # multiple images to process
         images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
         for image in images:
-            detect_plants(image, morph=3, iterations=5, debug=True)
+            detect_plants(image, morph=3, iterations=10, debug=True)
