@@ -17,5 +17,6 @@ Alternatively, process images using a python command line:
 ```python
 from soil_image_plant_detection import detect_plants
 help(detect_plants)
-detect_plants('soil_image.jpg', morph=5, iterations=4, debug=True)
+detect_plants('soil_image.jpg')
+detect_plants('soil_image.jpg', morph=15, iterations=2, debug=True)
 ```
