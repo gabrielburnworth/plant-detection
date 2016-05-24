@@ -10,6 +10,8 @@ def detect_plants(image, **kwargs):
     """Detect plants in image and saves an image with plants marked.
        
        Args:
+           image (str): filename of image to process
+       Kwargs:
            debug (boolean): output debug images
            morph (int): amount of filtering (default = 5)
            iterations (int): number of morphological iterations (default = 1)
