@@ -1,4 +1,4 @@
-"""Weed Detection.
+"""Plant Detection.
 
 Detects green plants on a dirt background
  and marks them with red circles.
@@ -6,7 +6,7 @@ Detects green plants on a dirt background
 import numpy as np
 import cv2
 
-def detect_weeds(image, **kwargs):
+def detect_plants(image, **kwargs):
     """Detect plants in image and saves an image with plants marked.
        
        Args:
@@ -49,14 +49,14 @@ def detect_weeds(image, **kwargs):
     lower_green = np.array([H - bound, minimum, minimum])
     upper_green = np.array([H + bound, 255, 255])
 
-    # Create weed mask
+    # Create plant mask
     mask = cv2.inRange(hsv, lower_green, upper_green)
     if debug:
         cv2.imwrite(imsavename(1, 'mask'), mask)
         res = cv2.bitwise_and(img, img, mask=mask)
         cv2.imwrite(imsavename(2, 'masked'), res)
 
-    # Process mask to try to make weeds more coherent
+    # Process mask to try to make plants more coherent
     if morph_amount is None: morph_amount = 5
     kernel = np.ones((morph_amount, morph_amount), np.uint8)
     proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
@@ -71,7 +71,7 @@ def detect_weeds(image, **kwargs):
 
     # Loop through contours
     for i in range(len(contours)):
-        # Calculate weed location by using centroid of contour
+        # Calculate plant location by using centroid of contour
         cnt = contours[i]
         M = cv2.moments(cnt)
         try:
@@ -83,7 +83,7 @@ def detect_weeds(image, **kwargs):
             print "Detected plant center pixel coordinates:"
         print "    x={} y={}".format(cx, cy)
 
-        # Mark weed with red circle
+        # Mark plant with red circle
         cv2.circle(img, (cx,cy), 20, (0,0,255), 4)
 
         if debug:
@@ -95,9 +95,9 @@ def detect_weeds(image, **kwargs):
         cv2.imwrite(imsavename(5, 'contours'), proc)
         cv2.imwrite(imsavename(6, 'img-contours'), img2)
 
-    # Save soil image with weeds marked
+    # Save soil image with plants marked
     cv2.imwrite(imsavename(None, 'marked'), img)
 
 if __name__ == "__main__":
     image = "soil_image.jpg"
-    detect_weeds(image, morph=15)
+    detect_plants(image, morph=15)
