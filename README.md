@@ -11,4 +11,4 @@ Download an image of soil with plants in it and save it as ```soil_image.jpg```
 Run the script:
 ```python soil_image_plant_detection.py```
 
-View ```soil_image_marked.jpg``
+View ```soil_image_marked.jpg```
