@@ -13,6 +13,7 @@ def detect_plants(image, **kwargs):
            image (str): filename of image to process
        Kwargs:
            debug (boolean): output debug images
+           blur (int): blur kernel size (must be odd, default = 5)
            morph (int): amount of filtering (default = 5)
            iterations (int): number of morphological iterations (default = 1)
            array (list): list of morphs to run
@@ -21,50 +22,55 @@ def detect_plants(image, **kwargs):
                                [5, 'rect',  'erode',  1]]
        Examples:
            detect_plants('soil_image.jpg')
-           detect_plants('soil_image.jpg', morph=3, iterations=10, debug=True)
-           detect_plants('soil_image.jpg', array=[[3, 'cross', 'dilate', 2],
-                     [5, 'rect', 'erode', 1],
-                     [5, 'cross', 'erode', 1],
-                     [5, 'ellipse', 'open', 1]], debug=True)
+           detect_plants('soil_image.jpg', blur=10, morph=3, iterations=10, debug=True)
+           detect_plants('soil_image.jpg', blur=15, array=[[5, 'ellipse', 'erode', 2],
+                     [3, 'ellipse', 'dilate', 8]], debug=True)
     """
-    debug = False
-    morph_amount = None
-    iterations = None
+    debug = False # default
+    blur_amount = None   # To allow values to be defined as kwargs
+    morph_amount = None #  and keep defaults in the relevant 
+    iterations = None   #  sections of code.
     array = None
     for key in kwargs:
         if key == 'debug': debug = kwargs[key]
+        if key == 'blur': blur_amount = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
         if key == 'iterations': iterations = kwargs[key]
         if key == 'array': array = kwargs[key]
 
-    def imsavename(step, description):
+    def save_image(img, step, description):
+        save_image = img
+        if step is not None: # debug image
+            save_image = annotate(img)
         name = image[:-4]
         details = description
-        if step is not None:
+        if step is not None: # debug image
             details = 'debug-{}_{}'.format(step, details)
         filename = '{}_{}.png'.format(name, details)
+        cv2.imwrite(filename, save_image)
         print "Image saved: {}".format(filename)
-        return filename
 
     def annotate(img):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        lines = ["blur kernel size = {}".format(blur_amount)]
-        if upper_green is not None:
+        lines = ["blur kernel size = {}".format(blur_amount)] # blur applied
+        if upper_green is not None: # color mask applied
             lines = lines + [
                  "HSV green lower bound = {}".format(lower_green),
                  "HSV green upper bound = {}".format(upper_green)]
-            if array is None and kt is not None:
+            if array is None and kt is not None: # single morph applied
                 lines = lines + [
                  "kernel type = {}".format(kernel_type),
                  "kernel size = {}".format(morph_amount),
                  "morphological transformation = {}".format(morph_type),
                  "number of iterations = {}".format(iterations)]
         h = img.shape[0]; w = img.shape[1]
-        add = 10 + 10 * len(lines)
-        if array is not None and kt is not None:
+        textsize = w / 1200.
+        lineheight = int(40 * textsize); textweight = int(3.5 * textsize)
+        add = lineheight + lineheight * len(lines)
+        if array is not None and kt is not None: # multiple morphs applied
             add_1 = add
-            add += 10 + 10 * len(array)
-        try:
+            add += lineheight + lineheight * len(array)
+        try: # color image?
             c = img.shape[2]
             new_shape = (h + add, w, c)
         except IndexError:
@@ -73,11 +79,13 @@ def detect_plants(image, **kwargs):
         annotated_image[add:, :] = img
         for o, line in enumerate(lines):
             cv2.putText(annotated_image, line, 
-                (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
-        if array is not None and kt is not None:
+                (10, lineheight + o * lineheight), 
+                font, textsize, (255,255,255), textweight)
+        if array is not None and kt is not None: # multiple morphs applied
             for o, line in enumerate(array):
                 cv2.putText(annotated_image, str(line), 
-                    (10, add_1 + o * 10), font, 0.3, (255,255,255), 1)
+                    (10, add_1 + o * lineheight), 
+                    font, textsize, (255,255,255), textweight)
         return annotated_image
     
     print "\nProcessing image: {}".format(image)
@@ -85,27 +93,24 @@ def detect_plants(image, **kwargs):
 
     # Load image and create blurred image
     img = cv2.imread(image, 1)
-    blur_amount = 5 # must be odd
+    if blur_amount is None: blur_amount = 5
     blur = cv2.medianBlur(img, blur_amount)
     if debug:
         img2 = img.copy()
-        blurA = annotate(blur)
-        cv2.imwrite(imsavename(0, 'blurred'), blurA)
+        save_image(blur, 0, 'blurred')
 
     # Create HSV image and select HSV color bounds for mask
     # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    lower_green = np.array([30, 50, 50])
+    lower_green = np.array([30, 0, 0])
     upper_green = np.array([90, 255, 255])
 
     # Create plant mask
     mask = cv2.inRange(hsv, lower_green, upper_green)
     if debug:
-        maskA = annotate(mask)
-        cv2.imwrite(imsavename(1, 'mask'), maskA)
+        save_image(mask, 1, 'mask')
         res = cv2.bitwise_and(img, img, mask=mask)
-        resA = annotate(res)
-        cv2.imwrite(imsavename(2, 'masked'), resA)
+        save_image(res, 2, 'masked')
     
     # Create dictionaries of morph types
     kt = {} # morph kernel type
@@ -115,9 +120,10 @@ def detect_plants(image, **kwargs):
     mt = {} # morph type
     mt['close'] = cv2.MORPH_CLOSE
     mt['open'] = cv2.MORPH_OPEN
-    
+
+    # Process mask to try to make plants more coherent
     if array is None:
-        # Process mask to try to make plants more coherent
+        # Single morphological transformation
         if morph_amount is None: morph_amount = 5
         kernel_type = 'ellipse'
         kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
@@ -125,7 +131,7 @@ def detect_plants(image, **kwargs):
         morph_type = 'close'
         proc = cv2.morphologyEx(mask, mt[morph_type], kernel, iterations=iterations)
     else:
-        # Array processing
+        # List of morphological transformations
         processes = array; array = None
         proc = mask
         for p, process in enumerate(processes):
@@ -138,15 +144,12 @@ def detect_plants(image, **kwargs):
                 proc = cv2.dilate(proc, kernel, iterations=iterations)
             else:
                 proc = cv2.morphologyEx(proc, mt[morph_type], kernel, iterations=iterations)
-            proc_step = annotate(proc)
-            cv2.imwrite(imsavename('3p{}'.format(p), 'processed-mask'), proc_step)
+            save_image(proc, '3p{}'.format(p), 'processed-mask')
         array = processes
     if debug:
-        procA = annotate(proc)
-        cv2.imwrite(imsavename(4, 'processed-mask'), procA)
+        save_image(proc, 4, 'processed-mask')
         res2 = cv2.bitwise_and(img, img, mask=proc)
-        res2 = annotate(res2)
-        cv2.imwrite(imsavename(5, 'processed-masked'), res2)
+        save_image(res2, 5, 'processed-masked')
 
     # Find contours (hopefully of outside edges of plants)
     contours, hierarchy = cv2.findContours(proc, 
@@ -176,13 +179,11 @@ def detect_plants(image, **kwargs):
             cv2.drawContours(img2, [cnt], 0, (255,255,255), 3)
 
     if debug:
-        proc = annotate(proc)
-        cv2.imwrite(imsavename(6, 'contours'), proc)
-        img2 = annotate(img2)
-        cv2.imwrite(imsavename(7, 'img-contours'), img2)
+        save_image(proc, 6, 'contours')
+        save_image(img2, 7, 'img-contours')
 
     # Save soil image with plants marked
-    cv2.imwrite(imsavename(None, 'marked'), img)
+    save_image(img, None, 'marked')
 
 if __name__ == "__main__":
     single_image = True
@@ -193,4 +194,5 @@ if __name__ == "__main__":
         images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
         for image in images:
             detect_plants(image, morph=3, iterations=10, debug=True)
+
 
