@@ -12,12 +12,15 @@ def detect_plants(image, **kwargs):
        Args:
            debug (boolean): output debug images
            morph (int): amount of filtering (default = 5)
+           iterations (int): number of morphological iterations (default = 1)
     """
     debug = False
     morph_amount = None
+    iterations = None
     for key in kwargs:
         if key == 'debug': debug = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
+        if key == 'iterations': iterations = kwargs[key]
 
     def imsavename(step, description):
         name = image[:-4]
@@ -32,21 +35,25 @@ def detect_plants(image, **kwargs):
 
     def annotate(img):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        line0 = "blur kernel size = {}".format(blur_amount)
-        line1 = "HSV green lower bound = {}".format(lower_green)
-        line2 = "HSV green upper bound = {}".format(upper_green)
-        line3 = "kernel type = ellipse"
-        line4 = "kernel size = {}".format(morph_amount)
-        line5 = "morphological transformation = close"
+        lines = [
+                 "blur kernel size = {}".format(blur_amount),
+                 "HSV green lower bound = {}".format(lower_green),
+                 "HSV green upper bound = {}".format(upper_green),
+                 "kernel type = ellipse",
+                 "kernel size = {}".format(morph_amount),
+                 "morphological transformation = close",
+                 "number of iterations = {}".format(iterations)
+                 ]
         h = img.shape[0]; w = img.shape[1]
+        add = 10 + 10 * len(lines)
         try:
             c = img.shape[2]
-            new_shape = (h + 70, w, c)
+            new_shape = (h + add, w, c)
         except IndexError:
-            new_shape = (h + 70, w)
+            new_shape = (h + add, w)
         annotated_image = np.zeros(new_shape, np.uint8)
-        annotated_image[70:, :] = img
-        for o, line in enumerate([line0, line1, line2, line3, line4, line5]):
+        annotated_image[add:, :] = img
+        for o, line in enumerate(lines):
             cv2.putText(annotated_image, line, (10, 10 + o * 10), font, 0.3, (255,255,255), 1)
         return annotated_image
     
@@ -76,7 +83,8 @@ def detect_plants(image, **kwargs):
     # Process mask to try to make plants more coherent
     if morph_amount is None: morph_amount = 5
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_amount, morph_amount))
-    proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    if iterations is None: iterations = 1
+    proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=iterations)
     if debug:
         proc2 = annotate(proc)
         cv2.imwrite(imsavename(3, 'processed-mask'), proc2)
@@ -120,5 +128,11 @@ def detect_plants(image, **kwargs):
     cv2.imwrite(imsavename(None, 'marked'), img)
 
 if __name__ == "__main__":
-    image = "soil_image.jpg"
-    detect_plants(image, morph=15)
+    single_image = True
+    if single_image:
+        image = "soil_image.jpg"
+        detect_plants(image)
+    else: # multiple images to process
+        images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
+        for image in images:
+            detect_plants(image, morph=3, iterations=5, debug=True)
