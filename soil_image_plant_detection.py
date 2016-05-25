@@ -107,7 +107,7 @@ def detect_plants(image, **kwargs):
     # Create HSV image and select HSV color bounds for mask
     # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    lower_green = np.array([30, 0, 0])
+    lower_green = np.array([30, 10, 10])
     upper_green = np.array([90, 255, 255])
 
     # Create plant mask
@@ -185,13 +185,13 @@ def detect_plants(image, **kwargs):
 
     if debug:
         save_image(proc, 6, 'contours')
-        image = save_image(img2, 7, 'img-contours')
+        final_image = save_image(img2, 7, 'img-contours')
 
     # Save soil image with plants marked
     save_image(img, None, 'marked')
 
     if not save:
-        return image
+        return final_image
 
 if __name__ == "__main__":
     single_image = True
