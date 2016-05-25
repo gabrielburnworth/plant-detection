@@ -21,6 +21,7 @@ def detect_plants(image, **kwargs):
                example: array=[[3, 'cross', 'dilate', 2],
                                [5, 'rect',  'erode',  1]]
            save (boolean): save images (default = True)
+           clump_buster (boolean): attempt to break plant clusters (default = False)
        Examples:
            detect_plants('soil_image.jpg')
            detect_plants('soil_image.jpg', blur=10, morph=3, iterations=10, debug=True)
@@ -29,10 +30,11 @@ def detect_plants(image, **kwargs):
     """
     debug = False # default
     blur_amount = None   # To allow values to be defined as kwargs
-    morph_amount = None #  and keep defaults in the relevant 
-    iterations = None   #  sections of code.
+    morph_amount = None  #  and keep defaults in the relevant 
+    iterations = None    #  sections of code.
     array = None
-    save = True
+    save = True   # default
+    clump_buster = False # default
     for key in kwargs:
         if key == 'debug': debug = kwargs[key]
         if key == 'blur': blur_amount = kwargs[key]
@@ -40,6 +42,7 @@ def detect_plants(image, **kwargs):
         if key == 'iterations': iterations = kwargs[key]
         if key == 'array': array = kwargs[key]
         if key == 'save': save = kwargs[key]
+        if key == 'clump_buster': clump_buster = kwargs[key]
 
     def save_image(img, step, description):
         save_image = img
@@ -107,7 +110,7 @@ def detect_plants(image, **kwargs):
     # Create HSV image and select HSV color bounds for mask
     # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    lower_green = np.array([30, 10, 10])
+    lower_green = np.array([30, 20, 20])
     upper_green = np.array([90, 255, 255])
 
     # Create plant mask
@@ -156,6 +159,16 @@ def detect_plants(image, **kwargs):
         res2 = cv2.bitwise_and(img, img, mask=proc)
         save_image(res2, 5, 'processed-masked')
 
+    if clump_buster:
+        contours, hierarchy = cv2.findContours(proc, 
+            cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for i in range(len(contours)):
+            cnt = contours[i]
+            rx, ry, rw, rh = cv2.boundingRect(cnt)
+            cv2.line(proc, (rx + rw / 2, ry), (rx + rw / 2, ry + rh), (0,0,0), rw / 25)
+            cv2.line(proc, (rx, ry + rh / 2), (rx + rw, ry + rh / 2), (0,0,0), rh / 25)
+        proc = cv2.dilate(proc, kernel, iterations=1)
+
     # Find contours (hopefully of outside edges of plants)
     contours, hierarchy = cv2.findContours(proc, 
         cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -199,7 +212,6 @@ if __name__ == "__main__":
         image = "soil_image.jpg"
         detect_plants(image)
     else: # multiple images to process
-        images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
+        images = ["soil_image_{:02d}.jpg".format(i) for i in range(0,11)]
         for image in images:
-            detect_plants(image, morph=3, iterations=10, debug=True)
-
+            detect_plants(image, blur=15, morph=6, iterations=10, debug=True)
