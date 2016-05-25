@@ -12,7 +12,7 @@ def detect_plants(image, **kwargs):
        Args:
            image (str): filename of image to process
        Kwargs:
-           debug (boolean): output debug images
+           debug (boolean): output debug images (default = False)
            blur (int): blur kernel size (must be odd, default = 5)
            morph (int): amount of filtering (default = 5)
            iterations (int): number of morphological iterations (default = 1)
@@ -20,6 +20,7 @@ def detect_plants(image, **kwargs):
                [[morph kernel size, morph kernel type, morph type, iterations]]
                example: array=[[3, 'cross', 'dilate', 2],
                                [5, 'rect',  'erode',  1]]
+           save (boolean): save images (default = True)
        Examples:
            detect_plants('soil_image.jpg')
            detect_plants('soil_image.jpg', blur=10, morph=3, iterations=10, debug=True)
@@ -31,12 +32,14 @@ def detect_plants(image, **kwargs):
     morph_amount = None #  and keep defaults in the relevant 
     iterations = None   #  sections of code.
     array = None
+    save = True
     for key in kwargs:
         if key == 'debug': debug = kwargs[key]
         if key == 'blur': blur_amount = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
         if key == 'iterations': iterations = kwargs[key]
         if key == 'array': array = kwargs[key]
+        if key == 'save': save = kwargs[key]
 
     def save_image(img, step, description):
         save_image = img
@@ -47,8 +50,10 @@ def detect_plants(image, **kwargs):
         if step is not None: # debug image
             details = 'debug-{}_{}'.format(step, details)
         filename = '{}_{}.png'.format(name, details)
-        cv2.imwrite(filename, save_image)
-        print "Image saved: {}".format(filename)
+        if save:
+            cv2.imwrite(filename, save_image)
+            print "Image saved: {}".format(filename)
+        return save_image
 
     def annotate(img):
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -180,10 +185,13 @@ def detect_plants(image, **kwargs):
 
     if debug:
         save_image(proc, 6, 'contours')
-        save_image(img2, 7, 'img-contours')
+        image = save_image(img2, 7, 'img-contours')
 
     # Save soil image with plants marked
     save_image(img, None, 'marked')
+
+    if not save:
+        return image
 
 if __name__ == "__main__":
     single_image = True
@@ -194,5 +202,4 @@ if __name__ == "__main__":
         images = ["soil_image_{}.jpg".format(i) for i in range(0,7)]
         for image in images:
             detect_plants(image, morph=3, iterations=10, debug=True)
-
 
