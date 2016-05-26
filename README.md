@@ -23,7 +23,8 @@ detect_plants('soil_image.jpg')
 detect_plants('soil_image.jpg', morph=15, iterations=2, debug=True)
 ```
 
-__Or, run the experimental GUI and move the sliders:__
+__Or, run the GUI and move the sliders:__
 ```python
 python Plant_Detection_GUI.py
 ```
+![screenshot plant detection gui](https://cloud.githubusercontent.com/assets/12681652/15560938/a63cae28-22a5-11e6-88f1-cf09235a0e84.png)
