@@ -214,7 +214,7 @@ def detect_plants(image, **kwargs):
     # Save soil image with plants marked
     save_image(img, None, 'marked')
 
-    if debug:
+    if debug and not save:
         return final_debug_image
 
 if __name__ == "__main__":
