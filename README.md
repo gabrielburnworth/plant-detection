@@ -27,4 +27,4 @@ __Or, run the GUI and move the sliders:__
 ```python
 python Plant_Detection_GUI.py
 ```
-![screenshot plant detection gui](https://cloud.githubusercontent.com/assets/12681652/15560938/a63cae28-22a5-11e6-88f1-cf09235a0e84.png)
+![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)
