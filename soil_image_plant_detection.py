@@ -11,6 +11,7 @@ def detect_plants(image, **kwargs):
        
        Args:
            image (str): filename of image to process
+
        Kwargs:
            debug (boolean): output debug images (default = False)
            blur (int): blur kernel size (must be odd, default = 5)
@@ -21,17 +22,20 @@ def detect_plants(image, **kwargs):
                example: array=[[3, 'cross', 'dilate', 2],
                                [5, 'rect',  'erode',  1]]
            save (boolean): save images (default = True)
-           clump_buster (boolean): attempt to break plant clusters (default = False)
+           clump_buster (boolean): attempt to break 
+                                   plant clusters (default = False)
            HSV_min (list): green lower bound Hue(0-179), Saturation(0-255), 
-                               and Value(0-255) (default = [30, 20, 20])
+                           and Value(0-255) (default = [30, 20, 20])
            HSV_max (list): green upper bound Hue(0-179), Saturation(0-255), 
-                               and Value(0-255) (default = [90, 255, 255])
+                           and Value(0-255) (default = [90, 255, 255])
+
        Examples:
            detect_plants('soil_image.jpg')
-           detect_plants('soil_image.jpg', blur=10, morph=3, iterations=10, debug=True)
-           detect_plants('soil_image.jpg', blur=15, array=[[5, 'ellipse', 'erode', 2],
-                     [3, 'ellipse', 'dilate', 8]], debug=True, save=False, clump_buster=True,
-                     HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
+           detect_plants('soil_image.jpg', morph=3, iterations=10, debug=True)
+           detect_plants('soil_image.jpg', blur=15, 
+              array=[[5, 'ellipse', 'erode',  2],
+                     [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
+              clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
     debug = False # default
     blur_amount = None   # To allow values to be defined as kwargs
@@ -145,10 +149,12 @@ def detect_plants(image, **kwargs):
         # Single morphological transformation
         if morph_amount is None: morph_amount = 5
         kernel_type = 'ellipse'
-        kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
+        kernel = cv2.getStructuringElement(kt[kernel_type], 
+                     (morph_amount, morph_amount))
         if iterations is None: iterations = 1
         morph_type = 'close'
-        proc = cv2.morphologyEx(mask, mt[morph_type], kernel, iterations=iterations)
+        proc = cv2.morphologyEx(mask, 
+                   mt[morph_type], kernel, iterations=iterations)
     else:
         # List of morphological transformations
         processes = array; array = None
@@ -156,13 +162,15 @@ def detect_plants(image, **kwargs):
         for p, process in enumerate(processes):
             morph_amount = process[0]; kernel_type = process[1]
             morph_type = process[2]; iterations = process[3]
-            kernel = cv2.getStructuringElement(kt[kernel_type], (morph_amount, morph_amount))
+            kernel = cv2.getStructuringElement(kt[kernel_type], 
+                         (morph_amount, morph_amount))
             if morph_type == 'erode':
                 proc = cv2.erode(proc, kernel, iterations=iterations)
             elif morph_type == 'dilate':
                 proc = cv2.dilate(proc, kernel, iterations=iterations)
             else:
-                proc = cv2.morphologyEx(proc, mt[morph_type], kernel, iterations=iterations)
+                proc = cv2.morphologyEx(proc, 
+                           mt[morph_type], kernel, iterations=iterations)
             save_image(proc, '3p{}'.format(p), 'processed-mask')
         array = processes
     if debug:
@@ -176,8 +184,10 @@ def detect_plants(image, **kwargs):
         for i in range(len(contours)):
             cnt = contours[i]
             rx, ry, rw, rh = cv2.boundingRect(cnt)
-            cv2.line(proc, (rx + rw / 2, ry), (rx + rw / 2, ry + rh), (0,0,0), rw / 25)
-            cv2.line(proc, (rx, ry + rh / 2), (rx + rw, ry + rh / 2), (0,0,0), rh / 25)
+            cv2.line(proc, (rx + rw / 2, ry), (rx + rw / 2, ry + rh),
+                     (0,0,0), rw / 25)
+            cv2.line(proc, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
+                     (0,0,0), rh / 25)
         proc = cv2.dilate(proc, kernel, iterations=1)
 
     # Find contours (hopefully of outside edges of plants)
