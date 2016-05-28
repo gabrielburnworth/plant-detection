@@ -33,7 +33,9 @@ def process(x):
             # get HSV values
             for b, bound in enumerate(['min', 'max']):
                 for P in range(0, 3):
-                    HSV_bounds[b][P] = cv2.getTrackbarPos(HSV_trackbar_name('HSV'[P], bound), HSVwindow)
+                    HSV_bounds[b][P] = cv2.getTrackbarPos(
+                        HSV_trackbar_name('HSV'[P], bound), 
+                        HSVwindow)
 
         # Process image with parameters
         if override_HSV_defaults:
@@ -59,8 +61,12 @@ def HSV_selection(open_window):
         cv2.namedWindow(HSVwindow)
         for b, bound in enumerate(['min', 'max']):
             for P, limit in zip(range(0, 3), [179, 255, 255]):
-                cv2.createTrackbar(HSV_trackbar_name('HSV'[P], bound), HSVwindow, 0, limit, process)
-                cv2.setTrackbarPos(HSV_trackbar_name('HSV'[P], bound), HSVwindow, HSV_bounds[b][P])
+                cv2.createTrackbar(
+                    HSV_trackbar_name('HSV'[P], bound), 
+                    HSVwindow, 0, limit, process)
+                cv2.setTrackbarPos(
+                    HSV_trackbar_name('HSV'[P], bound), 
+                    HSVwindow, HSV_bounds[b][P])
         HSVwindow_loaded = 1
     else: # close window
         cv2.destroyWindow(HSVwindow)
