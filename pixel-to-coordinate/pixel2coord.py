@@ -11,7 +11,7 @@ bot_coordinates = [200, 400] # for testing, current location
 camera_offset_coordinates = [300, 100] # camera offset from current location
 test_rotation = 20 # for testing, add some image rotation
 iterations = 3 # min 2 if image is rotated or if rotation is unknown
-viewoutputimage = True
+viewoutputimage = False # overridden as True if running script
 fromfile = True # otherwise, take photos
 
 import cv2
@@ -115,6 +115,8 @@ def p2c(object_pixel_locations, coord_scale):
 
 def calibration(inputimage):
     """Determine pixel to coordinate conversion scale and image rotation angle."""
+    if isinstance(inputimage, str):
+        inputimage = readimage(inputimage)
     total_rotation_angle = 0 # Leave at zero
     for i in range(0, iterations):
         object_pixel_locations, circled = findobjects(inputimage, process(inputimage))
@@ -130,12 +132,15 @@ def calibration(inputimage):
 
 def test(inputimage, coord_scale, rotation_angle):
     """Use calibration parameters to determine locations of objects."""
+    if isinstance(inputimage, str):
+        inputimage = readimage(inputimage)
     inputimage = rotateimage(inputimage, rotation_angle)
     object_pixel_locations, circled = findobjects(inputimage, process(inputimage))
     p2c(object_pixel_locations, coord_scale)
     if viewoutputimage: showimage(circled)
 
 if __name__ == "__main__":
+    viewoutputimage = True
     if fromfile:
         ### From files
         ## Calibration
@@ -144,7 +149,7 @@ if __name__ == "__main__":
         coord_scale, rotation_angle = calibration(image)
         ## Tests
         # Object detection
-        testimage = readimage("p2c_test_test.jpg")
+        testimage = readimage("p2c_test_objects.jpg")
         testimage = rotateimage(testimage, test_rotation)
         test(testimage, coord_scale, rotation_angle)
         # Color range
