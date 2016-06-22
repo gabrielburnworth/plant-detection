@@ -4,12 +4,12 @@ Calibrates the conversion of pixel locations to machine coordinates in images.
 Finds object coordinates in image.
 """
 ## Input values and options
+calibration_circles_xaxis = True # else, calibration circles spaced along y-axis
 image_bot_origin_location = [0, 1] # bot axes locations in image
-calibration_circle_diameter = 153 # red dot diameter
-calibration_circle_separation = 500 # distance between red dots
-bot_coordinates = [200, 400] # for testing, current location
-camera_offset_coordinates = [300, 100] # camera offset from current location
-test_rotation = 20 # for testing, add some image rotation
+calibration_circle_separation = 1000 # distance between red dots
+bot_coordinates = [600, 400] # for testing, current location
+camera_offset_coordinates = [200, 100] # camera offset from current location
+test_rotation = 5 # for testing, add some image rotation
 iterations = 3 # min 2 if image is rotated or if rotation is unknown
 viewoutputimage = False # overridden as True if running script
 fromfile = True # otherwise, take photos
@@ -47,9 +47,20 @@ def rotationdetermination(image, object_pixel_locations):
     threshold = 0
     obj_1_x, obj_1_y, r1 = object_pixel_locations[1]
     obj_2_x, obj_2_y, r2 = object_pixel_locations[2]
-    if abs(obj_1_y - obj_2_y) > threshold:
-        rotation_angle_radians = np.tan(
-          (obj_2_y - obj_1_y) / (obj_2_x - obj_1_x) )
+    if not calibration_circles_xaxis:
+        if obj_1_x > obj_2_x:
+            obj_1_x, obj_2_x = obj_2_x, obj_1_x
+            obj_1_y, obj_2_y = obj_2_y, obj_1_y
+    dx = (obj_1_x - obj_2_x)
+    dy = (obj_1_y - obj_2_y)
+    if calibration_circles_xaxis:
+        difference = abs(dy)
+        trig = difference / dx
+    else:
+        difference = abs(dx)
+        trig = difference / dy
+    if difference > threshold:
+        rotation_angle_radians = np.tan(trig)
         rotationangle = 180. / np.pi * rotation_angle_radians
     return rotationangle
 
@@ -91,21 +102,21 @@ def findobjects(image, proc):
 def calibrate(object_pixel_locations):
     """Determine coordinate conversion parameters."""
     if len(object_pixel_locations) > 2:
-        calibration_circle_dia = float(calibration_circle_diameter)
         calibration_circle_sep = float(calibration_circle_separation)
-        object_sep = abs(object_pixel_locations[1][0] - object_pixel_locations[2][0])
-        object_dia = np.average(object_pixel_locations[1:, 2]) * 2.
-        coord_scale = np.array([calibration_circle_sep / object_sep,
-                                calibration_circle_dia / object_dia])
+        i = 1
+        if calibration_circles_xaxis: i = 0
+        object_sep = abs(object_pixel_locations[1][i] - object_pixel_locations[2][i])
+        coord_scale = calibration_circle_sep / object_sep
         return coord_scale
 
 def p2c(object_pixel_locations, coord_scale):
-    """Convert pixel locations to machine coordinates: from image center."""
+    """Convert pixel locations to machine coordinates from image center."""
     coord = np.array(getcoordinates(), dtype=float)
     camera_offset = np.array(camera_offset_coordinates, dtype=float)
     camera_coordinates = coord + camera_offset # image center machine coordinates
     center_pixel_location = object_pixel_locations[0, :2] # image center pixel location
     sign = [1 if s == 1 else -1 for s in image_bot_origin_location]
+    coord_scale = np.array([coord_scale, coord_scale])
     print "Detected object machine coordinates:"
     for object_pixel_location in object_pixel_locations[1:, :2]:
         moc = ( camera_coordinates +
