@@ -5,6 +5,7 @@ Detects green plants on a dirt background
 """
 import numpy as np
 import cv2
+import pixel_to_coordinate.pixel2coord as pixel2coord
 
 def detect_plants(image, **kwargs):
     """Detect plants in image and saves an image with plants marked.
@@ -13,6 +14,8 @@ def detect_plants(image, **kwargs):
            image (str): filename of image to process
 
        Kwargs:
+           calibration_img (filename): calibration image filename used to
+               output coordinates instead of pixel locations (default = None)
            debug (boolean): output debug images (default = False)
            blur (int): blur kernel size (must be odd, default = 5)
            morph (int): amount of filtering (default = 5)
@@ -37,6 +40,7 @@ def detect_plants(image, **kwargs):
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
+    calibration_img = None # default
     debug = False # default
     blur_amount = None   # To allow values to be defined as kwargs
     morph_amount = None  #  and keep defaults in the relevant 
@@ -47,6 +51,7 @@ def detect_plants(image, **kwargs):
     HSV_min = None       # default in relevant code section
     HSV_max = None       # default in relevant code section
     for key in kwargs:
+        if key == 'calibration_img': calibration_img = kwargs[key]
         if key == 'debug': debug = kwargs[key]
         if key == 'blur': blur_amount = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
@@ -113,7 +118,8 @@ def detect_plants(image, **kwargs):
     kt = None; upper_green = None
 
     # Load image and create blurred image
-    img = cv2.imread(image, 1)
+    original_image = cv2.imread(image, 1)
+    img = original_image.copy()
     if blur_amount is None: blur_amount = 5
     blur = cv2.medianBlur(img, blur_amount)
     if debug:
@@ -205,9 +211,10 @@ def detect_plants(image, **kwargs):
             cy = int(M['m01'] / M['m00'])
         except ZeroDivisionError:
             continue
-        if i == 0:
-            print "Detected plant center pixel coordinates:"
-        print "    x={} y={}".format(cx, cy)
+        if calibration_img is None:
+            if i == 0:
+                print "Detected plant center pixel locations:"
+            print "    x={} y={}".format(cx, cy)
 
         # Mark plant with red circle
         cv2.circle(img, (cx,cy), 20, (0,0,255), 4)
@@ -217,21 +224,36 @@ def detect_plants(image, **kwargs):
             cv2.circle(img2, (cx,cy), 20, (0,0,255), 4)
             cv2.drawContours(img2, [cnt], 0, (255,255,255), 3)
 
+    # Return coordinates if requested
+    if calibration_img is not None:
+        coord_scale, rotation_angle = pixel2coord.calibration(calibration_img)
+        inputimage = pixel2coord.rotateimage(original_image, rotation_angle)
+        object_pixel_locations, circled = pixel2coord.findobjects(inputimage,
+            pixel2coord.rotateimage(proc, rotation_angle),
+            small_c=True, draw_contours=False)
+        pixel2coord.p2c(object_pixel_locations, coord_scale)
+        save_image(circled, None, 'coordinates_found')
+
     if debug:
         save_image(proc, 6, 'contours')
         final_debug_image = save_image(img2, 7, 'img-contours')
 
     # Save soil image with plants marked
-    save_image(img, None, 'marked')
+    if calibration_img is None:
+        save_image(img, None, 'marked')
 
     if debug and not save:
         return final_debug_image
 
 if __name__ == "__main__":
+    coordinate_output = False
     single_image = True
     if single_image:
         image = "soil_image.jpg"
-        detect_plants(image)
+        if coordinate_output:
+            detect_plants(image, calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg")
+        else:
+            detect_plants(image)
     else: # multiple images to process
         images = ["soil_image_{:02d}.jpg".format(i) for i in range(0,11)]
         for image in images:

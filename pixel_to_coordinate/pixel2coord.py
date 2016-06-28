@@ -86,9 +86,13 @@ def process(image):
 
 def findobjects(image, proc, **kwargs):
     """Create contours and find locations of objects."""
+    small_c = False # default
     circle = True # default
+    draw_contours = True # default
     for key in kwargs:
+        if key == 'small_c': small_c = kwargs[key]
         if key == 'circle': circle = kwargs[key]
+        if key == 'draw_contours': draw_contours = kwargs[key]
     contours, hierarchy = cv2.findContours(proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     circled = image.copy()
     object_pixel_locations = np.append(np.array(image.shape[:2][::-1]) / 2, 0)
@@ -97,10 +101,13 @@ def findobjects(image, proc, **kwargs):
         (cx, cy), radius = cv2.minEnclosingCircle(cnt)
         object_pixel_locations = np.vstack((object_pixel_locations, [cx, cy, radius]))
         center = (int(cx), int(cy))
+        if small_c:
+            radius = 20
         if circle:
             cv2.circle(circled, center, int(radius), (255, 0, 0), 4)
-        cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
-        cv2.drawContours(circled, [cnt], 0, (0, 255, 0), 3)
+        if draw_contours:
+            cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
+            cv2.drawContours(circled, [cnt], 0, (0, 255, 0), 3)
     return object_pixel_locations, circled
 
 def calibrate(object_pixel_locations):
@@ -145,7 +152,7 @@ def calibration(inputimage):
     if viewoutputimage: showimage(circled)
     return coord_scale, total_rotation_angle
 
-def test(inputimage, coord_scale, rotation_angle):
+def determine_coordinates(inputimage, coord_scale, rotation_angle):
     """Use calibration parameters to determine locations of objects."""
     if isinstance(inputimage, str):
         inputimage = readimage(inputimage)
@@ -166,7 +173,7 @@ if __name__ == "__main__":
         # Object detection
         testimage = readimage("p2c_test_objects.jpg")
         testimage = rotateimage(testimage, test_rotation)
-        test(testimage, coord_scale, rotation_angle)
+        determine_coordinates(testimage, coord_scale, rotation_angle)
         # Color range
         testimage = readimage("p2c_test_color.jpg")
         _, outputimage = findobjects(testimage, process(testimage), circle=False)
@@ -180,4 +187,4 @@ if __name__ == "__main__":
         ## Test
         image = getimage()
         image = rotateimage(image, test_rotation)
-        test(image, coord_scale, rotation_angle)
+        determine_coordinates(image, coord_scale, rotation_angle)
