@@ -35,7 +35,9 @@ def detect_plants(image, **kwargs):
        Examples:
            detect_plants('soil_image.jpg')
            detect_plants('soil_image.jpg', morph=3, iterations=10, debug=True)
-           detect_plants('soil_image.jpg', blur=15, 
+           detect_plants("soil_image.jpg", blur=9, morph=7, iterations=4,
+              calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg")
+           detect_plants('soil_image.jpg', blur=15,
               array=[[5, 'ellipse', 'erode',  2],
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
@@ -45,7 +47,7 @@ def detect_plants(image, **kwargs):
     blur_amount = None   # To allow values to be defined as kwargs
     morph_amount = None  #  and keep defaults in the relevant 
     iterations = None    #  sections of code.
-    array = None
+    array = None  # default
     save = True   # default
     clump_buster = False # default
     HSV_min = None       # default in relevant code section
