@@ -84,8 +84,11 @@ def process(image):
     proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
     return proc
 
-def findobjects(image, proc):
+def findobjects(image, proc, **kwargs):
     """Create contours and find locations of objects."""
+    circle = True # default
+    for key in kwargs:
+        if key == 'circle': circle = kwargs[key]
     contours, hierarchy = cv2.findContours(proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     circled = image.copy()
     object_pixel_locations = np.append(np.array(image.shape[:2][::-1]) / 2, 0)
@@ -94,7 +97,8 @@ def findobjects(image, proc):
         (cx, cy), radius = cv2.minEnclosingCircle(cnt)
         object_pixel_locations = np.vstack((object_pixel_locations, [cx, cy, radius]))
         center = (int(cx), int(cy))
-        cv2.circle(circled, center, int(radius), (255, 0, 0), 4)
+        if circle:
+            cv2.circle(circled, center, int(radius), (255, 0, 0), 4)
         cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
         cv2.drawContours(circled, [cnt], 0, (0, 255, 0), 3)
     return object_pixel_locations, circled
@@ -165,7 +169,7 @@ if __name__ == "__main__":
         test(testimage, coord_scale, rotation_angle)
         # Color range
         testimage = readimage("p2c_test_color.jpg")
-        _, outputimage = findobjects(testimage, process(testimage))
+        _, outputimage = findobjects(testimage, process(testimage), circle=False)
         if viewoutputimage: showimage(outputimage)
 
     else:
