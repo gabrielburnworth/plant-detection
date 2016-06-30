@@ -257,7 +257,7 @@ def detect_plants(image, **kwargs):
         marked_PL = pixel2coord.c2p(object_pixel_locations[0], marked, coord_scale)
         unmarked_PL = pixel2coord.c2p(object_pixel_locations[0], unmarked, coord_scale)
 
-        marked_img = original_image.copy()
+        marked_img = inputimage.copy()
         for mark in marked_PL:
             cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
                        int(mark[2]), (0, 0, 255), 4)
@@ -269,13 +269,11 @@ def detect_plants(image, **kwargs):
                        int(unmarked[2]), (255, 0, 0), 4)
 
         # Grid
-        # TODO: rotate grid according to rotation_angle
         large_grid = np.hstack((np.array([[x] for x in range(0, 2000, 100)]),
                                 np.array([[y] for y in range(0, 2000, 100)]),
                                 np.array([[0] for y in range(0, 2000, 100)])))
         large_grid_pl = np.array(pixel2coord.c2p(object_pixel_locations[0],
                      large_grid, coord_scale))
-        print large_grid, large_grid_pl
         for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
             if x > marked_img.shape[1] or x < 0:
                 continue
