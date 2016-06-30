@@ -219,8 +219,8 @@ def detect_plants(image, **kwargs):
             continue
         if calibration_img is None:
             if i == 0:
-                print "Detected plant center pixel locations:"
-            print "    x={} y={}".format(cx, cy)
+                print "Detected plant center pixel locations ( X Y ):"
+            print "    ( {:5.0f}px {:5.0f}px )".format(cx, cy)
 
         # Mark plant with red circle
         cv2.circle(img, (cx,cy), 20, (0,0,255), 4)
@@ -239,51 +239,86 @@ def detect_plants(image, **kwargs):
             small_c=False, draw_contours=False)
         plant_coordinates, plant_pixel_locations = pixel2coord.p2c(
                                 object_pixel_locations, coord_scale)
-        save_image(circled, None, 'coordinates_found')
-
-        # Known plant exclusion
-        marked, unmarked = [], []
-        known_plants = np.array(known_plants)
-        for plant_coordinate in plant_coordinates:
-            x, y, r = plant_coordinate[0], plant_coordinate[1], plant_coordinate[2]
-            cxs, cys, crs = known_plants[:, 0], known_plants[:, 1], known_plants[:, 2]
-            if all((x - cx)**2 + (y - cy)**2 > cr**2 for cx, cy, cr in zip(cxs, cys, crs)):
-                marked.append([x, y, r])
-            else:
-                unmarked.append([x, y, r])
-        for mark in marked:
-            print "Marked for removal: x={:.0f}, y={:.0f}".format(mark[0], mark[1])
-        known_PL = pixel2coord.c2p(object_pixel_locations[0], known_plants, coord_scale)
-        marked_PL = pixel2coord.c2p(object_pixel_locations[0], marked, coord_scale)
-        unmarked_PL = pixel2coord.c2p(object_pixel_locations[0], unmarked, coord_scale)
-
+        if debug: save_image(circled, None, 'coordinates_found')
         marked_img = inputimage.copy()
-        for mark in marked_PL:
-            cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
-                       int(mark[2]), (0, 0, 255), 4)
-        for known in known_PL:
-            cv2.circle(marked_img, (int(known[0]), int(known[1])),
-                       int(known[2]), (0, 255, 0), 4)
-        for unmarked in unmarked_PL:
-            cv2.circle(marked_img, (int(unmarked[0]), int(unmarked[1])),
-                       int(unmarked[2]), (255, 0, 0), 4)
+
+        # Known plant exclusion:
+        if known_plants is not None:
+            # Print known
+            print "\n{} known plants inputted.".format(len(known_plants))
+            if len(known_plants) > 0:
+                print "Plants at the following machine coordinates " + \
+                      "( X Y ) with R = radius are to be saved:"
+            for known_plant in known_plants:
+                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*known_plant)
+
+            # Find unknown
+            marked, unmarked = [], []
+            kplants = np.array(known_plants)
+            for plant_coord in plant_coordinates:
+                x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
+                cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
+                if all((x - cx)**2 + (y - cy)**2 > cr**2
+                       for cx, cy, cr in zip(cxs, cys, crs)):
+                    marked.append([x, y, r])
+                else:
+                    unmarked.append([x, y, r])
+
+            # Print removal candidates
+            print "\n{} plants marked for removal.".format(len(marked))
+            if len(marked) > 0:
+                print "Plants at the following machine coordinates " + \
+                      "( X Y ) with R = radius are to be removed:"
+            for mark in marked:
+                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark)
+
+            # Print saved
+            print "\n{} detected plants are known or have escaped "\
+                  "removal.".format(len(unmarked))
+            if len(unmarked) > 0:
+                print "Plants at the following machine coordinates " + \
+                      "( X Y ) with R = radius have been saved:"
+            for unmark in unmarked:
+                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
+
+            # Create annotated image
+            known_PL = pixel2coord.c2p(object_pixel_locations[0],
+                                       known_plants, coord_scale)
+            marked_PL = pixel2coord.c2p(object_pixel_locations[0],
+                                       marked, coord_scale)
+            unmarked_PL = pixel2coord.c2p(object_pixel_locations[0],
+                                       unmarked, coord_scale)
+            for mark in marked_PL:
+                cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
+                           int(mark[2]), (0, 0, 255), 4)
+            for known in known_PL:
+                cv2.circle(marked_img, (int(known[0]), int(known[1])),
+                           int(known[2]), (0, 255, 0), 4)
+            for unmarked in unmarked_PL:
+                cv2.circle(marked_img, (int(unmarked[0]), int(unmarked[1])),
+                           int(unmarked[2]), (255, 0, 0), 4)
+        else:
+            for ppl in plant_pixel_locations[1:]:
+                cv2.circle(marked_img, (int(ppl[0]), int(ppl[1])),
+                           int(ppl[2]), (0, 0, 0), 4)
 
         # Grid
-        large_grid = np.hstack((np.array([[x] for x in range(0, 2000, 100)]),
-                                np.array([[y] for y in range(0, 2000, 100)]),
-                                np.array([[0] for y in range(0, 2000, 100)])))
+        grid_range = np.array([[x] for x in range(0, 2000, 100)])
+        large_grid = np.hstack((grid_range, grid_range, grid_range))
         large_grid_pl = np.array(pixel2coord.c2p(object_pixel_locations[0],
                      large_grid, coord_scale))
         for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
             if x > marked_img.shape[1] or x < 0:
                 continue
             marked_img[:, x:(x + 1)] = (255, 255, 255)
-            cv2.putText(marked_img, str(xc), (int(x), 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0)
+            cv2.putText(marked_img, str(xc), (int(x), 100),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
             if y > marked_img.shape[0] or y < 0:
                 continue
             marked_img[y:(y + 1), :] = (255, 255, 255)
-            cv2.putText(marked_img, str(yc), (100, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0)
+            cv2.putText(marked_img, str(yc), (100, int(y)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         save_image(marked_img, None, 'marked')
 
     if debug:
@@ -303,9 +338,9 @@ if __name__ == "__main__":
     if single_image:
         image = "soil_image.jpg"
         if coordinate_output:
-            detect_plants(image,
+            detect_plants(image, blur=15, morph=6, iterations=4,
              calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
-             known_plants=[[300, 300, 100], [1130, 600, 120]])
+             known_plants=[[800, 200, 100], [1130, 600, 120]])
         else:
             detect_plants(image)
     else: # multiple images to process

@@ -130,13 +130,14 @@ def p2c(object_pixel_locations, coord_scale):
     sign = [1 if s == 1 else -1 for s in image_bot_origin_location]
     coord_scale = np.array([coord_scale, coord_scale])
     object_coordinates = []
-    print "Detected object machine coordinates:"
+    print "Detected object machine coordinates ( X Y ) with R = radius:"
     for o, object_pixel_location in enumerate(object_pixel_locations[1:, :2]):
+        radius = object_pixel_locations[1:][o][2]
         moc = ( camera_coordinates +
                 sign * coord_scale *
                 (center_pixel_location - object_pixel_location) )
-        print "    x={:.0f} y={:.0f}".format(*moc)
-        object_coordinates.append([moc[0], moc[1], coord_scale[0] * object_pixel_locations[1:][o][2]])
+        print "    ( {:5.0f} {:5.0f} ) R = {R:.0f}".format(*moc, R=radius)
+        object_coordinates.append([moc[0], moc[1], coord_scale[0] * radius])
     return object_coordinates, object_pixel_locations
 
 def c2p(center_pixel_location, object_coordinates, coord_scale):
@@ -149,11 +150,9 @@ def c2p(center_pixel_location, object_coordinates, coord_scale):
     sign = [1 if s == 1 else -1 for s in image_bot_origin_location]
     coord_scale = np.array([coord_scale, coord_scale])
     object_pixel_locations = []
-    #print "Detected object pixel locations:"
     for o, object_coordinate in enumerate(object_coordinates[:, :2]):
         opl = ( center_pixel_location -
                 ( (object_coordinate - camera_coordinates) / (sign * coord_scale) ) )
-        #print "    x={:.0f} y={:.0f}".format(*opl)
         object_pixel_locations.append([opl[0], opl[1],  object_coordinates[o][2] / coord_scale[0]])
     return object_pixel_locations
 
@@ -169,7 +168,7 @@ def calibration(inputimage):
             inputimage = rotateimage(inputimage, rotation_angle)
             total_rotation_angle += rotation_angle
     if total_rotation_angle != 0:
-        print "Rotation Required = {:.2f} degrees".format(total_rotation_angle)
+        print " Note: required rotation executed = {:.2f} degrees".format(total_rotation_angle)
     coord_scale = calibrate(object_pixel_locations)
     if viewoutputimage: showimage(circled)
     return coord_scale, total_rotation_angle
