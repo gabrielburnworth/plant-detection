@@ -11,6 +11,6 @@ Run the script: `python pixel2coord.py`
 
 __Alternatively, use a python command line:__
 ```python
-from pixel2coord import calibration, test
-test("p2c_test_objects.jpg", *calibration("p2c_test_calibration.jpg"))
+from pixel2coord import calibration, determine_coordinates
+determine_coordinates("p2c_test_objects.jpg", *calibration("p2c_test_calibration.jpg"))
 ```

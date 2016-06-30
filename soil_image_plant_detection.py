@@ -16,6 +16,8 @@ def detect_plants(image, **kwargs):
        Kwargs:
            calibration_img (filename): calibration image filename used to
                output coordinates instead of pixel locations (default = None)
+           known_plants (list): [x, y, radius] of known (intentional) plants
+                                (default = None)
            debug (boolean): output debug images (default = False)
            blur (int): blur kernel size (must be odd, default = 5)
            morph (int): amount of filtering (default = 5)
@@ -43,6 +45,7 @@ def detect_plants(image, **kwargs):
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
     calibration_img = None # default
+    known_plants = None # default
     debug = False # default
     blur_amount = None   # To allow values to be defined as kwargs
     morph_amount = None  #  and keep defaults in the relevant 
@@ -54,6 +57,7 @@ def detect_plants(image, **kwargs):
     HSV_max = None       # default in relevant code section
     for key in kwargs:
         if key == 'calibration_img': calibration_img = kwargs[key]
+        if key == 'known_plants': known_plants = kwargs[key]
         if key == 'debug': debug = kwargs[key]
         if key == 'blur': blur_amount = kwargs[key]
         if key == 'morph': morph_amount = kwargs[key]
@@ -232,9 +236,61 @@ def detect_plants(image, **kwargs):
         inputimage = pixel2coord.rotateimage(original_image, rotation_angle)
         object_pixel_locations, circled = pixel2coord.findobjects(inputimage,
             pixel2coord.rotateimage(proc, rotation_angle),
-            small_c=True, draw_contours=False)
-        pixel2coord.p2c(object_pixel_locations, coord_scale)
+            small_c=False, draw_contours=False)
+        plant_coordinates, plant_pixel_locations = pixel2coord.p2c(
+                                object_pixel_locations, coord_scale)
         save_image(circled, None, 'coordinates_found')
+
+        # Known plant exclusion
+        exclusion = np.zeros((circled.shape[:2]), np.uint8)
+        def plot_filled_circle(img, loc, value):
+            cv2.circle(img, (int(loc[0]), int(loc[1])), int(loc[2]),
+                       (value, value, value), -1)
+        for object_pixel_location in object_pixel_locations[1:, :]:
+            plot_filled_circle(exclusion, object_pixel_location, 255)
+        known_plant_pixel_locations = pixel2coord.c2p(
+         object_pixel_locations[0], known_plants, coord_scale)
+        for known_plant_PL in known_plant_pixel_locations:
+            plot_filled_circle(exclusion, known_plant_PL, 0)
+        save_image(exclusion, None, 'exclusion')
+
+        contours, hierarchy = cv2.findContours(exclusion,
+         cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        marked_pixel_locations = []
+        for i in range(len(contours)):
+            cnt = contours[i]
+            (cx, cy), radius = cv2.minEnclosingCircle(cnt)
+            marked_pixel_locations.append([cx, cy, radius])
+        marked_pixel_locations.insert(0, object_pixel_locations[0])
+        marked, _ = pixel2coord.p2c(marked_pixel_locations, coord_scale)
+        for mark in marked:
+            print "Marked for removal: x={:.0f}, y={:.0f}".format(mark[0], mark[1])
+        known_PL = pixel2coord.c2p(object_pixel_locations[0], known_plants, coord_scale)
+        marked_PL = pixel2coord.c2p(object_pixel_locations[0], marked, coord_scale)
+
+        marked_img = original_image.copy()
+        for mark in marked_PL:
+            cv2.circle(marked_img, (int(mark[0]), int(mark[1])), int(mark[2]), (0, 0, 255), 4)
+        for known in known_PL:
+            cv2.circle(marked_img, (int(known[0]), int(known[1])), int(known[2]), (0, 255, 0), 4)
+
+        # Grid
+        # TODO: rotate grid according to rotation_angle
+        large_grid = np.hstack((np.array([[x] for x in range(0, 2000, 100)]),
+                                np.array([[y] for y in range(0, 2000, 100)]),
+                                np.array([[0] for y in range(0, 2000, 100)])))
+        large_grid_pl = np.array(pixel2coord.c2p(object_pixel_locations[0],
+                     large_grid, coord_scale))
+        print large_grid, large_grid_pl
+        for y in large_grid_pl[:, 0]:
+            if y > marked_img.shape[0] or y < 0:
+                continue
+            marked_img[y:(y + 1), :] = (255, 255, 255)
+        for x in large_grid_pl[:, 1]:
+            if x > marked_img.shape[1] or x < 0:
+                continue
+            marked_img[:, x:(x + 1)] = (255, 255, 255)
+        save_image(marked_img, None, 'marked')
 
     if debug:
         save_image(proc, 6, 'contours')
@@ -253,7 +309,9 @@ if __name__ == "__main__":
     if single_image:
         image = "soil_image.jpg"
         if coordinate_output:
-            detect_plants(image, calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg")
+            detect_plants(image,
+             calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
+             known_plants=[[840, 200, 100], [1130, 600, 120]])
         else:
             detect_plants(image)
     else: # multiple images to process

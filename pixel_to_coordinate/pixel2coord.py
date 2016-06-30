@@ -122,18 +122,40 @@ def calibrate(object_pixel_locations):
 
 def p2c(object_pixel_locations, coord_scale):
     """Convert pixel locations to machine coordinates from image center."""
+    object_pixel_locations = np.array(object_pixel_locations)
     coord = np.array(getcoordinates(), dtype=float)
     camera_offset = np.array(camera_offset_coordinates, dtype=float)
     camera_coordinates = coord + camera_offset # image center machine coordinates
     center_pixel_location = object_pixel_locations[0, :2] # image center pixel location
     sign = [1 if s == 1 else -1 for s in image_bot_origin_location]
     coord_scale = np.array([coord_scale, coord_scale])
+    object_coordinates = []
     print "Detected object machine coordinates:"
-    for object_pixel_location in object_pixel_locations[1:, :2]:
+    for o, object_pixel_location in enumerate(object_pixel_locations[1:, :2]):
         moc = ( camera_coordinates +
                 sign * coord_scale *
                 (center_pixel_location - object_pixel_location) )
         print "    x={:.0f} y={:.0f}".format(*moc)
+        object_coordinates.append([moc[0], moc[1], coord_scale[0] * object_pixel_locations[1:][o][2]])
+    return object_coordinates, object_pixel_locations
+
+def c2p(center_pixel_location, object_coordinates, coord_scale):
+    """Convert machine coordinates to pixel locations using image center."""
+    object_coordinates = np.array(object_coordinates)
+    coord = np.array(getcoordinates(), dtype=float)
+    camera_offset = np.array(camera_offset_coordinates, dtype=float)
+    camera_coordinates = coord + camera_offset # image center machine coordinates
+    center_pixel_location = center_pixel_location[:2]
+    sign = [1 if s == 1 else -1 for s in image_bot_origin_location]
+    coord_scale = np.array([coord_scale, coord_scale])
+    object_pixel_locations = []
+    #print "Detected object pixel locations:"
+    for o, object_coordinate in enumerate(object_coordinates[:, :2]):
+        opl = ( center_pixel_location -
+                ( (object_coordinate - camera_coordinates) / (sign * coord_scale) ) )
+        #print "    x={:.0f} y={:.0f}".format(*opl)
+        object_pixel_locations.append([opl[0], opl[1],  object_coordinates[o][2] / coord_scale[0]])
+    return object_pixel_locations
 
 def calibration(inputimage):
     """Determine pixel to coordinate conversion scale and image rotation angle."""
@@ -158,7 +180,7 @@ def determine_coordinates(inputimage, coord_scale, rotation_angle):
         inputimage = readimage(inputimage)
     inputimage = rotateimage(inputimage, rotation_angle)
     object_pixel_locations, circled = findobjects(inputimage, process(inputimage))
-    p2c(object_pixel_locations, coord_scale)
+    object_coordinates, object_pixel_locations = p2c(object_pixel_locations, coord_scale)
     if viewoutputimage: showimage(circled)
 
 if __name__ == "__main__":
