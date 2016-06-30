@@ -242,37 +242,31 @@ def detect_plants(image, **kwargs):
         save_image(circled, None, 'coordinates_found')
 
         # Known plant exclusion
-        exclusion = np.zeros((circled.shape[:2]), np.uint8)
-        def plot_filled_circle(img, loc, value):
-            cv2.circle(img, (int(loc[0]), int(loc[1])), int(loc[2]),
-                       (value, value, value), -1)
-        for object_pixel_location in object_pixel_locations[1:, :]:
-            plot_filled_circle(exclusion, object_pixel_location, 255)
-        known_plant_pixel_locations = pixel2coord.c2p(
-         object_pixel_locations[0], known_plants, coord_scale)
-        for known_plant_PL in known_plant_pixel_locations:
-            plot_filled_circle(exclusion, known_plant_PL, 0)
-        save_image(exclusion, None, 'exclusion')
-
-        contours, hierarchy = cv2.findContours(exclusion,
-         cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        marked_pixel_locations = []
-        for i in range(len(contours)):
-            cnt = contours[i]
-            (cx, cy), radius = cv2.minEnclosingCircle(cnt)
-            marked_pixel_locations.append([cx, cy, radius])
-        marked_pixel_locations.insert(0, object_pixel_locations[0])
-        marked, _ = pixel2coord.p2c(marked_pixel_locations, coord_scale)
+        marked, unmarked = [], []
+        known_plants = np.array(known_plants)
+        for plant_coordinate in plant_coordinates:
+            x, y, r = plant_coordinate[0], plant_coordinate[1], plant_coordinate[2]
+            cxs, cys, crs = known_plants[:, 0], known_plants[:, 1], known_plants[:, 2]
+            if all((x - cx)**2 + (y - cy)**2 > cr**2 for cx, cy, cr in zip(cxs, cys, crs)):
+                marked.append([x, y, r])
+            else:
+                unmarked.append([x, y, r])
         for mark in marked:
             print "Marked for removal: x={:.0f}, y={:.0f}".format(mark[0], mark[1])
         known_PL = pixel2coord.c2p(object_pixel_locations[0], known_plants, coord_scale)
         marked_PL = pixel2coord.c2p(object_pixel_locations[0], marked, coord_scale)
+        unmarked_PL = pixel2coord.c2p(object_pixel_locations[0], unmarked, coord_scale)
 
         marked_img = original_image.copy()
         for mark in marked_PL:
-            cv2.circle(marked_img, (int(mark[0]), int(mark[1])), int(mark[2]), (0, 0, 255), 4)
+            cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
+                       int(mark[2]), (0, 0, 255), 4)
         for known in known_PL:
-            cv2.circle(marked_img, (int(known[0]), int(known[1])), int(known[2]), (0, 255, 0), 4)
+            cv2.circle(marked_img, (int(known[0]), int(known[1])),
+                       int(known[2]), (0, 255, 0), 4)
+        for unmarked in unmarked_PL:
+            cv2.circle(marked_img, (int(unmarked[0]), int(unmarked[1])),
+                       int(unmarked[2]), (255, 0, 0), 4)
 
         # Grid
         # TODO: rotate grid according to rotation_angle
@@ -282,14 +276,16 @@ def detect_plants(image, **kwargs):
         large_grid_pl = np.array(pixel2coord.c2p(object_pixel_locations[0],
                      large_grid, coord_scale))
         print large_grid, large_grid_pl
-        for y in large_grid_pl[:, 0]:
-            if y > marked_img.shape[0] or y < 0:
-                continue
-            marked_img[y:(y + 1), :] = (255, 255, 255)
-        for x in large_grid_pl[:, 1]:
+        for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
             if x > marked_img.shape[1] or x < 0:
                 continue
             marked_img[:, x:(x + 1)] = (255, 255, 255)
+            cv2.putText(marked_img, str(xc), (int(x), 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0)
+        for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
+            if y > marked_img.shape[0] or y < 0:
+                continue
+            marked_img[y:(y + 1), :] = (255, 255, 255)
+            cv2.putText(marked_img, str(yc), (100, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0)
         save_image(marked_img, None, 'marked')
 
     if debug:
@@ -311,7 +307,7 @@ if __name__ == "__main__":
         if coordinate_output:
             detect_plants(image,
              calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
-             known_plants=[[840, 200, 100], [1130, 600, 120]])
+             known_plants=[[300, 300, 100], [1130, 600, 120]])
         else:
             detect_plants(image)
     else: # multiple images to process
