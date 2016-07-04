@@ -310,13 +310,13 @@ def detect_plants(image, **kwargs):
         for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
             if x > marked_img.shape[1] or x < 0:
                 continue
-            marked_img[:, x:(x + 1)] = (255, 255, 255)
+            marked_img[:, int(x):int(x + 1)] = (255, 255, 255)
             cv2.putText(marked_img, str(xc), (int(x), 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
             if y > marked_img.shape[0] or y < 0:
                 continue
-            marked_img[y:(y + 1), :] = (255, 255, 255)
+            marked_img[int(y):int(y + 1), :] = (255, 255, 255)
             cv2.putText(marked_img, str(yc), (100, int(y)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         save_image(marked_img, None, 'marked')
