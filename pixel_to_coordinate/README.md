@@ -8,9 +8,3 @@ sudo apt-get install python-opencv python-numpy
 __Run the script:__
 
 Run the script: `python pixel2coord.py`
-
-__Alternatively, use a python command line:__
-```python
-from pixel2coord import calibration, determine_coordinates
-determine_coordinates("p2c_test_objects.jpg", *calibration("p2c_test_calibration.jpg"))
-```
