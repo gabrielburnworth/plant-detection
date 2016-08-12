@@ -252,6 +252,7 @@ def detect_plants(image, **kwargs):
         inputimage = rotateimage(original_image, P2C.total_rotation_angle)
         proc = rotateimage(proc, P2C.total_rotation_angle)
         object_pixel_locations = find(proc)
+        P2C.testimage = True
         plant_coordinates, plant_pixel_locations = P2C.p2c(
                                 object_pixel_locations)
 
@@ -353,7 +354,7 @@ if __name__ == "__main__":
         if coordinate_output:
             detect_plants(image, blur=15, morph=6, iterations=4,
              calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
-             known_plants=[[600, 300, 100], [850, 700, 120]], debug=1)
+             known_plants=[[600, 300, 100], [850, 700, 120]])
         else:
             detect_plants(image)
     else: # multiple images to process
