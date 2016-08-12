@@ -10,11 +10,9 @@ class Pixel2coord():
     in images. Finds object coordinates in image.
     """
     def __init__(self, calibration_image):
-        # Input values and options
         self.image = None
         if isinstance(calibration_image, str):
             self.readimage(calibration_image)
-            print "string!"
         else:
             self.image = calibration_image
         self.proc = None
@@ -32,6 +30,7 @@ class Pixel2coord():
         self.fromfile = True  # otherwise, take photos
         self.coord_scale = None
         self.total_rotation_angle = 0
+        self.testimage = 0
 
     def getcoordinates(self, test):
         """Get machine coordinates from bot."""
@@ -142,7 +141,7 @@ class Pixel2coord():
         """Convert pixel locations to machine coordinates from image center."""
         # TODO: ability to process only one coordinate (e.g. x instead of [x, y, r])
         object_pixel_locations = np.array(object_pixel_locations)
-        coord = np.array(self.getcoordinates(0), dtype=float)
+        coord = np.array(self.getcoordinates(self.testimage), dtype=float)
         camera_offset = np.array(self.camera_offset_coordinates, dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         sign = [1 if s == 1 else -1 for s in self.image_bot_origin_location]
