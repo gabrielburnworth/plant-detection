@@ -378,7 +378,7 @@ def detect_plants(image, **kwargs):
         return final_debug_image
 
 if __name__ == "__main__":
-    coordinate_output = 1#False
+    coordinate_output = True
     single_image = True
     if single_image:
         image = "soil_image.jpg"
