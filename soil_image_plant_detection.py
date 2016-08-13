@@ -87,14 +87,14 @@ def detect_plants(image, **kwargs):
         lines = ["blur kernel size = {}".format(blur_amount)] # blur applied
         if upper_green is not None: # color mask applied
             lines = lines + [
-                 "HSV green lower bound = {}".format(lower_green),
-                 "HSV green upper bound = {}".format(upper_green)]
+                "HSV green lower bound = {}".format(lower_green),
+                "HSV green upper bound = {}".format(upper_green)]
             if array is None and kt is not None: # single morph applied
                 lines = lines + [
-                 "kernel type = {}".format(kernel_type),
-                 "kernel size = {}".format(morph_amount),
-                 "morphological transformation = {}".format(morph_type),
-                 "number of iterations = {}".format(iterations)]
+                    "kernel type = {}".format(kernel_type),
+                    "kernel size = {}".format(morph_amount),
+                    "morphological transformation = {}".format(morph_type),
+                    "number of iterations = {}".format(iterations)]
         h = img.shape[0]; w = img.shape[1]
         textsize = w / 1200.
         lineheight = int(40 * textsize); textweight = int(3.5 * textsize)
@@ -111,13 +111,13 @@ def detect_plants(image, **kwargs):
         annotated_image[add:, :] = img
         for o, line in enumerate(lines):
             cv2.putText(annotated_image, line,
-                (10, lineheight + o * lineheight),
-                font, textsize, (255,255,255), textweight)
+                        (10, lineheight + o * lineheight),
+                        font, textsize, (255, 255, 255), textweight)
         if array is not None and kt is not None: # multiple morphs applied
             for o, line in enumerate(array):
                 cv2.putText(annotated_image, str(line),
-                    (10, add_1 + o * lineheight),
-                    font, textsize, (255,255,255), textweight)
+                            (10, add_1 + o * lineheight),
+                            font, textsize, (255, 255, 255), textweight)
         return annotated_image
 
     print "\nProcessing image: {}".format(image)
@@ -125,6 +125,7 @@ def detect_plants(image, **kwargs):
 
     # Load image and create blurred image
     original_image = cv2.imread(image, 1)
+    if 0: original_image = np.rot90(original_image)
     img = original_image.copy()
     if blur_amount is None: blur_amount = 5
     blur = cv2.medianBlur(img, blur_amount)
@@ -162,11 +163,11 @@ def detect_plants(image, **kwargs):
         if morph_amount is None: morph_amount = 5
         kernel_type = 'ellipse'
         kernel = cv2.getStructuringElement(kt[kernel_type],
-                     (morph_amount, morph_amount))
+                                           (morph_amount, morph_amount))
         if iterations is None: iterations = 1
         morph_type = 'close'
         proc = cv2.morphologyEx(mask,
-                   mt[morph_type], kernel, iterations=iterations)
+                                mt[morph_type], kernel, iterations=iterations)
     else:
         # List of morphological transformations
         processes = array; array = None
@@ -175,14 +176,15 @@ def detect_plants(image, **kwargs):
             morph_amount = process[0]; kernel_type = process[1]
             morph_type = process[2]; iterations = process[3]
             kernel = cv2.getStructuringElement(kt[kernel_type],
-                         (morph_amount, morph_amount))
+                                               (morph_amount, morph_amount))
             if morph_type == 'erode':
                 proc = cv2.erode(proc, kernel, iterations=iterations)
             elif morph_type == 'dilate':
                 proc = cv2.dilate(proc, kernel, iterations=iterations)
             else:
                 proc = cv2.morphologyEx(proc,
-                           mt[morph_type], kernel, iterations=iterations)
+                                        mt[morph_type], kernel,
+                                        iterations=iterations)
             save_image(proc, '3p{}'.format(p), 'processed-mask')
         array = processes
     if debug:
@@ -192,20 +194,22 @@ def detect_plants(image, **kwargs):
 
     if clump_buster:
         contours, hierarchy = cv2.findContours(proc,
-            cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                                               cv2.RETR_EXTERNAL,
+                                               cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             cnt = contours[i]
             rx, ry, rw, rh = cv2.boundingRect(cnt)
             cv2.line(proc, (rx + rw / 2, ry), (rx + rw / 2, ry + rh),
-                     (0,0,0), rw / 25)
+                     (0, 0, 0), rw / 25)
             cv2.line(proc, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
-                     (0,0,0), rh / 25)
+                     (0, 0, 0), rh / 25)
         proc = cv2.dilate(proc, kernel, iterations=1)
 
     def find(proc):
         # Find contours (hopefully of outside edges of plants)
         contours, hierarchy = cv2.findContours(proc,
-            cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                                               cv2.RETR_EXTERNAL,
+                                               cv2.CHAIN_APPROX_SIMPLE)
         print "{} plants detected in image.".format(len(contours))
 
         # Loop through contours
@@ -224,12 +228,12 @@ def detect_plants(image, **kwargs):
                 print "    ( {:5.0f}px {:5.0f}px )".format(cx, cy)
 
             # Mark plant with red circle
-            cv2.circle(img, (cx,cy), 20, (0,0,255), 4)
+            cv2.circle(img, (cx, cy), 20, (0, 0, 255), 4)
 
             if debug:
-                cv2.drawContours(proc, [cnt], 0, (255,255,255), 3)
-                cv2.circle(img2, (cx,cy), 20, (0,0,255), 4)
-                cv2.drawContours(img2, [cnt], 0, (255,255,255), 3)
+                cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
+                cv2.circle(img2, (cx, cy), 20, (0, 0, 255), 4)
+                cv2.drawContours(img2, [cnt], 0, (255, 255, 255), 3)
 
             object_pixel_locations.append([cx, cy, radius])
         return object_pixel_locations
@@ -241,20 +245,20 @@ def detect_plants(image, **kwargs):
     # Return coordinates if requested
     if calibration_img is not None:
         P2C = Pixel2coord(calibration_img)
-        P2C.calibration()
         def rotateimage(image, rotationangle):
             try:
                 rows, cols, _ = image.shape
             except ValueError:
                 rows, cols = image.shape
-            mtrx = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotationangle, 1)
+            mtrx = cv2.getRotationMatrix2D((cols / 2, rows / 2),
+                                           rotationangle, 1)
             return cv2.warpAffine(image, mtrx, (cols, rows))
         inputimage = rotateimage(original_image, P2C.total_rotation_angle)
         proc = rotateimage(proc, P2C.total_rotation_angle)
         object_pixel_locations = find(proc)
-        P2C.testimage = True
+        P2C.test_coordinates = [1350, 2450]
         plant_coordinates, plant_pixel_locations = P2C.p2c(
-                                object_pixel_locations)
+            object_pixel_locations)
 
         if debug: save_image(img2, None, 'coordinates_found')
         marked_img = inputimage.copy()
@@ -317,8 +321,33 @@ def detect_plants(image, **kwargs):
                            int(ppl[2]), (0, 0, 0), 4)
 
         # Grid
-        # TODO: put grid in correct location
-        grid_range = np.array([[x] for x in range(0, 2000, 100)])
+        w = marked_img.shape[1]
+        textsize = w / 2000.
+        textweight = int(3.5 * textsize)
+        def grid_point(point, pointtype):
+            if pointtype == 'coordinates':
+                if len(point) < 3:
+                    point = list(point) + [0]
+                point_pixel_location = np.array(P2C.c2p(point))[0]
+                x = point_pixel_location[0]
+                y = point_pixel_location[1]
+            else:  # pixels
+                x = point[0]
+                y = point[1]
+            tps = w / 300.
+            # crosshair center
+            marked_img[int(y - tps):int(y + tps + 1),
+                       int(x - tps):int(x + tps + 1)] = (255, 255, 255)
+           # crosshair lines
+            marked_img[int(y - tps * 4):int(y + tps * 4 + 1),
+                       int(x - tps / 4):int(x + tps / 4 + 1)] = (255, 255, 255)
+            marked_img[int(y - tps / 4):int(y + tps / 4 + 1),
+                       int(x - tps * 4):int(x + tps * 4 + 1)] = (255, 255, 255)
+        #grid_point([1650, 2050, 0], 'coordinates')  # test point
+        grid_point(P2C.test_coordinates, 'coordinates')  # UTM location
+        grid_point(P2C.center_pixel_location, 'pixels')  # image center
+
+        grid_range = np.array([[x] for x in range(0, 20000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
         large_grid_pl = np.array(P2C.c2p(large_grid))
         for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
@@ -326,13 +355,15 @@ def detect_plants(image, **kwargs):
                 continue
             marked_img[:, int(x):int(x + 1)] = (255, 255, 255)
             cv2.putText(marked_img, str(xc), (int(x), 100),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+                        cv2.FONT_HERSHEY_SIMPLEX, textsize,
+                        (255, 255, 255), textweight)
         for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
             if y > marked_img.shape[0] or y < 0:
                 continue
             marked_img[int(y):int(y + 1), :] = (255, 255, 255)
             cv2.putText(marked_img, str(yc), (100, int(y)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
+                        cv2.FONT_HERSHEY_SIMPLEX, textsize,
+                        (255, 255, 255), textweight)
         save_image(marked_img, None, 'marked')
 
     if debug:
@@ -347,17 +378,17 @@ def detect_plants(image, **kwargs):
         return final_debug_image
 
 if __name__ == "__main__":
-    coordinate_output = False
+    coordinate_output = 1#False
     single_image = True
     if single_image:
         image = "soil_image.jpg"
         if coordinate_output:
             detect_plants(image, blur=15, morph=6, iterations=4,
-             calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
-             known_plants=[[600, 300, 100], [850, 700, 120]])
+                calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
+                known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
         else:
             detect_plants(image)
     else: # multiple images to process
-        images = ["soil_image_{:02d}.jpg".format(i) for i in range(0,11)]
+        images = ["soil_image_{:02d}.jpg".format(i) for i in range(0, 11)]
         for image in images:
             detect_plants(image, blur=15, morph=6, iterations=10, debug=True)

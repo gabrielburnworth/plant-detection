@@ -15,30 +15,33 @@ class Pixel2coord():
             self.readimage(calibration_image)
         else:
             self.image = calibration_image
+        self.camera_rotation = 0
+        if self.camera_rotation > 0:
+            self.image = np.rot90(self.image)
         self.proc = None
         self.circled = None
         self.calibration_object_pixel_locations = []
         self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
         self.rotationangle = 0
-        self.calibration_circles_xaxis = True  # else, calibration circles spaced along y-axis
+        self.calibration_circles_xaxis = True  # calib. circles along x-axis
         self.image_bot_origin_location = [0, 1]  # bot axes locations in image
         self.calibration_circle_separation = 1000  # distance between red dots
-        self.camera_offset_coordinates = [200, 100]  # camera offset from current location
+        self.camera_offset_coordinates = [200, 100]  # camera offset from UTM
         self.test_rotation = 5  # for testing, add some image rotation
-        self.iterations = 3  # min 2 if image is rotated or if rotation is unknown
+        self.iterations = 3  # min 2 if image is rotated or if rotation unknown
         self.viewoutputimage = False  # overridden as True if running script
         self.fromfile = True  # otherwise, take photos
         self.coord_scale = None
         self.total_rotation_angle = 0
-        self.testimage = 0
+        self.test_coordinates = [600, 400]  # for calib image, current location
 
-    def getcoordinates(self, test):
+        # Run calibration sequence for provided image
+        self.calibration()
+
+    def getcoordinates(self):
         """Get machine coordinates from bot."""
-        # For now, testing coordintes:
-        bot_coordinates = [600, 400]  # for calib image, current location
-        if test:
-            bot_coordinates = [600, 400]  # for testing image, current location
-        return bot_coordinates
+        # For now, return testing coordintes:
+        return self.test_coordinates
 
     def getimage(self):
         """Take a photo."""
@@ -91,10 +94,13 @@ class Pixel2coord():
         """Prepare image for contour detection."""
         blur = cv2.medianBlur(self.image, 5)
         hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-        mask_L = cv2.inRange(hsv, np.array([0, 100, 100]), np.array([20, 255, 255]))
-        mask_U = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([179, 255, 255]))
+        mask_L = cv2.inRange(hsv, np.array([0, 100, 100]),
+                             np.array([20, 255, 255]))
+        mask_U = cv2.inRange(hsv, np.array([160, 100, 100]),
+                             np.array([179, 255, 255]))
         mask = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
-        self.proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
+        self.proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE,
+                                     np.ones((15, 15), np.uint8))
 
     def findobjects(self, **kwargs):
         """Create contours and find locations of objects."""
@@ -139,9 +145,15 @@ class Pixel2coord():
 
     def p2c(self, object_pixel_locations):
         """Convert pixel locations to machine coordinates from image center."""
-        # TODO: ability to process only one coordinate (e.g. x instead of [x, y, r])
         object_pixel_locations = np.array(object_pixel_locations)
-        coord = np.array(self.getcoordinates(self.testimage), dtype=float)
+        if len(object_pixel_locations) == 0:
+            return [], []
+        try:
+            object_pixel_locations.shape[1]
+        except IndexError:
+            object_pixel_locations = [object_pixel_locations]
+        object_pixel_locations = np.array(object_pixel_locations)
+        coord = np.array(self.getcoordinates(), dtype=float)
         camera_offset = np.array(self.camera_offset_coordinates, dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         sign = [1 if s == 1 else -1 for s in self.image_bot_origin_location]
@@ -162,7 +174,14 @@ class Pixel2coord():
         """Convert machine coordinates to pixel locations
         using image center."""
         object_coordinates = np.array(object_coordinates)
-        coord = np.array(self.getcoordinates(0), dtype=float)
+        if len(object_coordinates) == 0:
+            return []
+        try:
+            object_coordinates.shape[1]
+        except IndexError:
+            object_coordinates = [object_coordinates]
+        object_coordinates = np.array(object_coordinates)
+        coord = np.array(self.getcoordinates(), dtype=float)
         camera_offset = np.array(self.camera_offset_coordinates, dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         center_pixel_location = self.center_pixel_location[:2]
@@ -171,9 +190,11 @@ class Pixel2coord():
         object_pixel_locations = []
         for o, object_coordinate in enumerate(object_coordinates[:, :2]):
             opl = (center_pixel_location -
-                   ((object_coordinate - camera_coordinates) / (sign * coord_scale)))
+                   ((object_coordinate - camera_coordinates)
+                    / (sign * coord_scale)))
             object_pixel_locations.append([opl[0], opl[1],
-                                           object_coordinates[o][2] / coord_scale[0]])
+                                           object_coordinates[o][2]
+                                           / coord_scale[0]])
         return object_pixel_locations
 
     def calibration(self):
@@ -225,5 +246,4 @@ if __name__ == "__main__":
     else:
         # Use camera
         P2C.getimage()
-        P2C.calibration()
         P2C.determine_coordinates()
