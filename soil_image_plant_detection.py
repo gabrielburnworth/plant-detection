@@ -5,16 +5,17 @@ Detects green plants on a dirt background
 """
 import numpy as np
 import cv2
+from time import sleep
 from pixel_to_coordinate.pixel2coord import Pixel2coord
 
 
 class Detect_plants():
     """Detect plants in image and saves an image with plants marked.
 
-       Args:
-           image (str): filename of image to process
-
        Kwargs:
+           image (str): filename of image to process (default = None)
+               None -> take photo instead
+           coordinates (boolean): use coordinate conversion (default = False)
            calibration_img (filename): calibration image filename used to
                output coordinates instead of pixel locations (default = None)
            known_plants (list): [x, y, radius] of known (intentional) plants
@@ -38,17 +39,19 @@ class Detect_plants():
                                            (default = False)
 
        Examples:
-           Detect_plants('soil_image.jpg')
-           Detect_plants('soil_image.jpg', morph=3, iterations=10, debug=True)
-           Detect_plants("soil_image.jpg", blur=9, morph=7, iterations=4,
+           Detect_plants()
+           Detect_plants(image='soil_image.jpg', morph=3, iterations=10,
+              debug=True)
+           Detect_plants(image='soil_image.jpg', blur=9, morph=7, iterations=4,
               calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg")
-           Detect_plants('soil_image.jpg', blur=15,
+           Detect_plants(image='soil_image.jpg', blur=15,
               array=[[5, 'ellipse', 'erode',  2],
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
-    def __init__(self, image, **kwargs):
-        self.image = image
+    def __init__(self, **kwargs):
+        self.image = None
+        self.coordinates = False
         self.calibration_img = None  # default
         self.known_plants = None  # default
         self.debug = False  # default
@@ -62,6 +65,8 @@ class Detect_plants():
         self.HSV_max = [90, 255, 255]  # default
         self.parameters_from_file = False  # default
         for key in kwargs:
+            if key == 'image': self.image = kwargs[key]
+            if key == 'coordinates': self.coordinates = kwargs[key]
             if key == 'calibration_img': self.calibration_img = kwargs[key]
             if key == 'known_plants': self.known_plants = kwargs[key]
             if key == 'debug': self.debug = kwargs[key]
@@ -75,7 +80,30 @@ class Detect_plants():
             if key == 'HSV_max': self.HSV_max = kwargs[key]
             if key == 'parameters_from_file':
                 self.parameters_from_file = kwargs[key]
-        self.detect_plants()
+        if self.calibration_img is not None:
+            self.coordinates = True
+        if self.image is None:
+            self.image = self._getimage()
+        self.test_coordinates = [1350, 2450]
+
+    def _getcoordinates(self):
+        """Get machine coordinates from bot."""
+        # For now, return testing coordintes:
+        return self.test_coordinates
+
+    def _getimage(self):
+        """Take a photo."""
+        camera = cv2.VideoCapture(0)
+        sleep(0.1)
+        _, image = camera.read()
+        camera.release()
+        self.current_coordinates = self._getcoordinates()
+        return image
+
+    def calibrate(self):
+        if self.calibration_img is None and self.coordinates:
+            self.calibration_img = self._getimage()
+        P2C = Pixel2coord(calibration_image=self.calibration_img)
 
     def detect_plants(self):
 
@@ -286,7 +314,7 @@ class Detect_plants():
                     (_, _), radius = cv2.minEnclosingCircle(cnt)
                 except ZeroDivisionError:
                     continue
-                if self.calibration_img is None:
+                if not self.coordinates:
                     if i == 0:
                         print "Detected plant center pixel locations ( X Y ):"
                     print "    ( {:5.0f}px {:5.0f}px )".format(cx, cy)
@@ -303,12 +331,12 @@ class Detect_plants():
             return object_pixel_locations
 
         object_pixel_locations = []
-        if self.calibration_img is None:
+        if not self.coordinates:
             object_pixel_locations = find(proc)
 
         # Return coordinates if requested
-        if self.calibration_img is not None:
-            P2C = Pixel2coord(self.calibration_img)
+        if self.coordinates:
+            P2C = Pixel2coord()
 
             def rotateimage(image, rotationangle):
                 try:
@@ -321,7 +349,7 @@ class Detect_plants():
             inputimage = rotateimage(original_image, P2C.total_rotation_angle)
             proc = rotateimage(proc, P2C.total_rotation_angle)
             object_pixel_locations = find(proc)
-            P2C.test_coordinates = [1350, 2450]
+            P2C.test_coordinates = self._getcoordinates()
             plant_coordinates, plant_pixel_locations = P2C.p2c(
                 object_pixel_locations)
 
@@ -446,10 +474,12 @@ class Detect_plants():
             self.final_debug_image = save_image(img2, 7, 'img-contours')
 
         # Save soil image with plants marked
-        if self.calibration_img is None:
+        if not self.coordinates:
             save_image(img, None, 'marked')
 
 if __name__ == "__main__":
-    Detect_plants("soil_image.jpg", blur=15, morph=6, iterations=4,
+    detect_plants = Detect_plants(image="soil_image.jpg", blur=15, morph=6, iterations=4,
         calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
         known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
+    detect_plants.calibrate()
+    detect_plants.detect_plants()

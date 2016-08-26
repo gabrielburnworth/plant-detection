@@ -39,15 +39,17 @@ def process(x):
 
         # Process image with parameters
         if override_HSV_defaults:
-            detect_plants = Detect_plants(filename,
+            detect_plants = Detect_plants(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
                   debug=True, save=False)
+            detect_plants.detect_plants()
             img = detect_plants.final_debug_image
         else:
-            detect_plants = Detect_plants(filename,
+            detect_plants = Detect_plants(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
                   debug=True, save=False)
+            detect_plants.detect_plants()
             img = detect_plants.final_debug_image
 
         #Show processed image

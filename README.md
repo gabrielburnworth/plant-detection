@@ -19,8 +19,11 @@ __Alternatively, process images using a python command line:__
 ```python
 from soil_image_plant_detection import Detect_plants
 help(Detect_plants)
-Detect_plants('soil_image.jpg')
-Detect_plants('soil_image.jpg', morph=15, iterations=2, debug=True)
+detect_plants = Detect_plants(image='soil_image.jpg')
+detect_plants.calibrate()
+detect_plants.detect_plants()
+detect_plants = Detect_plants(image='soil_image.jpg', morph=15, iterations=2, debug=True)
+detect_plants.detect_plants()
 ```
 
 __Or, run the GUI and move the sliders:__
