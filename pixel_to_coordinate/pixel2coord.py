@@ -23,17 +23,29 @@ class Pixel2coord():
         self.calibration_object_pixel_locations = []
         self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
         self.rotationangle = 0
-        self.calibration_circles_xaxis = True  # calib. circles along x-axis
-        self.image_bot_origin_location = [0, 1]  # bot axes locations in image
-        self.calibration_circle_separation = 1000  # distance between red dots
-        self.camera_offset_coordinates = [200, 100]  # camera offset from UTM
         self.test_rotation = 5  # for testing, add some image rotation
-        self.iterations = 3  # min 2 if image is rotated or if rotation unknown
         self.viewoutputimage = False  # overridden as True if running script
         self.fromfile = True  # otherwise, take photos
         self.coord_scale = None
         self.total_rotation_angle = 0
-        self.test_coordinates = [600, 400]  # for calib image, current location
+        # Parameters imported from file (or defaults below)
+        self.calibration_circles_xaxis = None
+        self.image_bot_origin_location = None
+        self.calibration_circle_separation = None
+        self.camera_offset_coordinates = None
+        self.iterations = None
+        self.test_coordinates = None
+        self.blur_amount = None
+        self.morph_amount = None
+        self.HSV_min = None
+        self.HSV_max = None
+
+        if __name__ == "__main__":
+            self.parameters_filepath = "pixel2coord_calibration_parameters.txt"
+        else:
+            self.parameters_filepath = "pixel_to_coordinate/" + \
+                "pixel2coord_calibration_parameters.txt"
+        self.load_calibration_parameters()
 
         # Run calibration sequence for provided image
         self.calibration()
@@ -42,6 +54,81 @@ class Pixel2coord():
         """Get machine coordinates from bot."""
         # For now, return testing coordintes:
         return self.test_coordinates
+
+    def save_calibration_parameters(self):
+        """Save calibration parameters to file."""
+        with open(self.parameters_filepath, 'w') as f:
+            f.write('calibration_circles_xaxis {}\n'.format(
+                self.calibration_circles_xaxis))
+            f.write('image_bot_origin_location {} {}\n'.format(
+                *self.image_bot_origin_location))
+            f.write('calibration_circle_separation {}\n'.format(
+                self.calibration_circle_separation))
+            f.write('camera_offset_coordinates {} {}\n'.format(
+                *self.camera_offset_coordinates))
+            f.write('iterations {}\n'.format(
+                self.iterations))
+            f.write('test_coordinates {} {}\n'.format(
+                *self.test_coordinates))
+            f.write('blur_amount {}\n'.format(
+                self.blur_amount))
+            f.write('morph_amount {}\n'.format(
+                self.morph_amount))
+            f.write('HSV_min {} {} {}\n'.format(
+                *self.HSV_min))
+            f.write('HSV_max {} {} {}\n'.format(
+                *self.HSV_max))
+
+    def load_calibration_parameters(self):
+        """Load calibration parameters from file
+        or use defaults and save to file."""
+        try:  # Load calibration parameters from file
+            with open(self.parameters_filepath, 'r') as f:
+                lines = f.readlines()
+            for line in lines:
+                line = line.strip().split(' ')
+                if "calibration_circles_xaxis" in line:
+                    self.calibration_circles_xaxis = bool(line[1])
+                if "image_bot_origin_location" in line:
+                    self.image_bot_origin_location = [int(line[1]),
+                                                      int(line[2])]
+                if "calibration_circle_separation" in line:
+                    self.calibration_circle_separation = float(line[1])
+                if "camera_offset_coordinates" in line:
+                    self.camera_offset_coordinates = [float(line[1]),
+                                                      float(line[2])]
+                if "iterations" in line:
+                    self.iterations = int(line[1])
+                if "test_coordinates" in line:
+                    self.test_coordinates = [float(line[1]),
+                                             float(line[2])]
+                if "blur_amount" in line:
+                    self.blur_amount = int(line[1])
+                    if self.blur_amount % 2 == 0:
+                        self.blur_amount += 1
+                if "morph_amount" in line:
+                    self.morph_amount = int(line[1])
+                if "HSV_min" in line:
+                    self.HSV_min = [float(line[1]),
+                                    float(line[2]),
+                                    float(line[3])]
+                if "HSV_max" in line:
+                    self.HSV_max = [float(line[1]),
+                                    float(line[2]),
+                                    float(line[3])]
+        except IOError:  # Use defaults and save to file
+            self.calibration_circles_xaxis = True  # calib. circles along xaxis
+            self.image_bot_origin_location = [0, 1]  # image bot axes locations
+            self.calibration_circle_separation = 1000  # distance btwn red dots
+            self.camera_offset_coordinates = [200, 100]  # UTM camera offset
+            self.iterations = 3  # min 2 if image rotated or if rotation unkwn
+            self.test_coordinates = [600, 400]  # calib image coord. location
+            self.blur_amount = 5  # must be odd
+            self.morph_amount = 15
+            self.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
+            self.HSV_max = [20, 255, 255]
+
+            self.save_calibration_parameters()
 
     def getimage(self):
         """Take a photo."""
@@ -92,15 +179,22 @@ class Pixel2coord():
 
     def process(self):
         """Prepare image for contour detection."""
-        blur = cv2.medianBlur(self.image, 5)
+        blur = cv2.medianBlur(self.image, self.blur_amount)
         hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-        mask_L = cv2.inRange(hsv, np.array([0, 100, 100]),
-                             np.array([20, 255, 255]))
-        mask_U = cv2.inRange(hsv, np.array([160, 100, 100]),
-                             np.array([179, 255, 255]))
-        mask = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
+        if self.HSV_min[0] > self.HSV_max[0]:
+            hsv_btwn_min = [0, self.HSV_min[1], self.HSV_min[2]]
+            hsv_btwn_max = [179, self.HSV_max[1], self.HSV_max[2]]
+            mask_L = cv2.inRange(hsv, np.array(hsv_btwn_min),
+                                 np.array(self.HSV_max))
+            mask_U = cv2.inRange(hsv, np.array(self.HSV_min),
+                                 np.array(hsv_btwn_max))
+            mask = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
+        else:
+            mask = cv2.inRange(hsv, np.array(self.HSV_min),
+                               np.array(self.HSV_max))
         self.proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE,
-                                     np.ones((15, 15), np.uint8))
+                                     np.ones((self.morph_amount,
+                                              self.morph_amount), np.uint8))
 
     def findobjects(self, **kwargs):
         """Create contours and find locations of objects."""

@@ -2,6 +2,8 @@
 soil_image_marked.png
 soil_image_coordinates_found.png
 *debug*.png
+*.csv
+*.txt
 
 # Python byte-compiled / optimized / DLL files
 *.py[cod]

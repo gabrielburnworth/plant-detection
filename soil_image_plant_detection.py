@@ -33,6 +33,8 @@ def detect_plants(image, **kwargs):
                            and Value(0-255) (default = [30, 20, 20])
            HSV_max (list): green upper bound Hue(0-179), Saturation(0-255),
                            and Value(0-255) (default = [90, 255, 255])
+           parameters_from_file (boolean): load parameters from file
+                                           (default = False)
 
        Examples:
            detect_plants('soil_image.jpg')
@@ -44,17 +46,26 @@ def detect_plants(image, **kwargs):
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
+    # Globals are for loading inputs from file
+    global blur_amount
+    global morph_amount
+    global iterations
+    global clump_buster
+    global HSV_min
+    global HSV_max
+
     calibration_img = None # default
     known_plants = None # default
     debug = False # default
-    blur_amount = None   # To allow values to be defined as kwargs
-    morph_amount = None  #  and keep defaults in the relevant
-    iterations = None    #  sections of code.
+    blur_amount = 5  # default
+    morph_amount = 5  # default
+    iterations = 1  # default
     array = None  # default
     save = True   # default
     clump_buster = False # default
-    HSV_min = None       # default in relevant code section
-    HSV_max = None       # default in relevant code section
+    HSV_min = [30, 20, 20]  # default
+    HSV_max = [90, 255, 255]  # default
+    parameters_from_file = False  # default
     for key in kwargs:
         if key == 'calibration_img': calibration_img = kwargs[key]
         if key == 'known_plants': known_plants = kwargs[key]
@@ -67,6 +78,54 @@ def detect_plants(image, **kwargs):
         if key == 'clump_buster': clump_buster = kwargs[key]
         if key == 'HSV_min': HSV_min = kwargs[key]
         if key == 'HSV_max': HSV_max = kwargs[key]
+        if key == 'parameters_from_file': parameters_from_file = kwargs[key]
+
+    def save_detected_plants(save, remove):
+        np.savetxt("detected-plants_saved.csv", save,
+                   fmt='%.1f', delimiter=',', header='X,Y,Radius')
+        np.savetxt("detected-plants_to-remove.csv", remove,
+                   fmt='%.1f', delimiter=',', header='X,Y,Radius')
+
+    def save_parameters():
+        with open("plant-detection_inputs.txt", 'w') as f:
+            f.write('blur_amount {}\n'.format(blur_amount))
+            f.write('morph_amount {}\n'.format(morph_amount))
+            f.write('iterations {}\n'.format(iterations))
+            f.write('clump_buster {}\n'.format(clump_buster))
+            f.write('HSV_min {} {} {}\n'.format(*HSV_min))
+            f.write('HSV_max {} {} {}\n'.format(*HSV_max))
+
+    def load_parameters():
+        global blur_amount
+        global morph_amount
+        global iterations
+        global clump_buster
+        global HSV_min
+        global HSV_max
+        try:  # Load input parameters from file
+            with open("plant-detection_inputs.txt", 'r') as f:
+                lines = f.readlines()
+            for line in lines:
+                line = line.strip().split(' ')
+                if "blur_amount" in line:
+                    blur_amount = int(line[1])
+                    if blur_amount % 2 == 0:
+                        blur_amount += 1
+                if "morph_amount" in line:
+                    morph_amount = int(line[1])
+                if "iterations" in line:
+                    iterations = int(line[1])
+                if "clump_buster" in line:
+                    clump_buster = bool(line[1])
+                if "HSV_min" in line:
+                    HSV_min = [float(line[1]), float(line[2]), float(line[3])]
+                if "HSV_max" in line:
+                    HSV_max = [float(line[1]), float(line[2]), float(line[3])]
+        except IOError:  # Use defaults and save to file
+            save_parameters()
+
+    if parameters_from_file:
+        load_parameters()
 
     def save_image(img, step, description):
         save_image = img
@@ -125,9 +184,7 @@ def detect_plants(image, **kwargs):
 
     # Load image and create blurred image
     original_image = cv2.imread(image, 1)
-    if 0: original_image = np.rot90(original_image)
     img = original_image.copy()
-    if blur_amount is None: blur_amount = 5
     blur = cv2.medianBlur(img, blur_amount)
     if debug:
         img2 = img.copy()
@@ -136,8 +193,6 @@ def detect_plants(image, **kwargs):
     # Create HSV image and select HSV color bounds for mask
     # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    if HSV_min is None: HSV_min = [30, 20, 20]
-    if HSV_max is None: HSV_max = [90, 255, 255]
     lower_green = np.array(HSV_min)
     upper_green = np.array(HSV_max)
 
@@ -160,11 +215,9 @@ def detect_plants(image, **kwargs):
     # Process mask to try to make plants more coherent
     if array is None:
         # Single morphological transformation
-        if morph_amount is None: morph_amount = 5
         kernel_type = 'ellipse'
         kernel = cv2.getStructuringElement(kt[kernel_type],
                                            (morph_amount, morph_amount))
-        if iterations is None: iterations = 1
         morph_type = 'close'
         proc = cv2.morphologyEx(mask,
                                 mt[morph_type], kernel, iterations=iterations)
@@ -301,6 +354,9 @@ def detect_plants(image, **kwargs):
                       "( X Y ) with R = radius have been saved:"
             for unmark in unmarked:
                 print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
+
+            # Save plant coordinates to file
+            save_detected_plants(unmarked, marked)
 
             # Create annotated image
             known_PL = P2C.c2p(known_plants)
