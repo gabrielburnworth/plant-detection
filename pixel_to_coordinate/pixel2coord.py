@@ -78,6 +78,10 @@ class Pixel2coord():
                 *self.HSV_min))
             f.write('HSV_max {} {} {}\n'.format(
                 *self.HSV_max))
+            f.write('coord_scale {}\n'.format(
+                self.coord_scale))
+            f.write('total_rotation_angle {}\n'.format(
+                self.total_rotation_angle))
 
     def load_calibration_parameters(self):
         """Load calibration parameters from file
@@ -307,6 +311,7 @@ class Pixel2coord():
         self.calibrate()
         if self.viewoutputimage:
             self.showimage(self.circled)
+        self.save_calibration_parameters()
 
     def determine_coordinates(self):
         """Use calibration parameters to determine locations of objects."""
