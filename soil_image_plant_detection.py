@@ -47,6 +47,7 @@ def detect_plants(image, **kwargs):
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
     """
     # Globals are for loading inputs from file
+    global known_plants
     global blur_amount
     global morph_amount
     global iterations
@@ -94,8 +95,13 @@ def detect_plants(image, **kwargs):
             f.write('clump_buster {}\n'.format(clump_buster))
             f.write('HSV_min {} {} {}\n'.format(*HSV_min))
             f.write('HSV_max {} {} {}\n'.format(*HSV_max))
+        with open("plant-detection_known-plants.txt", 'w') as f:
+            f.write('X Y Radius\n')
+            for plant in known_plants:
+                f.write('{} {} {}\n'.format(*plant))
 
     def load_parameters():
+        global known_plants
         global blur_amount
         global morph_amount
         global iterations
@@ -121,6 +127,14 @@ def detect_plants(image, **kwargs):
                     HSV_min = [float(line[1]), float(line[2]), float(line[3])]
                 if "HSV_max" in line:
                     HSV_max = [float(line[1]), float(line[2]), float(line[3])]
+            with open("plant-detection_known-plants.txt", 'r') as f:
+                lines = f.readlines()
+                known_plants = []
+                for line in lines[1:]:
+                    line = line.strip().split(' ')
+                    known_plants.append([float(line[0]),
+                                         float(line[1]),
+                                         float(line[2])])
         except IOError:  # Use defaults and save to file
             save_parameters()
 
