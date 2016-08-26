@@ -443,14 +443,11 @@ class Detect_plants():
 
         if self.debug:
             save_image(proc, 6, 'contours')
-            final_debug_image = save_image(img2, 7, 'img-contours')
+            self.final_debug_image = save_image(img2, 7, 'img-contours')
 
         # Save soil image with plants marked
         if self.calibration_img is None:
             save_image(img, None, 'marked')
-
-        if self.debug and not self.save:
-            return final_debug_image
 
 if __name__ == "__main__":
     Detect_plants("soil_image.jpg", blur=15, morph=6, iterations=4,

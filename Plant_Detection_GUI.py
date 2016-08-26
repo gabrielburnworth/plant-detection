@@ -1,5 +1,5 @@
 import cv2
-from soil_image_plant_detection import detect_plants
+from soil_image_plant_detection import Detect_plants
 
 filename = 'soil_image.jpg'
 window = 'Plant Detection'
@@ -34,19 +34,21 @@ def process(x):
             for b, bound in enumerate(['min', 'max']):
                 for P in range(0, 3):
                     HSV_bounds[b][P] = cv2.getTrackbarPos(
-                        HSV_trackbar_name('HSV'[P], bound), 
+                        HSV_trackbar_name('HSV'[P], bound),
                         HSVwindow)
 
         # Process image with parameters
         if override_HSV_defaults:
-            img = detect_plants(filename, 
-                  blur=blur, morph=morph, iterations=iterations, 
+            detect_plants = Detect_plants(filename,
+                  blur=blur, morph=morph, iterations=iterations,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
                   debug=True, save=False)
+            img = detect_plants.final_debug_image
         else:
-            img = detect_plants(filename, 
-                  blur=blur, morph=morph, iterations=iterations, 
+            detect_plants = Detect_plants(filename,
+                  blur=blur, morph=morph, iterations=iterations,
                   debug=True, save=False)
+            img = detect_plants.final_debug_image
 
         #Show processed image
         cv2.imshow(window, img)
@@ -62,10 +64,10 @@ def HSV_selection(open_window):
         for b, bound in enumerate(['min', 'max']):
             for P, limit in zip(range(0, 3), [179, 255, 255]):
                 cv2.createTrackbar(
-                    HSV_trackbar_name('HSV'[P], bound), 
+                    HSV_trackbar_name('HSV'[P], bound),
                     HSVwindow, 0, limit, process)
                 cv2.setTrackbarPos(
-                    HSV_trackbar_name('HSV'[P], bound), 
+                    HSV_trackbar_name('HSV'[P], bound),
                     HSVwindow, HSV_bounds[b][P])
         HSVwindow_loaded = 1
     else: # close window
