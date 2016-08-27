@@ -1,5 +1,5 @@
 import cv2
-from soil_image_plant_detection import Detect_plants
+from Plant_Detection import Plant_Detection
 
 filename = 'soil_image.jpg'
 window = 'Plant Detection'
@@ -39,18 +39,18 @@ def process(x):
 
         # Process image with parameters
         if override_HSV_defaults:
-            detect_plants = Detect_plants(image=filename,
+            PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
                   debug=True, save=False)
-            detect_plants.detect_plants()
-            img = detect_plants.final_debug_image
+            PD.detect_plants()
+            img = PD.final_debug_image
         else:
-            detect_plants = Detect_plants(image=filename,
+            PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
                   debug=True, save=False)
-            detect_plants.detect_plants()
-            img = detect_plants.final_debug_image
+            PD.detect_plants()
+            img = PD.final_debug_image
 
         #Show processed image
         cv2.imshow(window, img)
