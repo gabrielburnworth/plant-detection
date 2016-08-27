@@ -5,6 +5,8 @@ Detects green plants on a dirt background
 """
 import numpy as np
 import cv2
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 from time import sleep
 from pixel_to_coordinate.pixel2coord import Pixel2coord
 
@@ -82,9 +84,7 @@ class Detect_plants():
                 self.parameters_from_file = kwargs[key]
         if self.calibration_img is not None:
             self.coordinates = True
-        if self.image is None:
-            self.image = self._getimage()
-        self.test_coordinates = [1350, 2450]
+        self.test_coordinates = [2000, 2000]
 
     def _getcoordinates(self):
         """Get machine coordinates from bot."""
@@ -93,11 +93,22 @@ class Detect_plants():
 
     def _getimage(self):
         """Take a photo."""
-        camera = cv2.VideoCapture(0)
-        sleep(0.1)
-        _, image = camera.read()
-        camera.release()
+        # With Raspberry Pi Camera:
+        with PiCamera() as camera:
+            camera.resolution = (1920, 1088)
+            rawCapture = PiRGBArray(camera)
+            sleep(0.1)
+            camera.capture(rawCapture, format="bgr")
+            image = rawCapture.array
+        # With USB cameras:
+        #camera = cv2.VideoCapture(0)
+        #sleep(0.1)
+        #_, image = camera.read()
+        #camera.release()
         self.current_coordinates = self._getcoordinates()
+        filename = '{}_{}.png'.format(*self.current_coordinates)
+        cv2.imwrite(filename, image)
+        print "Image saved: {}".format(filename)
         return image
 
     def calibrate(self):
@@ -121,10 +132,11 @@ class Detect_plants():
                 f.write('clump_buster {}\n'.format(self.clump_buster))
                 f.write('HSV_min {} {} {}\n'.format(*self.HSV_min))
                 f.write('HSV_max {} {} {}\n'.format(*self.HSV_max))
-            with open("plant-detection_known-plants.txt", 'w') as f:
-                f.write('X Y Radius\n')
-                for plant in self.known_plants:
-                    f.write('{} {} {}\n'.format(*plant))
+            if self.known_plants is not None:
+                with open("plant-detection_known-plants.txt", 'w') as f:
+                    f.write('X Y Radius\n')
+                    for plant in self.known_plants:
+                        f.write('{} {} {}\n'.format(*plant))
 
         def load_parameters():
             try:  # Load input parameters from file
@@ -168,7 +180,10 @@ class Detect_plants():
             save_image = img
             if step is not None:  # debug image
                 save_image = annotate(img)
-            name = self.image[:-4]
+            if isinstance(self.image, str):
+                name = self.image[:-4]
+            else:
+                name = '{}_{}'.format(*self.test_coordinates)
             details = description
             if step is not None:  # debug image
                 details = 'debug-{}_{}'.format(step, details)
@@ -220,7 +235,12 @@ class Detect_plants():
         kt = None; upper_green = None
 
         # Load image and create blurred image
-        original_image = cv2.imread(self.image, 1)
+        if self.image is None:
+            self.image = self._getimage()
+	    original_image = self.image
+            save_image(original_image, None, 'photo')
+        else:
+	    original_image = cv2.imread(self.image, 1)
         img = original_image.copy()
         blur = cv2.medianBlur(img, self.blur_amount)
         if self.debug:
@@ -370,6 +390,8 @@ class Detect_plants():
 
                 # Find unknown
                 marked, unmarked = [], []
+                if self.known_plants == []:
+                    self.known_plants = [[0, 0, 0]]
                 kplants = np.array(self.known_plants)
                 for plant_coord in plant_coordinates:
                     x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
@@ -483,3 +505,4 @@ if __name__ == "__main__":
         known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
     detect_plants.calibrate()
     detect_plants.detect_plants()
+    
