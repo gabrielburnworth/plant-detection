@@ -30,4 +30,8 @@ __Or, run the GUI and move the sliders:__
 ```python
 python Plant_Detection_GUI.py
 ```
+Default image to process is `soil_image.jpg`. To process other images, use:
+```python
+python Plant_Detection_GUI.py other_image_name.png
+```
 ![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)

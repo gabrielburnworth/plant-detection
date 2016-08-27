@@ -26,7 +26,6 @@ class Pixel2coord():
         self.rotationangle = 0
         self.test_rotation = 5  # for testing, add some image rotation
         self.viewoutputimage = False  # overridden as True if running script
-        self.fromfile = True  # otherwise, take photos
         self.coord_scale = None
         self.total_rotation_angle = 0
         self.center_pixel_location = None
@@ -60,7 +59,7 @@ class Pixel2coord():
         """Save calibration parameters to file."""
         with open(self.parameters_filepath, 'w') as f:
             f.write('calibration_circles_xaxis {}\n'.format(
-                self.calibration_circles_xaxis))
+                [1 if self.calibration_circles_xaxis else 0][0]))
             f.write('image_bot_origin_location {} {}\n'.format(
                 *self.image_bot_origin_location))
             f.write('calibration_circle_separation {}\n'.format(
@@ -95,7 +94,7 @@ class Pixel2coord():
             for line in lines:
                 line = line.strip().split(' ')
                 if "calibration_circles_xaxis" in line:
-                    self.calibration_circles_xaxis = bool(line[1])
+                    self.calibration_circles_xaxis = int(line[1])
                 if "image_bot_origin_location" in line:
                     self.image_bot_origin_location = [int(line[1]),
                                                       int(line[2])]
@@ -144,13 +143,6 @@ class Pixel2coord():
             self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
 
             self.save_calibration_parameters()
-
-    def getimage(self):
-        """Take a photo."""
-        camera = cv2.VideoCapture(0)
-        sleep(0.1)
-        _, self.image = camera.read()
-        camera.release()
 
     def readimage(self, filename):
         """Read an image from a file."""
@@ -338,24 +330,17 @@ if __name__ == "__main__":
     folder = os.path.dirname(os.path.realpath(__file__))
     P2C = Pixel2coord(calibration_image=folder + "/p2c_test_calibration.jpg")
     P2C.viewoutputimage = True
-    if P2C.fromfile:
-        # From files
-        # Calibration
-        P2C.rotateimage(P2C.test_rotation)
-        P2C.calibration()
-        # Tests
-        # Object detection
-        P2C.readimage(folder + "/p2c_test_objects.jpg")
-        P2C.rotateimage(P2C.test_rotation)
-        P2C.determine_coordinates()
-        # Color range
-        P2C.readimage(folder + "/p2c_test_color.jpg")
-        P2C.process()
-        P2C.findobjects(circle=False)
-        if P2C.viewoutputimage:
-            P2C.showimage(P2C.circled)
-
-    else:
-        # Use camera
-        P2C.getimage()
-        P2C.determine_coordinates()
+    # Calibration
+    P2C.rotateimage(P2C.test_rotation)
+    P2C.calibration()
+    # Tests
+    # Object detection
+    P2C.readimage(folder + "/p2c_test_objects.jpg")
+    P2C.rotateimage(P2C.test_rotation)
+    P2C.determine_coordinates()
+    # Color range
+    P2C.readimage(folder + "/p2c_test_color.jpg")
+    P2C.process()
+    P2C.findobjects(circle=False)
+    if P2C.viewoutputimage:
+        P2C.showimage(P2C.circled)

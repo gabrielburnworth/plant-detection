@@ -1,8 +1,12 @@
 #!/usr/bin/env python
+import sys
 import cv2
 from Plant_Detection import Plant_Detection
 
-filename = 'soil_image.jpg'
+if len(sys.argv) == 1:
+    filename = 'soil_image.jpg'
+else:
+    filename = sys.argv[1]
 window = 'Plant Detection'
 HSVwindow = 'HSV Selection'
 override_HSV_defaults = 0

@@ -135,12 +135,13 @@ class Plant_Detection():
                 f.write('blur_amount {}\n'.format(self.blur_amount))
                 f.write('morph_amount {}\n'.format(self.morph_amount))
                 f.write('iterations {}\n'.format(self.iterations))
-                f.write('clump_buster {}\n'.format(self.clump_buster))
+                f.write('clump_buster {}\n'.format(
+                    [1 if self.clump_buster else 0][0]))
                 f.write('HSV_min {} {} {}\n'.format(*self.HSV_min))
                 f.write('HSV_max {} {} {}\n'.format(*self.HSV_max))
-            if self.known_plants is not None:
-                with open("plant-detection_known-plants.txt", 'w') as f:
-                    f.write('X Y Radius\n')
+            with open("plant-detection_known-plants.txt", 'w') as f:
+                f.write('X Y Radius\n')
+                if self.known_plants is not None:
                     for plant in self.known_plants:
                         f.write('{} {} {}\n'.format(*plant))
 
@@ -159,7 +160,7 @@ class Plant_Detection():
                     if "iterations" in line:
                         self.iterations = int(line[1])
                     if "clump_buster" in line:
-                        self.clump_buster = bool(line[1])
+                        self.clump_buster = int(line[1])
                     if "HSV_min" in line:
                         self.HSV_min = [float(line[1]),
                                         float(line[2]),
@@ -170,12 +171,14 @@ class Plant_Detection():
                                         float(line[3])]
                 with open("plant-detection_known-plants.txt", 'r') as f:
                     lines = f.readlines()
-                    self.known_plants = []
+                    known_plants = []
                     for line in lines[1:]:
                         line = line.strip().split(' ')
-                        self.known_plants.append([float(line[0]),
-                                                  float(line[1]),
-                                                  float(line[2])])
+                        known_plants.append([float(line[0]),
+                                             float(line[1]),
+                                             float(line[2])])
+                    if len(known_plants) > 0:
+                        self.known_plants = known_plants
             except IOError:  # Use defaults and save to file
                 save_parameters()
 
@@ -243,24 +246,37 @@ class Plant_Detection():
         # Load image and create blurred image
         if self.image is None:
             self.image = self._getimage()
-	    original_image = self.image
+            original_image = self.image
             save_image(original_image, None, 'photo')
         else:
-	    original_image = cv2.imread(self.image, 1)
+            original_image = cv2.imread(self.image, 1)
+        height, width = original_image.shape[:2]
+        if height > 600:
+            original_image = cv2.resize(original_image,
+                (int(width * 600 / height), 600), interpolation=cv2.INTER_AREA)
         img = original_image.copy()
         blur = cv2.medianBlur(img, self.blur_amount)
         if self.debug:
             img2 = img.copy()
             save_image(blur, 0, 'blurred')
 
-        # Create HSV image and select HSV color bounds for mask
-        # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
+        # Create HSV image
         hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-        lower_green = np.array(self.HSV_min)
-        upper_green = np.array(self.HSV_max)
-
-        # Create plant mask
-        mask = cv2.inRange(hsv, lower_green, upper_green)
+        # Select HSV color bounds for mask and create plant mask
+        # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
+        lower_green = self.HSV_min
+        upper_green = self.HSV_max
+        if self.HSV_min[0] > self.HSV_max[0]:
+            hsv_btwn_min = [0, self.HSV_min[1], self.HSV_min[2]]
+            hsv_btwn_max = [179, self.HSV_max[1], self.HSV_max[2]]
+            mask_L = cv2.inRange(hsv, np.array(hsv_btwn_min),
+                                 np.array(self.HSV_max))
+            mask_U = cv2.inRange(hsv, np.array(self.HSV_min),
+                                 np.array(hsv_btwn_max))
+            mask = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
+        else:
+            mask = cv2.inRange(hsv, np.array(self.HSV_min),
+                               np.array(self.HSV_max))
         if self.debug:
             save_image(mask, 1, 'mask')
             res = cv2.bitwise_and(img, img, mask=mask)
@@ -393,56 +409,60 @@ class Plant_Detection():
                 for known_plant in self.known_plants:
                     print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
                         *known_plant)
-
-                # Find unknown
-                marked, unmarked = [], []
-                if self.known_plants == []:
-                    self.known_plants = [[0, 0, 0]]
-                kplants = np.array(self.known_plants)
-                for plant_coord in plant_coordinates:
-                    x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
-                    cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
-                    if all((x - cx)**2 + (y - cy)**2 > cr**2
-                           for cx, cy, cr in zip(cxs, cys, crs)):
-                        marked.append([x, y, r])
-                    else:
-                        unmarked.append([x, y, r])
-
-                # Print removal candidates
-                print "\n{} plants marked for removal.".format(len(marked))
-                if len(marked) > 0:
-                    print "Plants at the following machine coordinates " + \
-                          "( X Y ) with R = radius are to be removed:"
-                for mark in marked:
-                    print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark)
-
-                # Print saved
-                print "\n{} detected plants are known or have escaped "\
-                      "removal.".format(len(unmarked))
-                if len(unmarked) > 0:
-                    print "Plants at the following machine coordinates " + \
-                          "( X Y ) with R = radius have been saved:"
-                for unmark in unmarked:
-                    print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
-
-                # Save plant coordinates to file
-                save_detected_plants(unmarked, marked)
-
-                # Create annotated image
-                known_PL = P2C.c2p(self.known_plants)
-                marked_PL = P2C.c2p(marked)
-                unmarked_PL = P2C.c2p(unmarked)
-                for mark in marked_PL:
-                    cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
-                               int(mark[2]), (0, 0, 255), 4)
-                for known in known_PL:
-                    cv2.circle(marked_img, (int(known[0]), int(known[1])),
-                               int(known[2]), (0, 255, 0), 4)
-                for unmarked in unmarked_PL:
-                    cv2.circle(marked_img, (int(unmarked[0]),
-                                            int(unmarked[1])),
-                               int(unmarked[2]), (255, 0, 0), 4)
             else:
+                print "\n No known plants inputted."
+
+            # Find unknown
+            marked, unmarked = [], []
+            if self.known_plants is None:
+                known_plants = [[0, 0, 0]]
+            else:
+                known_plants = self.known_plants
+            kplants = np.array(known_plants)
+            for plant_coord in plant_coordinates:
+                x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
+                cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
+                if all((x - cx)**2 + (y - cy)**2 > cr**2
+                       for cx, cy, cr in zip(cxs, cys, crs)):
+                    marked.append([x, y, r])
+                else:
+                    unmarked.append([x, y, r])
+
+            # Print removal candidates
+            print "\n{} plants marked for removal.".format(len(marked))
+            if len(marked) > 0:
+                print "Plants at the following machine coordinates " + \
+                      "( X Y ) with R = radius are to be removed:"
+            for mark in marked:
+                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark)
+
+            # Print saved
+            print "\n{} detected plants are known or have escaped "\
+                  "removal.".format(len(unmarked))
+            if len(unmarked) > 0:
+                print "Plants at the following machine coordinates " + \
+                      "( X Y ) with R = radius have been saved:"
+            for unmark in unmarked:
+                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
+
+            # Save plant coordinates to file
+            save_detected_plants(unmarked, marked)
+
+            # Create annotated image
+            known_PL = P2C.c2p(known_plants)
+            marked_PL = P2C.c2p(marked)
+            unmarked_PL = P2C.c2p(unmarked)
+            for mark in marked_PL:
+                cv2.circle(marked_img, (int(mark[0]), int(mark[1])),
+                           int(mark[2]), (0, 0, 255), 4)
+            for known in known_PL:
+                cv2.circle(marked_img, (int(known[0]), int(known[1])),
+                           int(known[2]), (0, 255, 0), 4)
+            for unmarked in unmarked_PL:
+                cv2.circle(marked_img, (int(unmarked[0]),
+                                        int(unmarked[1])),
+                           int(unmarked[2]), (255, 0, 0), 4)
+            if 0:
                 for ppl in plant_pixel_locations[1:]:
                     cv2.circle(marked_img, (int(ppl[0]), int(ppl[1])),
                                int(ppl[2]), (0, 0, 0), 4)
@@ -507,7 +527,8 @@ class Plant_Detection():
             save_image(img, None, 'marked')
 
 if __name__ == "__main__":
-    PD = Plant_Detection(image="soil_image.jpg", blur=15, morph=6, iterations=4,
+    PD = Plant_Detection(image="soil_image.jpg",
+        blur=15, morph=6, iterations=4,
         calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
         known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
     PD.calibrate()
