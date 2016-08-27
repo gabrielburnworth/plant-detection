@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import cv2
 from Plant_Detection import Plant_Detection
 

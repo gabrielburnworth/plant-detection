@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Plant Detection.
 
 Detects green plants on a dirt background
@@ -5,8 +6,11 @@ Detects green plants on a dirt background
 """
 import numpy as np
 import cv2
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+import platform
+if platform.uname()[4].startswith("arm"):
+    from picamera.array import PiRGBArray
+    from picamera import PiCamera
+    using_rpi = True
 from time import sleep
 from pixel_to_coordinate.pixel2coord import Pixel2coord
 
@@ -93,18 +97,20 @@ class Plant_Detection():
 
     def _getimage(self):
         """Take a photo."""
-        # With Raspberry Pi Camera:
-        with PiCamera() as camera:
-            camera.resolution = (1920, 1088)
-            rawCapture = PiRGBArray(camera)
+        if using_rpi:
+            # With Raspberry Pi Camera:
+            with PiCamera() as camera:
+                camera.resolution = (1920, 1088)
+                rawCapture = PiRGBArray(camera)
+                sleep(0.1)
+                camera.capture(rawCapture, format="bgr")
+                image = rawCapture.array
+        else:
+            # With USB cameras:
+            camera = cv2.VideoCapture(0)
             sleep(0.1)
-            camera.capture(rawCapture, format="bgr")
-            image = rawCapture.array
-        # With USB cameras:
-        #camera = cv2.VideoCapture(0)
-        #sleep(0.1)
-        #_, image = camera.read()
-        #camera.release()
+            _, image = camera.read()
+            camera.release()
         self.current_coordinates = self._getcoordinates()
         filename = '{}_{}.png'.format(*self.current_coordinates)
         cv2.imwrite(filename, image)
@@ -494,6 +500,7 @@ class Plant_Detection():
         if self.debug:
             save_image(proc, 6, 'contours')
             self.final_debug_image = save_image(img2, 7, 'img-contours')
+            save_parameters()
 
         # Save soil image with plants marked
         if not self.coordinates:
@@ -505,4 +512,3 @@ if __name__ == "__main__":
         known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
     PD.calibrate()
     PD.detect_plants()
-    
