@@ -11,7 +11,7 @@ from time import sleep
 from pixel_to_coordinate.pixel2coord import Pixel2coord
 
 
-class Detect_plants():
+class Plant_Detection():
     """Detect plants in image and saves an image with plants marked.
 
        Kwargs:
@@ -500,9 +500,9 @@ class Detect_plants():
             save_image(img, None, 'marked')
 
 if __name__ == "__main__":
-    detect_plants = Detect_plants(image="soil_image.jpg", blur=15, morph=6, iterations=4,
+    PD = Plant_Detection(image="soil_image.jpg", blur=15, morph=6, iterations=4,
         calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
         known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
-    detect_plants.calibrate()
-    detect_plants.detect_plants()
+    PD.calibrate()
+    PD.detect_plants()
     
