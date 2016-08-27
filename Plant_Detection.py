@@ -367,7 +367,8 @@ class Plant_Detection():
                 if self.debug:
                     cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
                     cv2.circle(img2, (cx, cy), 20, (0, 0, 255), 4)
-                    cv2.drawContours(img2, [cnt], 0, (255, 255, 255), 3)
+                    cv2.drawContours(img2, [cnt], 0, (0, 0, 0), 6)
+                    cv2.drawContours(img2, [cnt], 0, (255, 255, 255), 2)
 
                 object_pixel_locations.append([cx, cy, radius])
             return object_pixel_locations
