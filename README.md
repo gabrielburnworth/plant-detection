@@ -5,7 +5,7 @@ The goal is to mark unwanted volunteer plants for removal.
 
 __Install OpenCV on Debian:__
 ```
-sudo apt-get install python-opencv python-numpy
+sudo apt-get install python-opencv python-numpy python-picamera
 ```
 __Run the script:__
 
@@ -19,11 +19,11 @@ __Alternatively, process images using a python command line:__
 ```python
 from soil_image_plant_detection import Detect_plants
 help(Detect_plants)
-detect_plants = Detect_plants(image='soil_image.jpg')
-detect_plants.calibrate()
-detect_plants.detect_plants()
-detect_plants = Detect_plants(image='soil_image.jpg', morph=15, iterations=2, debug=True)
-detect_plants.detect_plants()
+DP = Detect_plants(image='soil_image.jpg')
+DP.calibrate()
+DP.detect_plants()
+DP = Detect_plants(image='soil_image.jpg', morph=15, iterations=2, debug=True)
+DP.detect_plants()
 ```
 
 __Or, run the GUI and move the sliders:__
