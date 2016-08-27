@@ -11,19 +11,19 @@ __Run the script:__
 
 Download an image of soil with plants in it and save it as `soil_image.jpg` or use the sample.
 
-Run the script: `python soil_image_plant_detection.py`
+Run the script: `python Plant_Detection.py`
 
 View `soil_image_marked.jpg`
 
 __Alternatively, process images using a python command line:__
 ```python
-from soil_image_plant_detection import Detect_plants
-help(Detect_plants)
-DP = Detect_plants(image='soil_image.jpg')
-DP.calibrate()
-DP.detect_plants()
-DP = Detect_plants(image='soil_image.jpg', morph=15, iterations=2, debug=True)
-DP.detect_plants()
+from Plant_Detection import Plant_Detection
+help(Plant_Detection)
+PD = Plant_Detection(image='soil_image.jpg')
+PD.calibrate()
+PD.detect_plants()
+PD = Plant_Detection(image='soil_image.jpg', morph=15, iterations=2, debug=True)
+PD.detect_plants()
 ```
 
 __Or, run the GUI and move the sliders:__
