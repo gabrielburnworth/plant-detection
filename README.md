@@ -25,7 +25,7 @@ sudo apt-get install python-opencv python-numpy python-picamera
 
 #### Run the script:
 
-Download an image of soil with plants in it and save it as `soil_image.jpg` or use the sample.
+Using the sample soil image, `soil_image.jpg`.
 
 Run the script: `python Plant_Detection.py`
 
@@ -57,17 +57,24 @@ python Plant_Detection_GUI.py other_image_name.png
 
 #### 1. Save image to be processed
 For example: `test_image.jpg`
+
 #### 2. Run the GUI and move the sliders:
 ```python
 python Plant_Detection_GUI.py test_image.jpg
 ```
 This will create a plant detection parameters input file from the slider values.
-#### 3. Enter a python command line: `python`
+
+#### 3. Run detection:
+```python
+python Plant_Detection.py test_image.jpg
+```
+>Or, for more options, enter a python command line: `python`
 ```python
 from Plant_Detection import Plant_Detection
 PD = Plant_Detection(image='test_image.jpg', parameters_from_file=True)
 PD.detect_plants()
 ```
+
 #### 4. View output
 Annotated image: `test_image_marked.png`
 
