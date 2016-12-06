@@ -1,13 +1,29 @@
-# plant-detection
+# Plant Detection
 Detects and marks green plants in a (not green) soil area image using Python OpenCV.
 
 The goal is to mark unwanted volunteer plants for removal.
+
+## Contents
+ * [Installation](#installation)
+ * [Basic Usage](#basic-usage)
+   * [Option 1: Run script](#run-the-script)
+   * [Option 2: Python console](#alternatively-process-images-using-a-python-command-line)
+   * [Option 3: GUI](#or-run-the-gui-and-move-the-sliders)
+ * [Suggested Workflow](#image-file-processing-suggested-workflow)
+ * [Tips](#tips)
+
+---
+
+## Installation
 
 __Install OpenCV on Debian:__
 ```
 sudo apt-get install python-opencv python-numpy python-picamera
 ```
-__Run the script:__
+
+## Basic Usage
+
+#### Run the script:
 
 Download an image of soil with plants in it and save it as `soil_image.jpg` or use the sample.
 
@@ -15,7 +31,7 @@ Run the script: `python Plant_Detection.py`
 
 View `soil_image_marked.jpg`
 
-__Alternatively, process images using a python command line:__
+#### Alternatively, process images using a python command line:
 ```python
 from Plant_Detection import Plant_Detection
 help(Plant_Detection)
@@ -26,7 +42,7 @@ PD = Plant_Detection(image='soil_image.jpg', morph=15, iterations=2, debug=True)
 PD.detect_plants()
 ```
 
-__Or, run the GUI and move the sliders:__
+#### Or, run the GUI and move the sliders:
 ```python
 python Plant_Detection_GUI.py
 ```
@@ -34,22 +50,31 @@ Default image to process is `soil_image.jpg`. To process other images, use:
 ```python
 python Plant_Detection_GUI.py other_image_name.png
 ```
-![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)
+<img src="https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png" width="350">
+<!--![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)-->
 
 ## Image file processing suggested workflow
 
-#### Save image to be processed
+#### 1. Save image to be processed
 For example: `test_image.jpg`
-#### Run the GUI and move the sliders:
+#### 2. Run the GUI and move the sliders:
 ```python
 python Plant_Detection_GUI.py test_image.jpg
 ```
 This will create a plant detection parameters input file from the slider values.
-#### Enter a python command line: `python`
+#### 3. Enter a python command line: `python`
 ```python
 from Plant_Detection import Plant_Detection
 PD = Plant_Detection(image='test_image.jpg', parameters_from_file=True)
 PD.detect_plants()
 ```
-#### View output
+#### 4. View output
 Annotated image: `test_image_marked.png`
+
+## Tips
+
+#### View help
+`python -c $'from Plant_Detection import Plant_Detection\nhelp(Plant_Detection)'`
+
+#### Hue range aid
+`python Plant_Detection_GUI.py pixel_to_coordinate/p2c_test_color.jpg`
