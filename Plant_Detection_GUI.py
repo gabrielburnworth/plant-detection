@@ -11,7 +11,35 @@ window = 'Plant Detection'
 HSVwindow = 'HSV Selection'
 override_HSV_defaults = 0
 HSVwindow_loaded = 0
-HSV_bounds = [[30, 20, 20], [90, 255, 255]]
+try:  # Load input parameters from file
+    with open("plant-detection_inputs.txt", 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip().split(' ')
+        if "blur_amount" in line:
+            blur_amount = int(line[1])
+            if blur_amount % 2 == 0:
+                blur_amount += 1
+        if "morph_amount" in line:
+            morph_amount = int(line[1])
+        if "iterations" in line:
+            iterations = int(line[1])
+        if "HSV_min" in line:
+            HSV_min = [int(line[1]),
+                       int(line[2]),
+                       int(line[3])]
+        if "HSV_max" in line:
+            HSV_max = [int(line[1]),
+                       int(line[2]),
+                       int(line[3])]
+    HSV_bounds = [HSV_min, HSV_max]
+    from_file = 1
+except IOError:
+    from_file = 0
+    HSV_bounds = [[30, 20, 20], [90, 255, 255]]
+    blur_amount = 1
+    morph_amount = 1
+    iterations = 1
 
 def HSV_trackbar_name(P, bound):
     if P == 'H': P = 'Hue'
@@ -43,7 +71,7 @@ def process(x):
                         HSVwindow)
 
         # Process image with parameters
-        if override_HSV_defaults:
+        if override_HSV_defaults or from_file:
             PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
@@ -86,6 +114,10 @@ cv2.createTrackbar('Blur', window, 0, 100, process)
 cv2.createTrackbar('Morph', window, 1, 100, process)
 cv2.createTrackbar('Iterations', window, 1, 100, process)
 cv2.createTrackbar('Open HSV Selection Window', window, 0, 1, HSV_selection)
+
+cv2.setTrackbarPos('Blur', window, blur_amount)
+cv2.setTrackbarPos('Morph', window, morph_amount)
+cv2.setTrackbarPos('Iterations', window, iterations)
 
 while(1):
     k = cv2.waitKey(1) & 0xFF
