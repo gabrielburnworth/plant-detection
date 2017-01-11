@@ -89,6 +89,7 @@ class Plant_Detection():
         if self.calibration_img is not None:
             self.coordinates = True
         self.test_coordinates = [2000, 2000]
+        self.grey_out = False
 
     def _getcoordinates(self):
         """Get machine coordinates from bot."""
@@ -254,6 +255,7 @@ class Plant_Detection():
         if height > 600:
             original_image = cv2.resize(original_image,
                 (int(width * 600 / height), 600), interpolation=cv2.INTER_AREA)
+        img0 = original_image.copy()
         img = original_image.copy()
         blur = cv2.medianBlur(img, self.blur_amount)
         if self.debug:
@@ -339,6 +341,15 @@ class Plant_Detection():
                          (0, 0, 0), rh / 25)
             proc = cv2.dilate(proc, kernel, iterations=1)
 
+        if self.grey_out:
+            # Grey out region not selected by mask
+            grey_bg = cv2.addWeighted(np.full_like(img, 255), 0.4, img, 0.6, 0)
+            black_fg = cv2.bitwise_and(grey_bg, grey_bg, mask=cv2.bitwise_not(proc))
+            plant_fg_grey_bg = cv2.add(cv2.bitwise_and(img, img, mask=proc), black_fg)
+            img0 = plant_fg_grey_bg.copy()
+            img = plant_fg_grey_bg.copy()
+            img2 = plant_fg_grey_bg.copy()
+            
         def find(proc):
             # Find contours (hopefully of outside edges of plants)
             contours, hierarchy = cv2.findContours(proc,
@@ -389,7 +400,7 @@ class Plant_Detection():
                 mtrx = cv2.getRotationMatrix2D((cols / 2, rows / 2),
                                                rotationangle, 1)
                 return cv2.warpAffine(image, mtrx, (cols, rows))
-            inputimage = rotateimage(original_image, P2C.total_rotation_angle)
+            inputimage = rotateimage(img0, P2C.total_rotation_angle)
             proc = rotateimage(proc, P2C.total_rotation_angle)
             object_pixel_locations = find(proc)
             P2C.test_coordinates = self._getcoordinates()
