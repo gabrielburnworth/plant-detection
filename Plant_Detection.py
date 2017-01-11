@@ -138,8 +138,8 @@ class Plant_Detection():
                 f.write('iterations {}\n'.format(self.iterations))
                 f.write('clump_buster {}\n'.format(
                     [1 if self.clump_buster else 0][0]))
-                f.write('HSV_min {} {} {}\n'.format(*self.HSV_min))
-                f.write('HSV_max {} {} {}\n'.format(*self.HSV_max))
+                f.write('HSV_min {:d} {:d} {:d}\n'.format(*self.HSV_min))
+                f.write('HSV_max {:d} {:d} {:d}\n'.format(*self.HSV_max))
             with open("plant-detection_known-plants.txt", 'w') as f:
                 f.write('X Y Radius\n')
                 if self.known_plants is not None:
@@ -163,13 +163,13 @@ class Plant_Detection():
                     if "clump_buster" in line:
                         self.clump_buster = int(line[1])
                     if "HSV_min" in line:
-                        self.HSV_min = [float(line[1]),
-                                        float(line[2]),
-                                        float(line[3])]
+                        self.HSV_min = [int(line[1]),
+                                        int(line[2]),
+                                        int(line[3])]
                     if "HSV_max" in line:
-                        self.HSV_max = [float(line[1]),
-                                        float(line[2]),
-                                        float(line[3])]
+                        self.HSV_max = [int(line[1]),
+                                        int(line[2]),
+                                        int(line[3])]
                 with open("plant-detection_known-plants.txt", 'r') as f:
                     lines = f.readlines()
                     known_plants = []
@@ -329,16 +329,17 @@ class Plant_Detection():
             save_image(res2, 5, 'processed-masked')
 
         if self.clump_buster:
-            contours, hierarchy = cv2.findContours(proc,
+            cb_proc = proc.copy()
+            contours, hierarchy = cv2.findContours(cb_proc,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
             for i in range(len(contours)):
                 cnt = contours[i]
                 rx, ry, rw, rh = cv2.boundingRect(cnt)
                 cv2.line(proc, (rx + rw / 2, ry), (rx + rw / 2, ry + rh),
-                         (0, 0, 0), rw / 25)
+                         (0), rw / 7)
                 cv2.line(proc, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
-                         (0, 0, 0), rh / 25)
+                         (0), rh / 7)
             proc = cv2.dilate(proc, kernel, iterations=1)
 
         if self.grey_out:
@@ -349,7 +350,7 @@ class Plant_Detection():
             img0 = plant_fg_grey_bg.copy()
             img = plant_fg_grey_bg.copy()
             img2 = plant_fg_grey_bg.copy()
-            
+
         def find(proc):
             # Find contours (hopefully of outside edges of plants)
             contours, hierarchy = cv2.findContours(proc,

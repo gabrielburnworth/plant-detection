@@ -24,6 +24,8 @@ try:  # Load input parameters from file
             morph_amount = int(line[1])
         if "iterations" in line:
             iterations = int(line[1])
+        if "clump_buster" in line:
+            clump_buster = int(line[1])
         if "HSV_min" in line:
             HSV_min = [int(line[1]),
                        int(line[2]),
@@ -40,6 +42,7 @@ except IOError:
     blur_amount = 1
     morph_amount = 1
     iterations = 1
+    clump_buster = 0
 
 def HSV_trackbar_name(P, bound):
     if P == 'H': P = 'Hue'
@@ -74,6 +77,7 @@ def process(x):
         if override_HSV_defaults or from_file:
             PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
+                  clump_buster=clump_buster,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
                   debug=True, save=False)
             PD.detect_plants()
@@ -81,6 +85,7 @@ def process(x):
         else:
             PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
+                  clump_buster=clump_buster,
                   debug=True, save=False)
             PD.detect_plants()
             img = PD.final_debug_image
