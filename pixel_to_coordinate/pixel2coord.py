@@ -212,7 +212,11 @@ class Pixel2coord():
             if key == 'small_c': small_c = kwargs[key]
             if key == 'circle': circle = kwargs[key]
             if key == 'draw_contours': draw_contours = kwargs[key]
-        contours, _ = cv2.findContours(
+        try:
+            contours, _ = cv2.findContours(
+            self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        except ValueError:
+            _, contours, _ = cv2.findContours(
             self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.circled = self.image.copy()
         for i, cnt in enumerate(contours):

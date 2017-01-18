@@ -330,7 +330,12 @@ class Plant_Detection():
 
         if self.clump_buster:
             cb_proc = proc.copy()
-            contours, hierarchy = cv2.findContours(cb_proc,
+            try:
+                contours, hierarchy = cv2.findContours(cb_proc,
+                                                   cv2.RETR_EXTERNAL,
+                                                   cv2.CHAIN_APPROX_SIMPLE)
+            except ValueError:
+                unused_img, contours, hierarchy = cv2.findContours(cb_proc,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
             for i in range(len(contours)):
@@ -353,7 +358,12 @@ class Plant_Detection():
 
         def find(proc):
             # Find contours (hopefully of outside edges of plants)
-            contours, hierarchy = cv2.findContours(proc,
+            try:
+                contours, hierarchy = cv2.findContours(proc,
+                                                   cv2.RETR_EXTERNAL,
+                                                   cv2.CHAIN_APPROX_SIMPLE)
+            except ValueError:
+                unused_img, contours, hierarchy = cv2.findContours(proc,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
             print "{} plants detected in image.".format(len(contours))
