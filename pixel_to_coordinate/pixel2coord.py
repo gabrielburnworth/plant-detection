@@ -214,10 +214,10 @@ class Pixel2coord():
             if key == 'draw_contours': draw_contours = kwargs[key]
         try:
             contours, _ = cv2.findContours(
-            self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                          self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
             _, contours, _ = cv2.findContours(
-            self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                          self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         self.circled = self.image.copy()
         for i, cnt in enumerate(contours):
             (cx, cy), radius = cv2.minEnclosingCircle(cnt)
