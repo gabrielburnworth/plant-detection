@@ -13,6 +13,7 @@ if platform.uname()[4].startswith("arm"):
     using_rpi = True
 from time import sleep
 from pixel_to_coordinate.pixel2coord import Pixel2coord
+from CeleryPy import FarmBotJSON
 
 
 class Plant_Detection():
@@ -467,6 +468,16 @@ class Plant_Detection():
                       "( X Y ) with R = radius have been saved:"
             for unmark in unmarked:
                 print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
+
+            # Encode to CS
+            FarmBot = FarmBotJSON()
+            for mark in marked:
+                x, y = round(mark[0], 2), round(mark[1], 2)
+                FarmBot.add_point(x, y, 0)
+            for unmark in unmarked:
+                x, y = round(unmark[0], 2), round(unmark[1], 2)
+                r = round(unmark[2], 2)
+                FarmBot.add_plant(0, [x, y, 0], r)
 
             # Save plant coordinates to file
             save_detected_plants(unmarked, marked)
