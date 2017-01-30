@@ -35,8 +35,8 @@ class FarmBotJSON():
     def _print_json(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            print json.dumps(function(*args, **kwargs),
-                             indent=2, separators=(',', ': '))
+            print(json.dumps(function(*args, **kwargs),
+                             indent=2, separators=(',', ': ')))
         return wrapper
 
     @_print_json

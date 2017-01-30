@@ -116,7 +116,7 @@ class Plant_Detection():
         self.current_coordinates = self._getcoordinates()
         filename = '{}_{}.png'.format(*self.current_coordinates)
         cv2.imwrite(filename, image)
-        print "Image saved: {}".format(filename)
+        print("Image saved: {}".format(filename))
         return image
 
     def calibrate(self):
@@ -201,7 +201,7 @@ class Plant_Detection():
             filename = '{}_{}.png'.format(name, details)
             if self.save:
                 cv2.imwrite(filename, save_image)
-                print "Image saved: {}".format(filename)
+                print("Image saved: {}".format(filename))
             return save_image
 
         def annotate(img):
@@ -242,7 +242,7 @@ class Plant_Detection():
                                 font, textsize, (255, 255, 255), textweight)
             return annotated_image
 
-        print "\nProcessing image: {}".format(self.image)
+        print("\nProcessing image: {}".format(self.image))
         kt = None; upper_green = None
 
         # Load image and create blurred image
@@ -367,7 +367,7 @@ class Plant_Detection():
                 unused_img, contours, hierarchy = cv2.findContours(proc,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
-            print "{} plants detected in image.".format(len(contours))
+            print("{} plants detected in image.".format(len(contours)))
 
             # Loop through contours
             for i, cnt in enumerate(contours):
@@ -381,8 +381,8 @@ class Plant_Detection():
                     continue
                 if not self.coordinates:
                     if i == 0:
-                        print "Detected plant center pixel locations ( X Y ):"
-                    print "    ( {:5.0f}px {:5.0f}px )".format(cx, cy)
+                        print("Detected plant center pixel locations ( X Y ):")
+                    print("    ( {:5.0f}px {:5.0f}px )".format(cx, cy))
 
                 # Mark plant with red circle
                 cv2.circle(img, (cx, cy), 20, (0, 0, 255), 4)
@@ -409,7 +409,7 @@ class Plant_Detection():
                     rows, cols, _ = image.shape
                 except ValueError:
                     rows, cols = image.shape
-                mtrx = cv2.getRotationMatrix2D((cols / 2, rows / 2),
+                mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)),
                                                rotationangle, 1)
                 return cv2.warpAffine(image, mtrx, (cols, rows))
             inputimage = rotateimage(img0, P2C.total_rotation_angle)
@@ -425,16 +425,16 @@ class Plant_Detection():
             # Known plant exclusion:
             if self.known_plants is not None:
                 # Print known
-                print "\n{} known plants inputted.".format(
-                    len(self.known_plants))
+                print("\n{} known plants inputted.".format(
+                    len(self.known_plants)))
                 if len(self.known_plants) > 0:
-                    print "Plants at the following machine coordinates " + \
-                          "( X Y ) with R = radius are to be saved:"
+                    print("Plants at the following machine coordinates "
+                          "( X Y ) with R = radius are to be saved:")
                 for known_plant in self.known_plants:
-                    print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
-                        *known_plant)
+                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
+                        *known_plant))
             else:
-                print "\n No known plants inputted."
+                print("\n No known plants inputted.")
 
             # Find unknown
             marked, unmarked = [], []
@@ -453,21 +453,21 @@ class Plant_Detection():
                     unmarked.append([x, y, r])
 
             # Print removal candidates
-            print "\n{} plants marked for removal.".format(len(marked))
+            print("\n{} plants marked for removal.".format(len(marked)))
             if len(marked) > 0:
-                print "Plants at the following machine coordinates " + \
-                      "( X Y ) with R = radius are to be removed:"
+                print("Plants at the following machine coordinates "
+                      "( X Y ) with R = radius are to be removed:")
             for mark in marked:
-                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark)
+                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
 
             # Print saved
-            print "\n{} detected plants are known or have escaped "\
-                  "removal.".format(len(unmarked))
+            print("\n{} detected plants are known or have escaped "
+                  "removal.".format(len(unmarked)))
             if len(unmarked) > 0:
-                print "Plants at the following machine coordinates " + \
-                      "( X Y ) with R = radius have been saved:"
+                print("Plants at the following machine coordinates "
+                      "( X Y ) with R = radius have been saved:")
             for unmark in unmarked:
-                print "    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark)
+                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
 
             # Encode to CS
             FarmBot = FarmBotJSON()

@@ -181,7 +181,8 @@ class Pixel2coord():
             rows, cols, _ = self.image.shape
         except ValueError:
             rows, cols = self.image.shape
-        mtrx = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotationangle, 1)
+        mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)),
+                                       rotationangle, 1)
         self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
 
     def process(self):
@@ -264,13 +265,13 @@ class Pixel2coord():
         sign = [1 if s == 1 else -1 for s in self.image_bot_origin_location]
         coord_scale = np.array([self.coord_scale, self.coord_scale])
         object_coordinates = []
-        print "Detected object machine coordinates ( X Y ) with R = radius:"
+        print("Detected object machine coordinates ( X Y ) with R = radius:")
         for o, object_pixel_location in enumerate(object_pixel_locations[:, :2]):
             radius = object_pixel_locations[:][o][2]
             moc = (camera_coordinates +
                    sign * coord_scale *
                    (self.center_pixel_location - object_pixel_location))
-            print "    ( {:5.0f} {:5.0f} ) R = {R:.0f}".format(*moc, R=radius)
+            print("    ( {:5.0f} {:5.0f} ) R = {R:.0f}".format(*moc, R=radius))
             object_coordinates.append(
                 [moc[0], moc[1], coord_scale[0] * radius])
         return object_coordinates, object_pixel_locations
@@ -314,8 +315,8 @@ class Pixel2coord():
                 self.rotateimage(self.rotationangle)
                 self.total_rotation_angle += self.rotationangle
         if self.total_rotation_angle != 0:
-            print " Note: required rotation executed = {:.2f} degrees".format(
-                self.total_rotation_angle)
+            print(" Note: required rotation executed = {:.2f} degrees".format(
+                self.total_rotation_angle))
         self.calibrate()
         if self.viewoutputimage:
             self.showimage(self.circled)
