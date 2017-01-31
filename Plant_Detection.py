@@ -561,12 +561,13 @@ class Plant_Detection():
             save_image(img, None, 'marked')
 
 if __name__ == "__main__":
-    import sys
+    import sys, os
     if len(sys.argv) == 1:
-        soil_image = 'soil_image.jpg'
+        dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        soil_image = dir + 'soil_image.jpg'
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
-            calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg",
+            calibration_img=dir + "pixel_to_coordinate/p2c_test_calibration.jpg",
             known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
         PD.calibrate()
         PD.detect_plants()
