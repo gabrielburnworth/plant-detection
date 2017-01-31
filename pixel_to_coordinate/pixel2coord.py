@@ -40,9 +40,10 @@ class Pixel2coord():
         self.morph_amount = None
         self.HSV_min = None
         self.HSV_max = None
+        self.output_text = True
 
-        self.directory = os.path.dirname(os.path.realpath(__file__))
-        self.parameters_filepath = self.directory + \
+        self.dir = os.path.dirname(os.path.realpath(__file__))
+        self.parameters_filepath = self.dir + \
             "/pixel2coord_calibration_parameters.txt"
         self.load_calibration_parameters()
 
@@ -265,13 +266,15 @@ class Pixel2coord():
         sign = [1 if s == 1 else -1 for s in self.image_bot_origin_location]
         coord_scale = np.array([self.coord_scale, self.coord_scale])
         object_coordinates = []
-        print("Detected object machine coordinates ( X Y ) with R = radius:")
+        if self.output_text:
+            print("Detected object machine coordinates ( X Y ) with R = radius:")
         for o, object_pixel_location in enumerate(object_pixel_locations[:, :2]):
             radius = object_pixel_locations[:][o][2]
             moc = (camera_coordinates +
                    sign * coord_scale *
                    (self.center_pixel_location - object_pixel_location))
-            print("    ( {:5.0f} {:5.0f} ) R = {R:.0f}".format(*moc, R=radius))
+            if self.output_text:
+                print("    ( {:5.0f} {:5.0f} ) R = {R:.0f}".format(*moc, R=radius))
             object_coordinates.append(
                 [moc[0], moc[1], coord_scale[0] * radius])
         return object_coordinates, object_pixel_locations

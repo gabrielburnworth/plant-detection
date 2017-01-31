@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-import sys
+import sys, os
 import cv2
 from Plant_Detection import Plant_Detection
 
+directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
 if len(sys.argv) == 1:
-    filename = 'soil_image.jpg'
+    filename = directory + 'soil_image.jpg'
 else:
     filename = sys.argv[1]
 window = 'Plant Detection'
@@ -12,7 +14,7 @@ HSVwindow = 'HSV Selection'
 override_HSV_defaults = 0
 HSVwindow_loaded = 0
 try:  # Load input parameters from file
-    with open("plant-detection_inputs.txt", 'r') as f:
+    with open(directory + "plant-detection_inputs.txt", 'r') as f:
         lines = f.readlines()
     for line in lines:
         line = line.strip().split(' ')

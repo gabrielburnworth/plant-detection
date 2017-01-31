@@ -4,6 +4,7 @@
 Detects green plants on a dirt background
  and marks them with red circles.
 """
+import sys, os
 import numpy as np
 import cv2
 import platform
@@ -91,6 +92,11 @@ class Plant_Detection():
             self.coordinates = True
         self.test_coordinates = [2000, 2000]
         self.grey_out = False
+        self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        self.output_text = True
+        self.output_json = False
+        self.input_parameters_file = self.dir + "plant-detection_inputs.txt"
+        self.known_plants_file = self.dir + "plant-detection_known-plants.txt"
 
     def _getcoordinates(self):
         """Get machine coordinates from bot."""
@@ -116,7 +122,8 @@ class Plant_Detection():
         self.current_coordinates = self._getcoordinates()
         filename = '{}_{}.png'.format(*self.current_coordinates)
         cv2.imwrite(filename, image)
-        print("Image saved: {}".format(filename))
+        if self.output_text:
+            print("Image saved: {}".format(filename))
         return image
 
     def calibrate(self):
@@ -127,13 +134,13 @@ class Plant_Detection():
     def detect_plants(self):
 
         def save_detected_plants(save, remove):
-            np.savetxt("detected-plants_saved.csv", save,
+            np.savetxt(self.dir + "detected-plants_saved.csv", save,
                        fmt='%.1f', delimiter=',', header='X,Y,Radius')
-            np.savetxt("detected-plants_to-remove.csv", remove,
+            np.savetxt(self.dir + "detected-plants_to-remove.csv", remove,
                        fmt='%.1f', delimiter=',', header='X,Y,Radius')
 
         def save_parameters():
-            with open("plant-detection_inputs.txt", 'w') as f:
+            with open(self.input_parameters_file, 'w') as f:
                 f.write('blur_amount {}\n'.format(self.blur_amount))
                 f.write('morph_amount {}\n'.format(self.morph_amount))
                 f.write('iterations {}\n'.format(self.iterations))
@@ -141,7 +148,7 @@ class Plant_Detection():
                     [1 if self.clump_buster else 0][0]))
                 f.write('HSV_min {:d} {:d} {:d}\n'.format(*self.HSV_min))
                 f.write('HSV_max {:d} {:d} {:d}\n'.format(*self.HSV_max))
-            with open("plant-detection_known-plants.txt", 'w') as f:
+            with open(self.known_plants_file, 'w') as f:
                 f.write('X Y Radius\n')
                 if self.known_plants is not None:
                     for plant in self.known_plants:
@@ -149,7 +156,7 @@ class Plant_Detection():
 
         def load_parameters():
             try:  # Load input parameters from file
-                with open("plant-detection_inputs.txt", 'r') as f:
+                with open(self.input_parameters_file, 'r') as f:
                     lines = f.readlines()
                 for line in lines:
                     line = line.strip().split(' ')
@@ -171,7 +178,7 @@ class Plant_Detection():
                         self.HSV_max = [int(line[1]),
                                         int(line[2]),
                                         int(line[3])]
-                with open("plant-detection_known-plants.txt", 'r') as f:
+                with open(self.known_plants_file, 'r') as f:
                     lines = f.readlines()
                     known_plants = []
                     for line in lines[1:]:
@@ -201,7 +208,8 @@ class Plant_Detection():
             filename = '{}_{}.png'.format(name, details)
             if self.save:
                 cv2.imwrite(filename, save_image)
-                print("Image saved: {}".format(filename))
+                if self.output_text:
+                    print("Image saved: {}".format(filename))
             return save_image
 
         def annotate(img):
@@ -242,7 +250,8 @@ class Plant_Detection():
                                 font, textsize, (255, 255, 255), textweight)
             return annotated_image
 
-        print("\nProcessing image: {}".format(self.image))
+        if self.output_text:
+            print("\nProcessing image: {}".format(self.image))
         kt = None; upper_green = None
 
         # Load image and create blurred image
@@ -367,7 +376,8 @@ class Plant_Detection():
                 unused_img, contours, hierarchy = cv2.findContours(proc,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
-            print("{} plants detected in image.".format(len(contours)))
+            if self.output_text:
+                print("{} plants detected in image.".format(len(contours)))
 
             # Loop through contours
             for i, cnt in enumerate(contours):
@@ -379,7 +389,7 @@ class Plant_Detection():
                     (_, _), radius = cv2.minEnclosingCircle(cnt)
                 except ZeroDivisionError:
                     continue
-                if not self.coordinates:
+                if not self.coordinates and self.output_text:
                     if i == 0:
                         print("Detected plant center pixel locations ( X Y ):")
                     print("    ( {:5.0f}px {:5.0f}px )".format(cx, cy))
@@ -423,18 +433,19 @@ class Plant_Detection():
             marked_img = inputimage.copy()
 
             # Known plant exclusion:
-            if self.known_plants is not None:
-                # Print known
-                print("\n{} known plants inputted.".format(
-                    len(self.known_plants)))
-                if len(self.known_plants) > 0:
-                    print("Plants at the following machine coordinates "
-                          "( X Y ) with R = radius are to be saved:")
-                for known_plant in self.known_plants:
-                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
-                        *known_plant))
-            else:
-                print("\n No known plants inputted.")
+            if self.output_text:
+                if self.known_plants is not None:
+                    # Print known
+                    print("\n{} known plants inputted.".format(
+                        len(self.known_plants)))
+                    if len(self.known_plants) > 0:
+                        print("Plants at the following machine coordinates "
+                              "( X Y ) with R = radius are to be saved:")
+                    for known_plant in self.known_plants:
+                        print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
+                            *known_plant))
+                else:
+                    print("\n No known plants inputted.")
 
             # Find unknown
             marked, unmarked = [], []
@@ -453,31 +464,34 @@ class Plant_Detection():
                     unmarked.append([x, y, r])
 
             # Print removal candidates
-            print("\n{} plants marked for removal.".format(len(marked)))
-            if len(marked) > 0:
-                print("Plants at the following machine coordinates "
-                      "( X Y ) with R = radius are to be removed:")
-            for mark in marked:
-                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
+            if self.output_text:
+                print("\n{} plants marked for removal.".format(len(marked)))
+                if len(marked) > 0:
+                    print("Plants at the following machine coordinates "
+                          "( X Y ) with R = radius are to be removed:")
+                for mark in marked:
+                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
 
             # Print saved
-            print("\n{} detected plants are known or have escaped "
-                  "removal.".format(len(unmarked)))
-            if len(unmarked) > 0:
-                print("Plants at the following machine coordinates "
-                      "( X Y ) with R = radius have been saved:")
-            for unmark in unmarked:
-                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
+            if self.output_text:
+                print("\n{} detected plants are known or have escaped "
+                      "removal.".format(len(unmarked)))
+                if len(unmarked) > 0:
+                    print("Plants at the following machine coordinates "
+                          "( X Y ) with R = radius have been saved:")
+                for unmark in unmarked:
+                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
 
             # Encode to CS
-            FarmBot = FarmBotJSON()
-            for mark in marked:
-                x, y = round(mark[0], 2), round(mark[1], 2)
-                FarmBot.add_point(x, y, 0)
-            for unmark in unmarked:
-                x, y = round(unmark[0], 2), round(unmark[1], 2)
-                r = round(unmark[2], 2)
-                FarmBot.add_plant(0, [x, y, 0], r)
+            if self.output_json:
+                FarmBot = FarmBotJSON()
+                for mark in marked:
+                    x, y = round(mark[0], 2), round(mark[1], 2)
+                    FarmBot.add_point(x, y, 0)
+                for unmark in unmarked:
+                    x, y = round(unmark[0], 2), round(unmark[1], 2)
+                    r = round(unmark[2], 2)
+                    FarmBot.add_plant(0, [x, y, 0], r)
 
             # Save plant coordinates to file
             save_detected_plants(unmarked, marked)
@@ -561,7 +575,6 @@ class Plant_Detection():
             save_image(img, None, 'marked')
 
 if __name__ == "__main__":
-    import sys, os
     if len(sys.argv) == 1:
         dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         soil_image = dir + 'soil_image.jpg'
