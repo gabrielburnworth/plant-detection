@@ -104,7 +104,7 @@ class Plant_Detection():
         self.tmp_dir = None
 
         try:
-            params_json = json.loads(os.environ['PLANT_DETECTION.options'])
+            params_json = json.loads(os.environ['PLANT_DETECTION_options'])
             # Read inputs from env vars
             self.HSV_min = [params_json['H'][0], params_json['S'][0], params_json['V'][0]]
             self.HSV_max = [params_json['H'][1], params_json['S'][1], params_json['V'][1]]
@@ -239,6 +239,20 @@ class Plant_Detection():
         if self.parameters_from_file:
             load_parameters()
 
+        print('Processing Parameters:')
+        print('-' * 25)
+        print('Blur kernel size: {}'.format(self.blur_amount))
+        print('Morph kernel size: {}'.format(self.morph_amount))
+        print('Iterations: {}'.format(self.iterations))
+        #print('Clump Buster: {}'.format(self.clump_buster))
+        print('Hue:\n\tMIN: {}\n\tMAX: {}'.format(
+              self.HSV_min[0], self.HSV_max[0]))
+        print('Saturation:\n\tMIN: {}\n\tMAX: {}'.format(
+              self.HSV_min[1], self.HSV_max[1]))
+        print('Value:\n\tMIN: {}\n\tMAX: {}'.format(
+              self.HSV_min[2], self.HSV_max[2]))
+        print('-' * 25)
+
         def save_image(img, step, description):
             save_image = img
             if step is not None:  # debug image
@@ -316,6 +330,7 @@ class Plant_Detection():
                 (int(width * 600 / height), 600), interpolation=cv2.INTER_AREA)
         img0 = original_image.copy()
         img = original_image.copy()
+        if self.blur_amount % 2 == 0: self.blur_amount += 1
         blur = cv2.medianBlur(img, self.blur_amount)
         if self.debug:
             img2 = img.copy()
