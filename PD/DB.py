@@ -12,6 +12,8 @@ class DB():
         self.known_plants = None
         self.marked = None
         self.unmarked = None
+        self.pixel_locations = []
+        self.calibration_pixel_locations = []
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.known_plants_file = "plant-detection_known-plants.txt"
         self.filename = self.dir + self.known_plants_file
@@ -77,6 +79,13 @@ class DB():
                       "( X Y ) with R = radius have been saved:")
             for unmark in self.unmarked:
                 print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
+
+    def print_pixel(self):
+        if len(self.pixel_locations) > 0:
+            print("Detected plant center pixel locations ( X Y ):")
+            for pixel_location in self.pixel_locations:
+                print("    ( {:5.0f}px {:5.0f}px )".format(pixel_location[0],
+                                                           pixel_location[1]))
 
     def json_(self):
         # Encode to CS

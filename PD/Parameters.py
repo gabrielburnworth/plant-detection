@@ -4,6 +4,7 @@
 For Plant Detection.
 """
 import sys, os
+import cv2
 
 class Parameters():
     def __init__(self, **kwargs):
@@ -14,9 +15,20 @@ class Parameters():
         self.clump_buster = False  # default
         self.HSV_min = [30, 20, 20]  # default
         self.HSV_max = [90, 255, 255]  # default
+        self.kernel_type = 'ellipse'
+        self.morph_type = 'close'
         self.parameters_from_file = False  # default
         self.output_text = False
         self.output_json = False
+
+        # Create dictionaries of morph types
+        self.kt = {}  # morph kernel type
+        self.kt['ellipse'] = cv2.MORPH_ELLIPSE
+        self.kt['rect'] = cv2.MORPH_RECT
+        self.kt['cross'] = cv2.MORPH_CROSS
+        self.mt = {}  # morph type
+        self.mt['close'] = cv2.MORPH_CLOSE
+        self.mt['open'] = cv2.MORPH_OPEN
 
     def save(self, filename):
         with open(filename, 'w') as f:

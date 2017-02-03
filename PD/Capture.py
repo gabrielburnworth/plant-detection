@@ -9,7 +9,10 @@ import cv2
 import platform
 from time import sleep
 from datetime import datetime
-from gi.repository import GExiv2
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from gi.repository import GExiv2
 
 use_rpi_camera = False
 using_rpi = False
@@ -58,13 +61,16 @@ class Capture():
         return self.image
 
 if __name__ == "__main__":
+    dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
     from Image import Image
+    from Parameters import Parameters
+    from DB import DB
     image = Capture().capture()
-    wimage = Image()
+    wimage = Image(Parameters(), DB())
     wimage.image = image
-    wimage.save('capture')
+    wimage.save("capture")
 
-    exif = GExiv2.Metadata('capture.jpg')
+    exif = GExiv2.Metadata(dir + 'capture.jpg')
     current_coordinates = Capture()._getcoordinates()
     timestamp = Capture().timestamp
     exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(

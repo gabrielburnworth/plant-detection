@@ -7,8 +7,8 @@ Detects green plants on a dirt background
 import sys, os
 import numpy as np
 import cv2
-from pixel_to_coordinate.pixel2coord import Pixel2coord
-from CeleryPy import FarmBotJSON
+from PD.P2C import Pixel2coord
+from PD.CeleryPy import FarmBotJSON
 from PD.Image import Image
 from PD.Parameters import Parameters
 from PD.DB import DB
@@ -47,7 +47,7 @@ class Plant_Detection():
            Detect_plants(image='soil_image.jpg', morph=3, iterations=10,
               debug=True)
            Detect_plants(image='soil_image.jpg', blur=9, morph=7, iterations=4,
-              calibration_img="pixel_to_coordinate/p2c_test_calibration.jpg")
+              calibration_img="PD/p2c_test_calibration.jpg")
            Detect_plants(image='soil_image.jpg', blur=15,
               array=[[5, 'ellipse', 'erode',  2],
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
@@ -59,7 +59,6 @@ class Plant_Detection():
         self.calibration_img = None  # default
         self.known_plants = None  # default
         self.debug = False  # default
-        self.array = None  # default
         self.save = True   # default
         self.parameters_from_file = False  # default
         self.params = Parameters()
@@ -73,7 +72,7 @@ class Plant_Detection():
             if key == 'blur': self.params.blur_amount = kwargs[key]
             if key == 'morph': self.params.morph_amount = kwargs[key]
             if key == 'iterations': self.params.iterations = kwargs[key]
-            if key == 'array': self.array = kwargs[key]
+            if key == 'array': self.params.array = kwargs[key]
             if key == 'save': self.save = kwargs[key]
             if key == 'clump_buster': self.params.clump_buster = kwargs[key]
             if key == 'HSV_min': self.params.HSV_min = kwargs[key]
@@ -95,7 +94,6 @@ class Plant_Detection():
         P2C = Pixel2coord(calibration_image=self.calibration_img)
 
     def detect_plants(self):
-
         if self.parameters_from_file:
             self.params.load(self.input_parameters_file)
 
@@ -105,12 +103,12 @@ class Plant_Detection():
 
         # Load image
         if self.image is None:
-            self.image = Image()
+            self.image = Image(self.params, self.db)
             self.image.capture()
             self.image.save('photo')
         else:
             filename = self.image
-            self.image = Image()
+            self.image = Image(self.params, self.db)
             self.image.load(filename)
 
         self.image.blur()
@@ -133,49 +131,14 @@ class Plant_Detection():
         if self.grey_out:
             self.image.grey()
 
-        def find(proc):
-            # Find contours (hopefully of outside edges of plants)
-            try:
-                contours, hierarchy = cv2.findContours(proc,
-                                                   cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-            except ValueError:
-                unused_img, contours, hierarchy = cv2.findContours(proc,
-                                                   cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-            if self.output_text:
-                print("{} plants detected in image.".format(len(contours)))
-
-            # Loop through contours
-            for i, cnt in enumerate(contours):
-                # Calculate plant location by using centroid of contour
-                M = cv2.moments(cnt)
-                try:
-                    cx = int(M['m10'] / M['m00'])
-                    cy = int(M['m01'] / M['m00'])
-                    (_, _), radius = cv2.minEnclosingCircle(cnt)
-                except ZeroDivisionError:
-                    continue
-                if not self.coordinates and self.output_text:
-                    if i == 0:
-                        print("Detected plant center pixel locations ( X Y ):")
-                    print("    ( {:5.0f}px {:5.0f}px )".format(cx, cy))
-
-                # Mark plant with red circle
-                cv2.circle(self.image.original, (cx, cy), 20, (0, 0, 255), 4)
-
-                if self.debug:
-                    cv2.drawContours(proc, [cnt], 0, (255, 255, 255), 3)
-                    cv2.circle(img2, (cx, cy), 20, (0, 0, 255), 4)
-                    cv2.drawContours(img2, [cnt], 0, (0, 0, 0), 6)
-                    cv2.drawContours(img2, [cnt], 0, (255, 255, 255), 2)
-
-                object_pixel_locations.append([cx, cy, radius])
-            return object_pixel_locations
-
-        object_pixel_locations = []
         if not self.coordinates:
-            object_pixel_locations = find(self.image.image)
+            self.db.pixel_locations = self.image.find()
+            self.image.save('contours')
+            if self.output_text:
+                self.db.print_pixel()
+            # Save soil image with plants marked
+            self.image.image = self.image.marked
+            self.image.save('marked')
 
         # Return coordinates if requested
         if self.coordinates:
@@ -192,12 +155,16 @@ class Plant_Detection():
             inputimage = rotateimage(self.image.original, P2C.total_rotation_angle)
             self.image.morphed = rotateimage(self.image.morphed,
                                              P2C.total_rotation_angle)
-            object_pixel_locations = find(self.image.morphed)
+            self.image.image = self.image.morphed
+            self.db.pixel_locations = self.image.find()
             P2C.test_coordinates = [2000, 2000]
             plant_coordinates, plant_pixel_locations = P2C.p2c(
-                object_pixel_locations)
+                self.db.pixel_locations)
 
-            if self.debug: save_image(img2, None, 'coordinates_found')
+            if self.debug:
+                self.image.save('contours')
+                self.image.image = self.image.marked
+                self.image.save('coordinates_found')
             self.image.marked = self.image.original.copy()
 
             # Find unknown
@@ -295,13 +262,8 @@ class Plant_Detection():
             self.image.save('marked')
 
         if self.debug:
-            save_image(proc, 6, 'contours')
-            self.final_debug_image = save_image(img2, 7, 'img-contours')
+            self.final_debug_image = self.image.marked
             self.params.save(self.input_parameters_file)
-
-        # Save soil image with plants marked
-        if not self.coordinates:
-            save_image(img, None, 'marked')
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -309,11 +271,11 @@ if __name__ == "__main__":
         soil_image = dir + 'soil_image.jpg'
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
-            calibration_img=dir + "pixel_to_coordinate/p2c_test_calibration.jpg",
+            calibration_img=dir + "PD/p2c_test_calibration.jpg", debug=1,
             known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
         PD.calibrate()
         PD.detect_plants()
     else:
         soil_image = sys.argv[1]
-        PD = Plant_Detection(image=soil_image, parameters_from_file=True)
+        PD = Plant_Detection(image=soil_image, parameters_from_file=True, debug=True)
         PD.detect_plants()

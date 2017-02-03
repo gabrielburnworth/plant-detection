@@ -2,6 +2,7 @@
 *.png
 *.jpg
 !soil_image.jpg
+!p2c*.jpg
 *.csv
 *.txt
 

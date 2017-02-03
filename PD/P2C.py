@@ -4,61 +4,61 @@ from time import sleep
 import cv2
 import numpy as np
 import os
-
+from Parameters import Parameters
+from Capture import Capture
+from Image import Image
+from DB import DB
 
 class Pixel2coord():
     """Calibrates the conversion of pixel locations to machine coordinates
     in images. Finds object coordinates in image.
     """
     def __init__(self, calibration_image=None):
-        self.image = None
+        self.cparams = Parameters()
+        self.dir = os.path.dirname(os.path.realpath(__file__))
+        self.parameters_filepath = self.dir + \
+            "/pixel2coord_calibration_parameters.txt"
         if calibration_image is not None:
-            if isinstance(calibration_image, str):
-                self.readimage(calibration_image)
-            else:
-                self.image = calibration_image
+            self.temp_cimage = Image(Parameters(), DB())
+            self.temp_cimage.load(calibration_image)
+
+            # Parameters imported from file (or defaults below)
+            self.coord_scale = None
+            self.total_rotation_angle = 0
+            self.center_pixel_location = None
+            self.calibration_circles_xaxis = None
+            self.image_bot_origin_location = None
+            self.calibration_circle_separation = None
+            self.camera_offset_coordinates = None
+            self.iterations = None
+            self.test_coordinates = None
+
+        self.db = DB()
+        self.load_calibration_parameters()
+        if calibration_image is not None:
+            self.image = Image(self.cparams, self.db)
+            self.image.load(calibration_image)
         self.camera_rotation = 0
         if self.camera_rotation > 0:
             self.image = np.rot90(self.image)
         self.proc = None
         self.circled = None
-        self.calibration_object_pixel_locations = []
         self.rotationangle = 0
         self.test_rotation = 5  # for testing, add some image rotation
         self.viewoutputimage = False  # overridden as True if running script
-        self.coord_scale = None
-        self.total_rotation_angle = 0
-        self.center_pixel_location = None
-        # Parameters imported from file (or defaults below)
-        self.calibration_circles_xaxis = None
-        self.image_bot_origin_location = None
-        self.calibration_circle_separation = None
-        self.camera_offset_coordinates = None
-        self.iterations = None
-        self.test_coordinates = None
-        self.blur_amount = None
-        self.morph_amount = None
-        self.HSV_min = None
-        self.HSV_max = None
-        self.output_text = True
 
-        self.dir = os.path.dirname(os.path.realpath(__file__))
-        self.parameters_filepath = self.dir + \
-            "/pixel2coord_calibration_parameters.txt"
-        self.load_calibration_parameters()
+
+        self.output_text = True
+        self.get_bot_coordinates = Capture()._getcoordinates
 
         # Run calibration sequence for provided image
-        if self.image is not None:
+        if calibration_image is not None:
             self.calibration()
-
-    def getcoordinates(self):
-        """Get machine coordinates from bot."""
-        # For now, return testing coordintes:
-        return self.test_coordinates
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
-        with open(self.parameters_filepath, 'w') as f:
+        self.cparams.save(self.parameters_filepath)
+        with open(self.parameters_filepath, 'a') as f:
             f.write('calibration_circles_xaxis {}\n'.format(
                 [1 if self.calibration_circles_xaxis else 0][0]))
             f.write('image_bot_origin_location {} {}\n'.format(
@@ -67,18 +67,10 @@ class Pixel2coord():
                 self.calibration_circle_separation))
             f.write('camera_offset_coordinates {} {}\n'.format(
                 *self.camera_offset_coordinates))
-            f.write('iterations {}\n'.format(
+            f.write('rotation_iters {}\n'.format(
                 self.iterations))
             f.write('test_coordinates {} {}\n'.format(
                 *self.test_coordinates))
-            f.write('blur_amount {}\n'.format(
-                self.blur_amount))
-            f.write('morph_amount {}\n'.format(
-                self.morph_amount))
-            f.write('HSV_min {} {} {}\n'.format(
-                *self.HSV_min))
-            f.write('HSV_max {} {} {}\n'.format(
-                *self.HSV_max))
             f.write('coord_scale {}\n'.format(
                 self.coord_scale))
             f.write('total_rotation_angle {}\n'.format(
@@ -89,6 +81,7 @@ class Pixel2coord():
     def load_calibration_parameters(self):
         """Load calibration parameters from file
         or use defaults and save to file."""
+        self.cparams.load(self.parameters_filepath)
         try:  # Load calibration parameters from file
             with open(self.parameters_filepath, 'r') as f:
                 lines = f.readlines()
@@ -104,25 +97,11 @@ class Pixel2coord():
                 if "camera_offset_coordinates" in line:
                     self.camera_offset_coordinates = [float(line[1]),
                                                       float(line[2])]
-                if "iterations" in line:
+                if "rotation_iters" in line:
                     self.iterations = int(line[1])
                 if "test_coordinates" in line:
                     self.test_coordinates = [float(line[1]),
                                              float(line[2])]
-                if "blur_amount" in line:
-                    self.blur_amount = int(line[1])
-                    if self.blur_amount % 2 == 0:
-                        self.blur_amount += 1
-                if "morph_amount" in line:
-                    self.morph_amount = int(line[1])
-                if "HSV_min" in line:
-                    self.HSV_min = [float(line[1]),
-                                    float(line[2]),
-                                    float(line[3])]
-                if "HSV_max" in line:
-                    self.HSV_max = [float(line[1]),
-                                    float(line[2]),
-                                    float(line[3])]
                 if "coord_scale" in line:
                     self.coord_scale = float(line[1])
                 if "total_rotation_angle" in line:
@@ -130,6 +109,12 @@ class Pixel2coord():
                 if "center_pixel_location" in line:
                     self.center_pixel_location = [float(line[1]),
                                                   float(line[2])]
+            essential_parameters = [self.camera_offset_coordinates,
+                                    self.image_bot_origin_location,
+                                    self.coord_scale,
+                                    self.center_pixel_location]
+            if any(param is None for param in essential_parameters):
+                raise IOError
         except IOError:  # Use defaults and save to file
             self.calibration_circles_xaxis = True  # calib. circles along xaxis
             self.image_bot_origin_location = [0, 1]  # image bot axes locations
@@ -137,29 +122,19 @@ class Pixel2coord():
             self.camera_offset_coordinates = [200, 100]  # UTM camera offset
             self.iterations = 3  # min 2 if image rotated or if rotation unkwn
             self.test_coordinates = [600, 400]  # calib image coord. location
-            self.blur_amount = 5  # must be odd
-            self.morph_amount = 15
-            self.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
-            self.HSV_max = [20, 255, 255]
-            self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
+            self.cparams.blur_amount = 5  # must be odd
+            self.cparams.morph_amount = 15
+            self.cparams.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
+            self.cparams.HSV_max = [20, 255, 255]
+            self.center_pixel_location = np.array(self.temp_cimage.image.shape[:2][::-1]) / 2
 
             self.save_calibration_parameters()
-
-    def readimage(self, filename):
-        """Read an image from a file."""
-        self.image = cv2.imread(filename)
-
-    def showimage(self, image_to_show):
-        """Show an image."""
-        cv2.imshow("image", image_to_show)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
         threshold = 0
-        obj_1_x, obj_1_y, _ = self.calibration_object_pixel_locations[0]
-        obj_2_x, obj_2_y, _ = self.calibration_object_pixel_locations[1]
+        obj_1_x, obj_1_y, _ = self.db.calibration_pixel_locations[0]
+        obj_2_x, obj_2_y, _ = self.db.calibration_pixel_locations[1]
         if not self.calibration_circles_xaxis:
             if obj_1_x > obj_2_x:
                 obj_1_x, obj_2_x = obj_2_x, obj_1_x
@@ -179,75 +154,29 @@ class Pixel2coord():
     def rotateimage(self, rotationangle):
         """Rotate image number of degrees."""
         try:
-            rows, cols, _ = self.image.shape
+            rows, cols, _ = self.image.image.shape
         except ValueError:
-            rows, cols = self.image.shape
+            rows, cols = self.image.image.shape
         mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)),
                                        rotationangle, 1)
-        self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
+        self.image.image = cv2.warpAffine(self.image.image, mtrx, (cols, rows))
 
     def process(self):
         """Prepare image for contour detection."""
-        blur = cv2.medianBlur(self.image, self.blur_amount)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-        if self.HSV_min[0] > self.HSV_max[0]:
-            hsv_btwn_min = [0, self.HSV_min[1], self.HSV_min[2]]
-            hsv_btwn_max = [179, self.HSV_max[1], self.HSV_max[2]]
-            mask_L = cv2.inRange(hsv, np.array(hsv_btwn_min),
-                                 np.array(self.HSV_max))
-            mask_U = cv2.inRange(hsv, np.array(self.HSV_min),
-                                 np.array(hsv_btwn_max))
-            mask = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
-        else:
-            mask = cv2.inRange(hsv, np.array(self.HSV_min),
-                               np.array(self.HSV_max))
-        self.proc = cv2.morphologyEx(mask, cv2.MORPH_CLOSE,
-                                     np.ones((self.morph_amount,
-                                              self.morph_amount), np.uint8))
-
-    def findobjects(self, **kwargs):
-        """Create contours and find locations of objects."""
-        small_c = False  # default
-        circle = True  # default
-        draw_contours = True  # default
-        for key in kwargs:
-            if key == 'small_c': small_c = kwargs[key]
-            if key == 'circle': circle = kwargs[key]
-            if key == 'draw_contours': draw_contours = kwargs[key]
-        try:
-            contours, _ = cv2.findContours(
-                          self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        except ValueError:
-            _, contours, _ = cv2.findContours(
-                          self.proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        self.circled = self.image.copy()
-        for i, cnt in enumerate(contours):
-            (cx, cy), radius = cv2.minEnclosingCircle(cnt)
-            if i == 0:
-                self.calibration_object_pixel_locations = [cx, cy, radius]
-            else:
-                self.calibration_object_pixel_locations = np.vstack(
-                    (self.calibration_object_pixel_locations,
-                     [cx, cy, radius]))
-            center = (int(cx), int(cy))
-            if small_c:
-                radius = 20
-            if circle:
-                cv2.circle(self.circled, center, int(radius), (255, 0, 0), 4)
-            if draw_contours:
-                cv2.drawContours(self.proc, [cnt], 0, (255, 255, 255), 3)
-                cv2.drawContours(self.circled, [cnt], 0, (0, 255, 0), 3)
+        self.image.blur()
+        self.image.mask()
+        self.image.morph()
 
     def calibrate(self):
         """Determine coordinate conversion parameters."""
-        if len(self.calibration_object_pixel_locations) > 1:
+        if len(self.db.calibration_pixel_locations) > 1:
             calibration_circle_sep = float(self.calibration_circle_separation)
             if self.calibration_circles_xaxis:
                 i = 0
             else:
                 i = 1
-            object_sep = abs(self.calibration_object_pixel_locations[0][i] -
-                             self.calibration_object_pixel_locations[1][i])
+            object_sep = abs(self.db.calibration_pixel_locations[0][i] -
+                             self.db.calibration_pixel_locations[1][i])
             self.coord_scale = calibration_circle_sep / object_sep
 
     def p2c(self, object_pixel_locations):
@@ -260,7 +189,7 @@ class Pixel2coord():
         except IndexError:
             object_pixel_locations = [object_pixel_locations]
         object_pixel_locations = np.array(object_pixel_locations)
-        coord = np.array(self.getcoordinates(), dtype=float)
+        coord = np.array(self.get_bot_coordinates(), dtype=float)
         camera_offset = np.array(self.camera_offset_coordinates, dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         sign = [1 if s == 1 else -1 for s in self.image_bot_origin_location]
@@ -290,7 +219,7 @@ class Pixel2coord():
         except IndexError:
             object_coordinates = [object_coordinates]
         object_coordinates = np.array(object_coordinates)
-        coord = np.array(self.getcoordinates(), dtype=float)
+        coord = np.array(self.get_bot_coordinates(), dtype=float)
         camera_offset = np.array(self.camera_offset_coordinates, dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         center_pixel_location = self.center_pixel_location[:2]
@@ -312,7 +241,7 @@ class Pixel2coord():
         self.total_rotation_angle = 0
         for i in range(0, self.iterations):
             self.process()
-            self.findobjects()
+            self.image.find(calibration=True)
             if i != (self.iterations - 1):
                 self.rotationdetermination()
                 self.rotateimage(self.rotationangle)
@@ -322,20 +251,23 @@ class Pixel2coord():
                 self.total_rotation_angle))
         self.calibrate()
         if self.viewoutputimage:
-            self.showimage(self.circled)
+            self.image.image = self.image.marked
+            self.image.show()
         self.save_calibration_parameters()
 
     def determine_coordinates(self):
         """Use calibration parameters to determine locations of objects."""
         self.rotateimage(self.total_rotation_angle)
         self.process()
-        self.findobjects()
-        _, _ = self.p2c(self.calibration_object_pixel_locations)
+        self.image.find(calibration=True)
+        _, _ = self.p2c(self.db.calibration_pixel_locations)
         if self.viewoutputimage:
-            self.showimage(self.circled)
+            self.image.image = self.image.marked
+            self.image.show()
 
 if __name__ == "__main__":
     folder = os.path.dirname(os.path.realpath(__file__))
+    print("Calibration image load...")
     P2C = Pixel2coord(calibration_image=folder + "/p2c_test_calibration.jpg")
     P2C.viewoutputimage = True
     # Calibration
@@ -343,12 +275,15 @@ if __name__ == "__main__":
     P2C.calibration()
     # Tests
     # Object detection
-    P2C.readimage(folder + "/p2c_test_objects.jpg")
+    print("Calibration object test...")
+    P2C.image.load(folder + "/p2c_test_objects.jpg")
     P2C.rotateimage(P2C.test_rotation)
     P2C.determine_coordinates()
     # Color range
-    P2C.readimage(folder + "/p2c_test_color.jpg")
+    print("Calibration color range...")
+    P2C.image.load(folder + "/p2c_test_color.jpg")
     P2C.process()
-    P2C.findobjects(circle=False)
+    P2C.image.find(circle=False)
     if P2C.viewoutputimage:
-        P2C.showimage(P2C.circled)
+        P2C.image.image = P2C.image.marked
+        P2C.image.show()
