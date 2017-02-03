@@ -98,6 +98,22 @@ class Plant_Detection():
         self.input_parameters_file = self.dir + "plant-detection_inputs.txt"
         self.known_plants_file = self.dir + "plant-detection_known-plants.txt"
 
+        try:
+            # Read inputs from env vars
+            Hh = int(os.environ['PLANT_DETECTION.HUEHigh'])
+            Hl = int(os.environ['PLANT_DETECTION.HUELow'])
+            Sh = int(os.environ['PLANT_DETECTION.saturationHigh'])
+            Sl = int(os.environ['PLANT_DETECTION.saturationLow'])
+            Vh = int(os.environ['PLANT_DETECTION.valueHigh'])
+            Vl = int(os.environ['PLANT_DETECTION.valueLow'])
+            self.HSV_min = [Hl, Sl, Vl]
+            self.HSV_max = [Hh, Sh, Vh]
+            self.blur_amount = int(os.environ['PLANT_DETECTION.blur'])
+            self.morph_amount = int(os.environ['PLANT_DETECTION.morph'])
+            self.iterations = int(os.environ['PLANT_DETECTION.iterations'])
+        except KeyError:
+            pass
+
     def _getcoordinates(self):
         """Get machine coordinates from bot."""
         # For now, return testing coordintes:
