@@ -41,10 +41,11 @@ class Pixel2coord():
         self.HSV_min = None
         self.HSV_max = None
         self.output_text = True
+        self.tmp_dir = None
 
         self.dir = os.path.dirname(os.path.realpath(__file__))
-        self.parameters_filepath = self.dir + \
-            "/pixel2coord_calibration_parameters.txt"
+        self.parameters_filename = "/pixel2coord_calibration_parameters.txt"
+        self.parameters_filepath = self.dir + self.parameters_filename
         self.load_calibration_parameters()
 
         # Run calibration sequence for provided image
@@ -58,7 +59,12 @@ class Pixel2coord():
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
-        with open(self.parameters_filepath, 'w') as f:
+        if self.tmp_dir is None:
+            filename = self.parameters_filepath
+        else:
+            filename = self.tmp_dir + self.parameters_filename
+
+        with open(filename, 'w') as f:
             f.write('calibration_circles_xaxis {}\n'.format(
                 [1 if self.calibration_circles_xaxis else 0][0]))
             f.write('image_bot_origin_location {} {}\n'.format(
@@ -89,8 +95,12 @@ class Pixel2coord():
     def load_calibration_parameters(self):
         """Load calibration parameters from file
         or use defaults and save to file."""
+        if self.tmp_dir is None:
+            filename = self.parameters_filepath
+        else:
+            filename = self.tmp_dir + self.parameters_filename
         try:  # Load calibration parameters from file
-            with open(self.parameters_filepath, 'r') as f:
+            with open(filename, 'r') as f:
                 lines = f.readlines()
             for line in lines:
                 line = line.strip().split(' ')
@@ -131,19 +141,27 @@ class Pixel2coord():
                     self.center_pixel_location = [float(line[1]),
                                                   float(line[2])]
         except IOError:  # Use defaults and save to file
-            self.calibration_circles_xaxis = True  # calib. circles along xaxis
-            self.image_bot_origin_location = [0, 1]  # image bot axes locations
-            self.calibration_circle_separation = 1000  # distance btwn red dots
-            self.camera_offset_coordinates = [200, 100]  # UTM camera offset
-            self.iterations = 3  # min 2 if image rotated or if rotation unkwn
-            self.test_coordinates = [600, 400]  # calib image coord. location
-            self.blur_amount = 5  # must be odd
-            self.morph_amount = 15
-            self.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
-            self.HSV_max = [20, 255, 255]
-            self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
+            if self.image is not None:
+                self.calibration_circles_xaxis = True  # calib. circles along xaxis
+                self.image_bot_origin_location = [0, 1]  # image bot axes locations
+                self.calibration_circle_separation = 1000  # distance btwn red dots
+                self.camera_offset_coordinates = [200, 100]  # UTM camera offset
+                self.iterations = 3  # min 2 if image rotated or if rotation unkwn
+                self.test_coordinates = [600, 400]  # calib image coord. location
+                self.blur_amount = 5  # must be odd
+                self.morph_amount = 15
+                self.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
+                self.HSV_max = [20, 255, 255]
+                self.center_pixel_location = np.array(self.image.shape[:2][::-1]) / 2
 
-            self.save_calibration_parameters()
+                try:
+                    self.save_calibration_parameters()
+                except IOError:
+                    self.tmp_dir = "/tmp"
+                    self.save_calibration_parameters()
+            else:
+                self.tmp_dir = "/tmp"
+                self.load_calibration_parameters()
 
     def readimage(self, filename):
         """Read an image from a file."""

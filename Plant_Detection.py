@@ -8,6 +8,7 @@ import sys, os
 import numpy as np
 import cv2
 import platform
+import json
 use_rpi_camera = False; using_rpi = False
 if platform.uname()[4].startswith("arm") and use_rpi_camera:
     from picamera.array import PiRGBArray
@@ -96,22 +97,20 @@ class Plant_Detection():
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.output_text = True
         self.output_json = False
-        self.input_parameters_file = self.dir + "plant-detection_inputs.txt"
-        self.known_plants_file = self.dir + "plant-detection_known-plants.txt"
+        self.input_parameters_filename = "plant-detection_inputs.txt"
+        self.input_parameters_file = self.dir + self.input_parameters_filename
+        self.known_plants_filename = "plant-detection_known-plants.txt"
+        self.known_plants_file = self.dir + self.known_plants_filename
+        self.tmp_dir = None
 
         try:
+            params_json = json.loads(os.environ['PLANT_DETECTION.options'])
             # Read inputs from env vars
-            Hh = int(os.environ['PLANT_DETECTION.HUEHigh'])
-            Hl = int(os.environ['PLANT_DETECTION.HUELow'])
-            Sh = int(os.environ['PLANT_DETECTION.saturationHigh'])
-            Sl = int(os.environ['PLANT_DETECTION.saturationLow'])
-            Vh = int(os.environ['PLANT_DETECTION.valueHigh'])
-            Vl = int(os.environ['PLANT_DETECTION.valueLow'])
-            self.HSV_min = [Hl, Sl, Vl]
-            self.HSV_max = [Hh, Sh, Vh]
-            self.blur_amount = int(os.environ['PLANT_DETECTION.blur'])
-            self.morph_amount = int(os.environ['PLANT_DETECTION.morph'])
-            self.iterations = int(os.environ['PLANT_DETECTION.iterations'])
+            self.HSV_min = [params_json['H'][0], params_json['S'][0], params_json['V'][0]]
+            self.HSV_max = [params_json['H'][1], params_json['S'][1], params_json['V'][1]]
+            self.blur_amount = int(params_json['blur'])
+            self.morph_amount = int(params_json['morph'])
+            self.iterations = int(params_json['iterations'])
         except KeyError:
             pass
 
@@ -152,13 +151,25 @@ class Plant_Detection():
     def detect_plants(self):
 
         def save_detected_plants(save, remove):
-            np.savetxt(self.dir + "detected-plants_saved.csv", save,
-                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
-            np.savetxt(self.dir + "detected-plants_to-remove.csv", remove,
-                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
+            if self.tmp_dir is None:
+                csv_dir = self.dir
+            else:
+                csv_dir = self.tmp_dir
+            try:
+                np.savetxt(csv_dir + "detected-plants_saved.csv", save,
+                           fmt='%.1f', delimiter=',', header='X,Y,Radius')
+                np.savetxt(csv_dir + "detected-plants_to-remove.csv", remove,
+                           fmt='%.1f', delimiter=',', header='X,Y,Radius')
+            except IOError:
+                self.tmp_dir = "/tmp/"
+                save_detected_plants(save, remove)
 
         def save_parameters():
-            with open(self.input_parameters_file, 'w') as f:
+            if self.tmp_dir is None:
+                filename = self.input_parameters_file
+            else:
+                filename = self.tmp_dir + self.input_parameters_filename
+            with open(filename, 'w') as f:
                 f.write('blur_amount {}\n'.format(self.blur_amount))
                 f.write('morph_amount {}\n'.format(self.morph_amount))
                 f.write('iterations {}\n'.format(self.iterations))
@@ -166,15 +177,23 @@ class Plant_Detection():
                     [1 if self.clump_buster else 0][0]))
                 f.write('HSV_min {:d} {:d} {:d}\n'.format(*self.HSV_min))
                 f.write('HSV_max {:d} {:d} {:d}\n'.format(*self.HSV_max))
-            with open(self.known_plants_file, 'w') as f:
+            if self.tmp_dir is None:
+                filename = self.known_plants_file
+            else:
+                filename = self.tmp_dir + self.known_plants_filename
+            with open(filename, 'w') as f:
                 f.write('X Y Radius\n')
                 if self.known_plants is not None:
                     for plant in self.known_plants:
                         f.write('{} {} {}\n'.format(*plant))
 
         def load_parameters():
+            if self.tmp_dir is None:
+                filename = self.input_parameters_file
+            else:
+                filename = self.tmp_dir + self.input_parameters_filename
             try:  # Load input parameters from file
-                with open(self.input_parameters_file, 'r') as f:
+                with open(filename, 'r') as f:
                     lines = f.readlines()
                 for line in lines:
                     line = line.strip().split(' ')
@@ -196,7 +215,11 @@ class Plant_Detection():
                         self.HSV_max = [int(line[1]),
                                         int(line[2]),
                                         int(line[3])]
-                with open(self.known_plants_file, 'r') as f:
+                if self.tmp_dir is None:
+                    filename = self.known_plants_file
+                else:
+                    filename = self.tmp_dir + self.known_plants_filename
+                with open(filename, 'r') as f:
                     lines = f.readlines()
                     known_plants = []
                     for line in lines[1:]:
@@ -207,7 +230,11 @@ class Plant_Detection():
                     if len(known_plants) > 0:
                         self.known_plants = known_plants
             except IOError:  # Use defaults and save to file
-                save_parameters()
+                try:
+                    save_parameters()
+                except IOError:
+                    self.tmp_dir = "/tmp/"
+                    save_parameters()
 
         if self.parameters_from_file:
             load_parameters()
@@ -225,7 +252,10 @@ class Plant_Detection():
                 details = 'debug-{}_{}'.format(step, details)
             filename = '{}_{}.png'.format(name, details)
             if self.save:
-                cv2.imwrite(filename, save_image)
+                try:
+                    cv2.imwrite(filename, save_image)
+                except IOError:
+                    pass
                 cv2.imwrite('/tmp/images/image_' + details + '.jpg', save_image)
                 if self.output_text:
                     print("Image saved: {}".format(filename))
