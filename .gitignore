@@ -1,7 +1,8 @@
 # Plant Detection results
-soil_image_marked.png
-soil_image_coordinates_found.png
-*debug*.png
+*.png
+*.jpg
+!soil_image.jpg
+!p2c*.jpg
 *.csv
 *.txt
 
