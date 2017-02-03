@@ -8,7 +8,8 @@ import sys, os
 import numpy as np
 import cv2
 import platform
-if platform.uname()[4].startswith("arm"):
+use_rpi_camera = False; using_rpi = False
+if platform.uname()[4].startswith("arm") and use_rpi_camera:
     from picamera.array import PiRGBArray
     from picamera import PiCamera
     using_rpi = True
@@ -121,7 +122,7 @@ class Plant_Detection():
 
     def _getimage(self):
         """Take a photo."""
-        if using_rpi:
+        if using_rpi and use_rpi_camera:
             # With Raspberry Pi Camera:
             with PiCamera() as camera:
                 camera.resolution = (1920, 1088)
@@ -138,6 +139,7 @@ class Plant_Detection():
         self.current_coordinates = self._getcoordinates()
         filename = '{}_{}.png'.format(*self.current_coordinates)
         cv2.imwrite(filename, image)
+        cv2.imwrite('/tmp/images/' + filename, image)
         if self.output_text:
             print("Image saved: {}".format(filename))
         return image
@@ -224,6 +226,7 @@ class Plant_Detection():
             filename = '{}_{}.png'.format(name, details)
             if self.save:
                 cv2.imwrite(filename, save_image)
+                cv2.imwrite('/tmp/images/image_' + details + '.jpg', save_image)
                 if self.output_text:
                     print("Image saved: {}".format(filename))
             return save_image
