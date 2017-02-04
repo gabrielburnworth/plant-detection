@@ -43,12 +43,12 @@ class Plant_Detection():
                                            (default = False)
 
        Examples:
-           Detect_plants()
-           Detect_plants(image='soil_image.jpg', morph=3, iterations=10,
+           Plant_Detection()
+           Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
               debug=True)
-           Detect_plants(image='soil_image.jpg', blur=9, morph=7, iterations=4,
+           Plant_Detection(image='soil_image.jpg', blur=9, morph=7, iterations=4,
               calibration_img="PD/p2c_test_calibration.jpg")
-           Detect_plants(image='soil_image.jpg', blur=15,
+           Plant_Detection(image='soil_image.jpg', blur=15,
               array=[[5, 'ellipse', 'erode',  2],
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
@@ -61,13 +61,14 @@ class Plant_Detection():
         self.debug = False  # default
         self.save = True   # default
         self.parameters_from_file = False  # default
+        self.parameters_from_json = False  # default
         self.params = Parameters()
         self.db = DB()
         for key in kwargs:
             if key == 'image': self.image = kwargs[key]
             if key == 'coordinates': self.coordinates = kwargs[key]
             if key == 'calibration_img': self.calibration_img = kwargs[key]
-            if key == 'known_plants': self.known_plants = kwargs[key]
+            if key == 'known_plants': self.db.known_plants = kwargs[key]
             if key == 'debug': self.debug = kwargs[key]
             if key == 'blur': self.params.blur_amount = kwargs[key]
             if key == 'morph': self.params.morph_amount = kwargs[key]
@@ -79,191 +80,106 @@ class Plant_Detection():
             if key == 'HSV_max': self.params.HSV_max = kwargs[key]
             if key == 'parameters_from_file':
                 self.parameters_from_file = kwargs[key]
+            if key == 'parameters_from_json':
+                self.parameters_from_json = kwargs[key]
         if self.calibration_img is not None:
             self.coordinates = True
         self.grey_out = False
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.output_text = True
         self.output_json = False
-        self.input_parameters_file = self.dir + "plant-detection_inputs.txt"
-        self.known_plants_file = self.dir + "plant-detection_known-plants.txt"
+        self.input_parameters_filename = "plant-detection_inputs.txt"
+        self.db.tmp_dir = None
 
     def calibrate(self):
+        """Initialize coordinate conversion module using calibration image."""
         if self.calibration_img is None and self.coordinates:
+            # Calibration requested, but no image provided.
+            # Take a calibration image.
             self.calibration_img = self._getimage()
-        P2C = Pixel2coord(calibration_image=self.calibration_img)
+        # Call coordinate conversion module, calibrate and save values
+        P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
 
     def detect_plants(self):
+        """Detect the green objects in the image."""
         if self.parameters_from_file:
-            self.params.load(self.input_parameters_file)
+            # Requested to load detection parameters from file
+            self.params.load(self.dir, self.input_parameters_filename)
+
+        if self.parameters_from_json:
+            # Requested to load detection parameters from json ENV variable
+            self.params.load_json()
 
         if self.output_text:
+            self.params.print_()
             print("\nProcessing image: {}".format(self.image))
-        kt = None; upper_green = None
 
-        # Load image
         if self.image is None:
-            self.image = Image(self.params, self.db)
+            # No image provided. Capture one.
+            self.image = Image(self.params, self.db) # create image object
             self.image.capture()
             self.image.save('photo')
         else:
+            # Image provided. Load it.
             filename = self.image
-            self.image = Image(self.params, self.db)
+            self.image = Image(self.params, self.db) # create image object
             self.image.load(filename)
 
+        # Blur image to simplify and reduce noise.
         self.image.blur()
         if self.debug:
             self.image.save('blurred')
 
+        # Create a mask using the color range parameters
         self.image.mask()
         if self.debug:
             self.image.save('masked')
             self.image.mask2()
 
+        # Transform mask to try to make objects more coherent
         self.image.morph()
         if self.debug:
             self.image.save('morphed')
             self.image.morph2()
 
+        # Optionally break up masses by splitting them into quarters
         if self.params.clump_buster:
             self.image.clump_buster()
 
+        # Optionally grey out regions not detected as objects
         if self.grey_out:
             self.image.grey()
 
-        if not self.coordinates:
-            self.db.pixel_locations = self.image.find()
-            self.image.save('contours')
-            if self.output_text:
-                self.db.print_pixel()
-            # Save soil image with plants marked
-            self.image.image = self.image.marked
-            self.image.save('marked')
-
         # Return coordinates if requested
-        if self.coordinates:
-            P2C = Pixel2coord()
-
-            def rotateimage(image, rotationangle):
-                try:
-                    rows, cols, _ = image.shape
-                except ValueError:
-                    rows, cols = image.shape
-                mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)),
-                                               rotationangle, 1)
-                return cv2.warpAffine(image, mtrx, (cols, rows))
-            inputimage = rotateimage(self.image.original, P2C.total_rotation_angle)
-            self.image.morphed = rotateimage(self.image.morphed,
-                                             P2C.total_rotation_angle)
-            self.image.image = self.image.morphed
-            self.db.pixel_locations = self.image.find()
-            P2C.test_coordinates = [2000, 2000]
-            plant_coordinates, plant_pixel_locations = P2C.p2c(
-                self.db.pixel_locations)
-
+        if self.coordinates:  # Convert pixel locations to coordinates
+            P2C = Pixel2coord(self.db)  # Use calibration values created by calibrate()
+            self.image.coordinates(P2C)  # get coordinates of all detected objects
+            self.db.identify()  # organize objects into plants and weeds
+            if self.output_text:
+                self.db.print_count()  # print number of objects detected
+                self.db.print_()  # print organized object data text to stdout
+            if self.output_json:
+                self.db.json_()  # print organized object data json to stdout
             if self.debug:
                 self.image.save('contours')
                 self.image.image = self.image.marked
                 self.image.save('coordinates_found')
-            self.image.marked = self.image.original.copy()
+            self.image.label(P2C)  # mark each object with a colored circle
+            self.image.grid(P2C)  # add coordinate grid and features
+            self.image.save('marked')
 
-            # Find unknown
-            marked, unmarked = [], []
-            if self.known_plants is None:
-                known_plants = [[0, 0, 0]]
-            else:
-                known_plants = self.known_plants
-            kplants = np.array(known_plants)
-            for plant_coord in plant_coordinates:
-                x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
-                cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
-                if all((x - cx)**2 + (y - cy)**2 > cr**2
-                       for cx, cy, cr in zip(cxs, cys, crs)):
-                    marked.append([x, y, r])
-                else:
-                    unmarked.append([x, y, r])
-
-
-            self.db.marked = marked
-            self.db.unmarked = unmarked
+        else:  # No coordinate conversion
+            self.image.find()  # get pixel locations of objects
+            self.image.save('contours')
             if self.output_text:
-                self.db.print_()
-            if self.output_json:
-                self.db.json_()
-
-            # Create annotated image
-            known_PL = P2C.c2p(known_plants)
-            marked_PL = P2C.c2p(marked)
-            unmarked_PL = P2C.c2p(unmarked)
-            for mark in marked_PL:
-                cv2.circle(self.image.marked, (int(mark[0]), int(mark[1])),
-                           int(mark[2]), (0, 0, 255), 4)
-            for known in known_PL:
-                cv2.circle(self.image.marked, (int(known[0]), int(known[1])),
-                           int(known[2]), (0, 255, 0), 4)
-            for unmarked in unmarked_PL:
-                cv2.circle(self.image.marked, (int(unmarked[0]),
-                                        int(unmarked[1])),
-                           int(unmarked[2]), (255, 0, 0), 4)
-            if 0:
-                for ppl in plant_pixel_locations[1:]:
-                    cv2.circle(self.image.marked, (int(ppl[0]), int(ppl[1])),
-                               int(ppl[2]), (0, 0, 0), 4)
-
-            # Grid
-            w = self.image.marked.shape[1]
-            textsize = w / 2000.
-            textweight = int(3.5 * textsize)
-            def grid_point(point, pointtype):
-                if pointtype == 'coordinates':
-                    if len(point) < 3:
-                        point = list(point) + [0]
-                    point_pixel_location = np.array(P2C.c2p(point))[0]
-                    x = point_pixel_location[0]
-                    y = point_pixel_location[1]
-                else:  # pixels
-                    x = point[0]
-                    y = point[1]
-                tps = w / 300.
-                # crosshair center
-                self.image.marked[int(y - tps):int(y + tps + 1),
-                           int(x - tps):int(x + tps + 1)] = (255, 255, 255)
-                # crosshair lines
-                self.image.marked[int(y - tps * 4):int(y + tps * 4 + 1),
-                           int(x - tps / 4):int(x + tps / 4 + 1)] = (255,
-                                                                     255,
-                                                                     255)
-                self.image.marked[int(y - tps / 4):int(y + tps / 4 + 1),
-                           int(x - tps * 4):int(x + tps * 4 + 1)] = (255,
-                                                                     255,
-                                                                     255)
-            #grid_point([1650, 2050, 0], 'coordinates')  # test point
-            grid_point(P2C.test_coordinates, 'coordinates')  # UTM location
-            grid_point(P2C.center_pixel_location, 'pixels')  # image center
-
-            grid_range = np.array([[x] for x in range(0, 20000, 100)])
-            large_grid = np.hstack((grid_range, grid_range, grid_range))
-            large_grid_pl = np.array(P2C.c2p(large_grid))
-            for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
-                if x > self.image.marked.shape[1] or x < 0:
-                    continue
-                self.image.marked[:, int(x):int(x + 1)] = (255, 255, 255)
-                cv2.putText(self.image.marked, str(xc), (int(x), 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, textsize,
-                            (255, 255, 255), textweight)
-            for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
-                if y > self.image.marked.shape[0] or y < 0:
-                    continue
-                self.image.marked[int(y):int(y + 1), :] = (255, 255, 255)
-                cv2.putText(self.image.marked, str(yc), (100, int(y)),
-                            cv2.FONT_HERSHEY_SIMPLEX, textsize,
-                            (255, 255, 255), textweight)
-            self.image.image = self.image.marked
+                self.db.print_count()  # print number of objects detected
+                self.db.print_pixel()  # print object pixel location text
+            self.image.image = self.image.marked  # Save marked soil image
             self.image.save('marked')
 
         if self.debug:
             self.final_debug_image = self.image.marked
-            self.params.save(self.input_parameters_file)
+            self.params.save(self.dir, self.input_parameters_filename)
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -271,10 +187,11 @@ if __name__ == "__main__":
         soil_image = dir + 'soil_image.jpg'
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
-            calibration_img=dir + "PD/p2c_test_calibration.jpg", debug=1,
-            known_plants=[[1600, 2200, 100], [2050, 2650, 120]])
-        PD.calibrate()
-        PD.detect_plants()
+            calibration_img=dir + "PD/p2c_test_calibration.jpg",
+            parameters_from_json=True,
+            known_plants=[[200, 600, 100], [900, 200, 120]])
+        PD.calibrate()  # use calibration img to get coordinate conversion data
+        PD.detect_plants()  # detect coordinates and sizes of weeds and plants
     else:
         soil_image = sys.argv[1]
         PD = Plant_Detection(image=soil_image, parameters_from_file=True, debug=True)

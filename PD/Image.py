@@ -10,7 +10,6 @@ from Capture import Capture
 from Parameters import Parameters
 from DB import DB
 
-
 class Image():
     """Provide image processes to Plant Detection"""
     def __init__(self, parameters, db):
@@ -56,10 +55,12 @@ class Image():
     def save(self, title):
         filename = '{}{}.jpg'.format(self.dir, title)
         cv2.imwrite(filename, self.image)
+        cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.image)
 
     def save_annotated(self, title):
         filename = '{}{}.jpg'.format(self.dir, title)
         cv2.imwrite(filename, self.annotate())
+        cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.annotate())
 
     def show(self):
         """Show image."""
@@ -67,7 +68,18 @@ class Image():
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+    def rotate(self, rotationangle):
+        """Rotate image number of degrees."""
+        try:
+            rows, cols, _ = self.image.shape
+        except ValueError:
+            rows, cols = self.image.shape
+        mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)),
+                                       rotationangle, 1)
+        self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
+
     def blur(self):
+        if self.params.blur_amount % 2 == 0: self.params.blur_amount += 1
         self.blurred = cv2.medianBlur(self.original, self.params.blur_amount)
         self.image = self.blurred.copy()
         self.status['blur'] = True
@@ -199,15 +211,10 @@ class Image():
             unused_img, contours, hierarchy = cv2.findContours(self.morphed,
                                                cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
-        object_count = len(contours)
-        if self.output_text:
-            if calibration:
-                object_name = 'calibration objects'
-            else:
-                object_name = 'plants'
-            print("{} {} detected in image.".format(object_count, object_name))
+        self.db.object_count = len(contours)
 
         # Loop through contours
+        self.db.pixel_locations = []
         for i, cnt in enumerate(contours):
             # Calculate plant location by using centroid of contour
             M = cv2.moments(cnt)
@@ -247,7 +254,88 @@ class Image():
                          [mcx, mcy, radius]))
         self.image = self.morphed
         self.status['mark'] = True
-        return self.db.pixel_locations
+
+    def coordinates(self, p2c):
+        """ """
+        self.image = self.original  # work on original
+        self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
+        self.marked = self.image  # create copy of calibrated img to mark up
+        self.image = self.morphed  # work on morphed mask
+        self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
+        self.morphed = self.image  # save to morphed mask
+        self.find()  # detect pixel locations of objects
+        self.get_bot_coordinates = Capture()._getcoordinates
+        p2c.p2c(self.db)  # convert pixel locations to coordinates
+
+    def label(self, p2c):
+        # Create annotated image
+        def circle(color):
+            c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0)}
+            p2c.c2p(self.db)
+            for obj in self.db.pixel_locations:
+                cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
+                           int(obj[2]), c[color], 4)
+
+        self.db.coordinate_locations = self.db.known_plants
+        circle('green')
+        self.db.coordinate_locations = self.db.marked
+        circle('red')
+        self.db.coordinate_locations = self.db.unmarked
+        circle('blue')
+
+    def grid(self, p2c):
+        w = self.marked.shape[1]
+        textsize = w / 2000.
+        textweight = int(3.5 * textsize)
+        def grid_point(point, pointtype):
+            if pointtype == 'coordinates':
+                if len(point) < 3:
+                    point = list(point) + [0]
+                self.db.coordinate_locations = point
+                p2c.c2p(self.db)
+                point_pixel_location = np.array(self.db.pixel_locations)[0]
+                x = point_pixel_location[0]
+                y = point_pixel_location[1]
+            else:  # pixels
+                x = point[0]
+                y = point[1]
+            tps = w / 300.
+            # crosshair center
+            self.marked[int(y - tps):int(y + tps + 1),
+                       int(x - tps):int(x + tps + 1)] = (255, 255, 255)
+            # crosshair lines
+            self.marked[int(y - tps * 4):int(y + tps * 4 + 1),
+                       int(x - tps / 4):int(x + tps / 4 + 1)] = (255,
+                                                                 255,
+                                                                 255)
+            self.marked[int(y - tps / 4):int(y + tps / 4 + 1),
+                       int(x - tps * 4):int(x + tps * 4 + 1)] = (255,
+                                                                 255,
+                                                                 255)
+        #grid_point([1650, 2050, 0], 'coordinates')  # test point
+        grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
+        grid_point(p2c.center_pixel_location, 'pixels')  # image center
+
+        grid_range = np.array([[x] for x in range(0, 20000, 100)])
+        large_grid = np.hstack((grid_range, grid_range, grid_range))
+        self.db.coordinate_locations = large_grid
+        p2c.c2p(self.db)
+        large_grid_pl = np.array(self.db.pixel_locations)
+        for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
+            if x > self.marked.shape[1] or x < 0:
+                continue
+            self.marked[:, int(x):int(x + 1)] = (255, 255, 255)
+            cv2.putText(self.marked, str(xc), (int(x), 100),
+                        cv2.FONT_HERSHEY_SIMPLEX, textsize,
+                        (255, 255, 255), textweight)
+        for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
+            if y > self.marked.shape[0] or y < 0:
+                continue
+            self.marked[int(y):int(y + 1), :] = (255, 255, 255)
+            cv2.putText(self.marked, str(yc), (100, int(y)),
+                        cv2.FONT_HERSHEY_SIMPLEX, textsize,
+                        (255, 255, 255), textweight)
+        self.image = self.marked
 
     def annotate(self):
         font = cv2.FONT_HERSHEY_SIMPLEX

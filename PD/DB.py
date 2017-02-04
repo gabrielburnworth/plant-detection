@@ -1,39 +1,50 @@
 #!/usr/bin/env python
-"""Parameters for Plant Detection.
+"""DB for Plant Detection.
 
 For Plant Detection.
 """
 import sys, os
+import numpy as np
 
 class DB():
     def __init__(self, **kwargs):
         self.output_text = True
         self.output_json = False
         self.known_plants = None
+        self.object_count = None
         self.marked = None
         self.unmarked = None
         self.pixel_locations = []
+        self.coordinate_locations = []
         self.calibration_pixel_locations = []
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.known_plants_file = "plant-detection_known-plants.txt"
-        self.filename = self.dir + self.known_plants_file
+        self.tmp_dir = None
 
-    def save(self, filename):
-        with open(filename, 'w') as f:
+    def save(self, directory, filename):
+        with open(directory, filename, 'w') as f:
             f.write('X Y Radius\n')
             if self.known_plants is not None:
                 for plant in self.known_plants:
                     f.write('{} {} {}\n'.format(*plant))
 
     def save_detected_plants(save, remove):
-        np.savetxt(self.dir + "detected-plants_saved.csv", save,
-                   fmt='%.1f', delimiter=',', header='X,Y,Radius')
-        np.savetxt(self.dir + "detected-plants_to-remove.csv", remove,
-                   fmt='%.1f', delimiter=',', header='X,Y,Radius')
+        if self.tmp_dir is None:
+            csv_dir = self.dir
+        else:
+            csv_dir = self.tmp_dir
+        try:
+            np.savetxt(csv_dir + "detected-plants_saved.csv", save,
+                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
+            np.savetxt(csv_dir + "detected-plants_to-remove.csv", remove,
+                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
+        except IOError:
+            self.tmp_dir = "/tmp/"
+            save_detected_plants(save, remove)
 
-    def load(self, filename):
+    def load(self, directory, filename):
         try:  # Load input parameters from file
-            with open(self.known_plants_file, 'r') as f:
+            with open(self.dir + self.known_plants_file, 'r') as f:
                 lines = f.readlines()
                 known_plants = []
                 for line in lines[1:]:
@@ -44,7 +55,32 @@ class DB():
                 if len(known_plants) > 0:
                     self.known_plants = known_plants
         except IOError:  # Use defaults and save to file
-            self.save(filename)
+            self.save(directory, filename)
+
+    def identify(self):
+        # Find unknown
+        self.marked = []
+        self.unmarked = []
+        if self.known_plants is None:
+            self.known_plants = [[0, 0, 0]]
+        kplants = np.array(self.known_plants)
+        for plant_coord in self.coordinate_locations:
+            x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
+            cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
+            if all((x - cx)**2 + (y - cy)**2 > cr**2
+                   for cx, cy, cr in zip(cxs, cys, crs)):
+                self.marked.append([x, y, r])
+            else:
+                self.unmarked.append([x, y, r])
+
+    def print_count(self, calibration=False):
+        if self.output_text:
+            if calibration:
+                object_name = 'calibration objects'
+            else:
+                object_name = 'plants'
+            print("{} {} detected in image.".format(self.object_count,
+                                                    object_name))
 
     def print_(self):
         # Known plant exclusion:
@@ -80,9 +116,18 @@ class DB():
             for unmark in self.unmarked:
                 print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
 
+    def print_coordinates(self):
+        if len(self.coordinate_locations) > 0:
+            print("Detected object machine coordinates ( X Y ) with R = radius:")
+            for coordinate_location in self.coordinate_locations:
+                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
+                                                        coordinate_location[0],
+                                                        coordinate_location[1],
+                                                        coordinate_location[2]))
+
     def print_pixel(self):
         if len(self.pixel_locations) > 0:
-            print("Detected plant center pixel locations ( X Y ):")
+            print("Detected object center pixel locations ( X Y ):")
             for pixel_location in self.pixel_locations:
                 print("    ( {:5.0f}px {:5.0f}px )".format(pixel_location[0],
                                                            pixel_location[1]))
@@ -104,11 +149,11 @@ class DB():
 
 if __name__ == "__main__":
     db = DB()
-    db.load(db.filename)
+    db.load(db.dir, db.filename)
     db.print_()
     print('-' * 60)
     db.known_plants = [[4.0, 3.0, 4.0]]
     db.marked = [[4.0, 3.0, 4.0]]
     db.unmarked = [[4.0, 3.0, 4.0]]
     db.print_()
-    db.save(db.filename)
+    db.save(db.dir, db.filename)

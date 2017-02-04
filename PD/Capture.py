@@ -17,7 +17,7 @@ with warnings.catch_warnings():
 use_rpi_camera = False
 using_rpi = False
 
-if platform.uname()[4].startswith("arm"):
+if platform.uname()[4].startswith("arm") and use_rpi_camera:
     from picamera.array import PiRGBArray
     from picamera import PiCamera
     using_rpi = True
@@ -30,7 +30,7 @@ class Capture():
         self.camera_port = 0
         self.timestamp = datetime.now().isoformat()
         self.current_coordinates = None
-        self.test_coordinates = [2000, 2000]
+        self.test_coordinates = [600, 400]
         self.output_text = True
 
     def _getcoordinates(self):
