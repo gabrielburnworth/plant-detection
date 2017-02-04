@@ -9,10 +9,14 @@ import cv2
 import platform
 from time import sleep
 from datetime import datetime
-import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from gi.repository import GExiv2
+try:
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from gi.repository import GExiv2
+    exif_import = True
+except ImportError:
+    exif_import = False
 
 use_rpi_camera = False
 using_rpi = False
@@ -70,10 +74,11 @@ if __name__ == "__main__":
     wimage.image = image
     wimage.save("capture")
 
-    exif = GExiv2.Metadata(dir + 'capture.jpg')
-    current_coordinates = Capture()._getcoordinates()
-    timestamp = Capture().timestamp
-    exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(
-                                          current_coordinates, timestamp)
-    print(exif.get_comment())
-    exif.save_file()
+    if exif_import:
+        exif = GExiv2.Metadata(dir + 'capture.jpg')
+        current_coordinates = Capture()._getcoordinates()
+        timestamp = Capture().timestamp
+        exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(
+                                              current_coordinates, timestamp)
+        print(exif.get_comment())
+        exif.save_file()

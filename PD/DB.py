@@ -22,7 +22,7 @@ class DB():
         self.tmp_dir = None
 
     def save(self, directory, filename):
-        with open(directory, filename, 'w') as f:
+        with open(directory + filename, 'w') as f:
             f.write('X Y Radius\n')
             if self.known_plants is not None:
                 for plant in self.known_plants:
@@ -54,8 +54,8 @@ class DB():
                                          float(line[2])])
                 if len(known_plants) > 0:
                     self.known_plants = known_plants
-        except IOError:  # Use defaults and save to file
-            self.save(directory, filename)
+        except IOError:
+            pass
 
     def identify(self):
         # Find unknown
@@ -149,11 +149,11 @@ class DB():
 
 if __name__ == "__main__":
     db = DB()
-    db.load(db.dir, db.filename)
+    db.load(db.dir, db.known_plants_file)
     db.print_()
     print('-' * 60)
     db.known_plants = [[4.0, 3.0, 4.0]]
     db.marked = [[4.0, 3.0, 4.0]]
     db.unmarked = [[4.0, 3.0, 4.0]]
     db.print_()
-    db.save(db.dir, db.filename)
+    db.save(db.dir, db.known_plants_file)
