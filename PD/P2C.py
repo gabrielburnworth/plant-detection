@@ -1,7 +1,5 @@
 """Image Pixel Location to Machine Coordinate Conversion."""
 
-from time import sleep
-import cv2
 import numpy as np
 import os
 from Parameters import Parameters

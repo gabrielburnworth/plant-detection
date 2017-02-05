@@ -5,13 +5,11 @@ Detects green plants on a dirt background
  and marks them with red circles.
 """
 import sys, os
-import numpy as np
-import cv2
 from PD.P2C import Pixel2coord
-from PD.CeleryPy import FarmBotJSON
 from PD.Image import Image
 from PD.Parameters import Parameters
 from PD.DB import DB
+from PD.Capture import Capture
 
 class Plant_Detection():
     """Detect plants in image and saves an image with plants marked.
@@ -64,6 +62,7 @@ class Plant_Detection():
         self.parameters_from_json = False  # default
         self.params = Parameters()
         self.db = DB()
+        self.capture = Capture().capture
         for key in kwargs:
             if key == 'image': self.image = kwargs[key]
             if key == 'coordinates': self.coordinates = kwargs[key]
@@ -90,13 +89,14 @@ class Plant_Detection():
         self.output_json = False
         self.input_parameters_filename = "plant-detection_inputs.txt"
         self.db.tmp_dir = None
+        self.final_debug_image = None
 
     def calibrate(self):
         """Initialize coordinate conversion module using calibration image."""
         if self.calibration_img is None and self.coordinates:
             # Calibration requested, but no image provided.
             # Take a calibration image.
-            self.calibration_img = self._getimage()
+            self.calibration_img = self.capture()
         # Call coordinate conversion module, calibrate and save values
         P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
 
@@ -180,14 +180,15 @@ class Plant_Detection():
         if self.debug:
             self.final_debug_image = self.image.marked
             self.params.save(self.dir, self.input_parameters_filename)
+            self.db.save_known_plants()
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        soil_image = dir + 'soil_image.jpg'
+        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        soil_image = directory + 'soil_image.jpg'
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
-            calibration_img=dir + "PD/p2c_test_calibration.jpg",
+            calibration_img=directory + "PD/p2c_test_calibration.jpg",
             parameters_from_json=True,
             known_plants=[[200, 600, 100], [900, 200, 120]])
         PD.calibrate()  # use calibration img to get coordinate conversion data

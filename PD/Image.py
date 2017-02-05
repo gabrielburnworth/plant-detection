@@ -28,6 +28,7 @@ class Image():
         self.db = db
         self.object_count = None
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        self.get_bot_coordinates = Capture()._getcoordinates
         self.status = {'image': False, 'blur': False, 'mask': False,
                        'morph': False, 'bust': False, 'grey': False,
                        'mark': False, 'annotate': False}
@@ -104,13 +105,13 @@ class Image():
         self.status['mask'] = True
 
     def mask2(self):
-            self.masked2 = cv2.bitwise_and(self.original,
-                                            self.original,
-                                            mask=self.masked)
-            temp = self.image
-            self.image = self.masked2
-            self.save('masked2')
-            self.image = temp
+        self.masked2 = cv2.bitwise_and(self.original,
+                                        self.original,
+                                        mask=self.masked)
+        temp = self.image
+        self.image = self.masked2
+        self.save('masked2')
+        self.image = temp
 
     def morph(self):
         # Process mask to try to make plants more coherent
@@ -128,7 +129,7 @@ class Image():
             # List of morphological transformations
             processes = self.params.array
             self.morphed = self.masked
-            for p, process in enumerate(processes):
+            for prcoess_num, process in enumerate(processes):
                 morph_amount = process[0]
                 kernel_type = self.params.kt[process[1]]
                 morph_type = self.params.mt[process[2]]
@@ -264,7 +265,7 @@ class Image():
         self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
         self.morphed = self.image  # save to morphed mask
         self.find()  # detect pixel locations of objects
-        self.get_bot_coordinates = Capture()._getcoordinates
+        self.get_bot_coordinates()
         p2c.p2c(self.db)  # convert pixel locations to coordinates
 
     def label(self, p2c):
@@ -383,8 +384,8 @@ if __name__ == "__main__":
     image.show()
 
     if len(sys.argv) == 1:
-        dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-        soil_image = dir + 'soil_image.jpg'
+        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        soil_image = directory + 'soil_image.jpg'
     else:
         soil_image = sys.argv[1]
     image.load(soil_image)

@@ -8,7 +8,7 @@ import cv2
 import json
 
 class Parameters():
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.blur_amount = 5  # default
         self.morph_amount = 5  # default
         self.iterations = 1  # default
@@ -107,11 +107,11 @@ class Parameters():
         print('-' * 25)
 
 if __name__ == "__main__":
-    dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-    filename = "plant-detection_inputs.txt"
+    input_directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+    input_filename = "plant-detection_inputs.txt"
     parameters = Parameters()
-    parameters.load(dir, filename)
+    parameters.load(input_directory, input_filename)
     parameters.print_()
     parameters.iterations = 4
     parameters.print_()
-    parameters.save(dir, filename)
+    parameters.save(input_directory, input_filename)

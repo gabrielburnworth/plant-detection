@@ -5,9 +5,10 @@ For Plant Detection.
 """
 import sys, os
 import numpy as np
+from CeleryPy import FarmBotJSON
 
 class DB():
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.output_text = True
         self.output_json = False
         self.known_plants = None
@@ -21,14 +22,14 @@ class DB():
         self.known_plants_file = "plant-detection_known-plants.txt"
         self.tmp_dir = None
 
-    def save(self, directory, filename):
-        with open(directory + filename, 'w') as f:
+    def save_known_plants(self):
+        with open(self.dir + self.known_plants_file, 'w') as f:
             f.write('X Y Radius\n')
             if self.known_plants is not None:
                 for plant in self.known_plants:
                     f.write('{} {} {}\n'.format(*plant))
 
-    def save_detected_plants(save, remove):
+    def save_detected_plants(self, save, remove):
         if self.tmp_dir is None:
             csv_dir = self.dir
         else:
@@ -40,22 +41,20 @@ class DB():
                        fmt='%.1f', delimiter=',', header='X,Y,Radius')
         except IOError:
             self.tmp_dir = "/tmp/"
-            save_detected_plants(save, remove)
+            self.save_detected_plants(save, remove)
 
-    def load(self, directory, filename):
-        try:  # Load input parameters from file
-            with open(self.dir + self.known_plants_file, 'r') as f:
-                lines = f.readlines()
-                known_plants = []
-                for line in lines[1:]:
-                    line = line.strip().split(' ')
-                    known_plants.append([float(line[0]),
-                                         float(line[1]),
-                                         float(line[2])])
-                if len(known_plants) > 0:
-                    self.known_plants = known_plants
-        except IOError:
-            pass
+    def load_known_plants(self):
+        # Load input parameters from file
+        with open(self.dir + self.known_plants_file, 'r') as f:
+            lines = f.readlines()
+            known_plants = []
+            for line in lines[1:]:
+                line = line.strip().split(' ')
+                known_plants.append([float(line[0]),
+                                     float(line[1]),
+                                     float(line[2])])
+            if len(known_plants) > 0:
+                self.known_plants = known_plants
 
     def identify(self):
         # Find unknown
@@ -104,7 +103,7 @@ class DB():
                 print("Plants at the following machine coordinates "
                       "( X Y ) with R = radius are to be removed:")
                 for mark in self.marked:
-                        print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
+                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
 
         # Print saved
         if self.unmarked is not None:
@@ -149,11 +148,11 @@ class DB():
 
 if __name__ == "__main__":
     db = DB()
-    db.load(db.dir, db.known_plants_file)
+    db.load_known_plants()
     db.print_()
     print('-' * 60)
     db.known_plants = [[4.0, 3.0, 4.0]]
     db.marked = [[4.0, 3.0, 4.0]]
     db.unmarked = [[4.0, 3.0, 4.0]]
     db.print_()
-    db.save(db.dir, db.known_plants_file)
+    db.save_known_plants()

@@ -4,16 +4,14 @@
 For Plant Detection.
 """
 import sys, os
-import numpy as np
 import cv2
 import platform
 from time import sleep
 from datetime import datetime
 try:
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        from gi.repository import GExiv2
+    import gi
+    gi.require_version('GExiv2', '0.10')
+    from gi.repository import GExiv2
     exif_import = True
 except ImportError:
     exif_import = False
@@ -28,7 +26,7 @@ if platform.uname()[4].startswith("arm") and use_rpi_camera:
 
 class Capture():
     """Capture image for Plant Detection"""
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.image = None
         self.ret = None
         self.camera_port = 0
@@ -65,7 +63,7 @@ class Capture():
         return self.image
 
 if __name__ == "__main__":
-    dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+    directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
     from Image import Image
     from Parameters import Parameters
     from DB import DB
@@ -75,7 +73,7 @@ if __name__ == "__main__":
     wimage.save("capture")
 
     if exif_import:
-        exif = GExiv2.Metadata(dir + 'capture.jpg')
+        exif = GExiv2.Metadata(directory + 'capture.jpg')
         current_coordinates = Capture()._getcoordinates()
         timestamp = Capture().timestamp
         exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(
