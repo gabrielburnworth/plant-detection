@@ -118,7 +118,7 @@ class Plant_Detection():
             # No image provided. Capture one.
             self.image = Image(self.params, self.db) # create image object
             self.image.capture()
-            self.image.save('photo')
+            self.image.save_annotated('photo')
         else:
             # Image provided. Load it.
             filename = self.image
@@ -128,18 +128,18 @@ class Plant_Detection():
         # Blur image to simplify and reduce noise.
         self.image.blur()
         if self.debug:
-            self.image.save('blurred')
+            self.image.save_annotated('blurred')
 
         # Create a mask using the color range parameters
         self.image.mask()
         if self.debug:
-            self.image.save('masked')
+            self.image.save_annotated('masked')
             self.image.mask2()
 
         # Transform mask to try to make objects more coherent
         self.image.morph()
         if self.debug:
-            self.image.save('morphed')
+            self.image.save_annotated('morphed')
             self.image.morph2()
 
         # Optionally break up masses by splitting them into quarters
@@ -161,16 +161,16 @@ class Plant_Detection():
             if self.output_json:
                 self.db.json_()  # print organized object data json to stdout
             if self.debug:
-                self.image.save('contours')
+                self.image.save_annotated('contours')
                 self.image.image = self.image.marked
-                self.image.save('coordinates_found')
+                self.image.save_annotated('coordinates_found')
             self.image.label(P2C)  # mark each object with a colored circle
             self.image.grid(P2C)  # add coordinate grid and features
             self.image.save('marked')
 
         else:  # No coordinate conversion
             self.image.find()  # get pixel locations of objects
-            self.image.save('contours')
+            self.image.save_annotated('contours')
             if self.output_text:
                 self.db.print_count()  # print number of objects detected
                 self.db.print_pixel()  # print object pixel location text

@@ -15,6 +15,7 @@ class Image():
     def __init__(self, parameters, db):
         self.image = None # working image
         self.original = None
+        self.output = None
         self.blurred = None
         self.morphed = None
         self.morphed2 = None
@@ -36,21 +37,23 @@ class Image():
     def _reduce(self):
         height, width = self.original.shape[:2]
         if height > 600:
-            self.original = cv2.resize(self.original,
+            self.output = cv2.resize(self.original,
                 (int(width * 600 / height), 600), interpolation=cv2.INTER_AREA)
+        else:
+            self.output = self.original.copy()
 
     def load(self, filename):
         self.original = cv2.imread(filename, 1)
         self._reduce()
-        self.image = self.original.copy()
-        self.marked = self.original.copy()
+        self.image = self.output.copy()
+        self.marked = self.output.copy()
         self.status['image'] = True
 
     def capture(self):
         self.original = Capture().capture()
         self._reduce()
-        self.image = self.original.copy()
-        self.marked = self.original.copy()
+        self.image = self.output.copy()
+        self.marked = self.output.copy()
         self.status['image'] = True
 
     def save(self, title):
@@ -81,7 +84,7 @@ class Image():
 
     def blur(self):
         if self.params.blur_amount % 2 == 0: self.params.blur_amount += 1
-        self.blurred = cv2.medianBlur(self.original, self.params.blur_amount)
+        self.blurred = cv2.medianBlur(self.output, self.params.blur_amount)
         self.image = self.blurred.copy()
         self.status['blur'] = True
 
@@ -105,12 +108,12 @@ class Image():
         self.status['mask'] = True
 
     def mask2(self):
-        self.masked2 = cv2.bitwise_and(self.original,
-                                        self.original,
+        self.masked2 = cv2.bitwise_and(self.output,
+                                        self.output,
                                         mask=self.masked)
         temp = self.image
         self.image = self.masked2
-        self.save('masked2')
+        self.save_annotated('masked2')
         self.image = temp
 
     def morph(self):
@@ -150,12 +153,12 @@ class Image():
         self.status['morph'] = True
 
     def morph2(self):
-        self.morphed2 = cv2.bitwise_and(self.original,
-                                        self.original,
+        self.morphed2 = cv2.bitwise_and(self.output,
+                                        self.output,
                                         mask=self.morphed)
         temp = self.image
         self.image = self.morphed2
-        self.save('morphed2')
+        self.save_annotated('morphed2')
         self.image = temp
 
     def clump_buster(self):
@@ -174,7 +177,7 @@ class Image():
                      (0), rw / 7)
             cv2.line(self.morphed, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
                      (0), rh / 7)
-        kernel = cv2.getStructuringElement('ellipse',
+        kernel = cv2.getStructuringElement(self.params.kt['ellipse'],
                                           (self.params.morph_amount,
                                            self.params.morph_amount))
         self.morphed = cv2.dilate(self.morphed, kernel, iterations=1)
@@ -190,6 +193,7 @@ class Image():
         plant_fg_grey_bg = cv2.add(cv2.bitwise_and(self.marked, self.marked,
                                    mask=self.morphed), black_fg)
         self.greyed = plant_fg_grey_bg.copy()
+        self.output = self.greyed
         self.status['grey'] = True
 
     def find(self, **kwargs):
@@ -258,7 +262,7 @@ class Image():
 
     def coordinates(self, p2c):
         """ """
-        self.image = self.original  # work on original
+        self.image = self.output  # work on output image
         self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
         self.marked = self.image  # create copy of calibrated img to mark up
         self.image = self.morphed  # work on morphed mask
@@ -339,6 +343,10 @@ class Image():
         self.image = self.marked
 
     def annotate(self):
+        tc = {'white': (255, 255, 255), 'black': (0, 0, 0)}
+        bc = {'white': 255, 'black': 0}
+        text_color = tc['white']
+        bg_color = bc['black']
         font = cv2.FONT_HERSHEY_SIMPLEX
         lines = ["blur kernel size = {}".format(self.params.blur_amount)]  # blur
         if self.status['mask']:
@@ -363,17 +371,17 @@ class Image():
             new_shape = (h + add, w, c)
         except IndexError:
             new_shape = (h + add, w)
-        annotated_image = np.zeros(new_shape, np.uint8)
+        annotated_image = np.full(new_shape, bg_color, np.uint8)
         annotated_image[add:, :] = self.image
         for o, line in enumerate(lines):
             cv2.putText(annotated_image, line,
                         (10, lineheight + o * lineheight),
-                        font, textsize, (255, 255, 255), textweight)
+                        font, textsize, text_color, textweight)
         if self.status['morph'] and self.params.array:  # multiple morphs
             for o, line in enumerate(array):
                 cv2.putText(annotated_image, str(line),
                             (10, add_1 + o * lineheight),
-                            font, textsize, (255, 255, 255), textweight)
+                            font, textsize, text_color, textweight)
         self.status['annotate'] = True
         return annotated_image
 
