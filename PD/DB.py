@@ -21,6 +21,7 @@ class DB():
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.known_plants_file = "plant-detection_known-plants.txt"
         self.tmp_dir = None
+        self.calibration_parameters = None
 
     def save_known_plants(self):
         with open(self.dir + self.known_plants_file, 'w') as f:

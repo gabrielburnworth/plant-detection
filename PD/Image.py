@@ -42,19 +42,19 @@ class Image():
         else:
             self.output = self.original.copy()
 
-    def load(self, filename):
-        self.original = cv2.imread(filename, 1)
+    def _prepare(self):
         self._reduce()
         self.image = self.output.copy()
         self.marked = self.output.copy()
         self.status['image'] = True
 
+    def load(self, filename):
+        self.original = cv2.imread(filename, 1)
+        self._prepare()
+
     def capture(self):
         self.original = Capture().capture()
-        self._reduce()
-        self.image = self.output.copy()
-        self.marked = self.output.copy()
-        self.status['image'] = True
+        self._prepare()
 
     def save(self, title):
         filename = '{}{}.jpg'.format(self.dir, title)
@@ -82,9 +82,24 @@ class Image():
                                        rotationangle, 1)
         self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
 
+    def rotate_main_images(self, rotationangle):
+        self.image = self.output  # work on output image
+        self.rotate(rotationangle)  # rotate according to angle
+        self.output = self.image.copy()
+        self.marked = self.image.copy()  # create copy of rotated img to mark up
+
+        try:
+            self.morphed.shape
+            self.image = self.morphed  # work on morphed mask
+            self.rotate(rotationangle)  # rotate according to angle
+            self.morphed = self.image.copy()  # save to morphed mask
+        except AttributeError:
+            pass
+        self.image = self.output
+
     def blur(self):
         if self.params.blur_amount % 2 == 0: self.params.blur_amount += 1
-        self.blurred = cv2.medianBlur(self.output, self.params.blur_amount)
+        self.blurred = cv2.medianBlur(self.image, self.params.blur_amount)
         self.image = self.blurred.copy()
         self.status['blur'] = True
 
@@ -217,6 +232,15 @@ class Image():
                                                cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
         self.db.object_count = len(contours)
+        if calibration and self.db.object_count > 10 and 0:
+            print("ERROR: Too many calibration objects detected in image.")
+            print("\t ({}) Try changing calibration parameters.".format(
+                self.db.object_count))
+            self.params.print_()
+            cv2.drawContours(self.output, contours, -1, (255, 0, 0), 3)
+            self.image = self.output
+            self.show()
+            sys.exit(0)
 
         # Loop through contours
         self.db.pixel_locations = []
@@ -254,20 +278,19 @@ class Image():
                 if i == 0:
                     self.db.calibration_pixel_locations = [mcx, mcy, radius]
                 else:
-                    self.db.calibration_pixel_locations = np.vstack(
-                        (self.db.calibration_pixel_locations,
-                         [mcx, mcy, radius]))
+                    try:
+                        self.db.calibration_pixel_locations = np.vstack(
+                            (self.db.calibration_pixel_locations,
+                             [mcx, mcy, radius]))
+                    except ValueError:
+                        self.db.calibration_pixel_locations = [mcx, mcy, radius]
         self.image = self.morphed
         self.status['mark'] = True
 
     def coordinates(self, p2c):
         """ """
-        self.image = self.output  # work on output image
-        self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
-        self.marked = self.image  # create copy of calibrated img to mark up
-        self.image = self.morphed  # work on morphed mask
-        self.rotate(p2c.total_rotation_angle)  # rotate according to calibration
-        self.morphed = self.image  # save to morphed mask
+        self.rotate_main_images(p2c.total_rotation_angle)  # rotate according to calibration
+        self.image = self.morphed
         self.find()  # detect pixel locations of objects
         self.get_bot_coordinates()
         p2c.p2c(self.db)  # convert pixel locations to coordinates

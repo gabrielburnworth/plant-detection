@@ -22,6 +22,7 @@ class Parameters():
         self.output_text = False
         self.output_json = False
         self.tmp_dir = None
+        self.calibration_params_from_json = False
 
         # Create dictionaries of morph types
         self.kt = {}  # morph kernel type
@@ -80,16 +81,13 @@ class Parameters():
             pass
 
     def load_json(self):
-        try:
-            params_json = json.loads(os.environ['PLANT_DETECTION_options'])
-            # Read inputs from env vars
-            self.HSV_min = [params_json['H'][0], params_json['S'][0], params_json['V'][0]]
-            self.HSV_max = [params_json['H'][1], params_json['S'][1], params_json['V'][1]]
-            self.blur_amount = int(params_json['blur'])
-            self.morph_amount = int(params_json['morph'])
-            self.iterations = int(params_json['iterations'])
-        except KeyError:
-            pass
+        params_json = json.loads(os.environ['PLANT_DETECTION_options'])
+        # Read inputs from env vars
+        self.HSV_min = [params_json['H'][0], params_json['S'][0], params_json['V'][0]]
+        self.HSV_max = [params_json['H'][1], params_json['S'][1], params_json['V'][1]]
+        self.blur_amount = int(params_json['blur'])
+        self.morph_amount = int(params_json['morph'])
+        self.iterations = int(params_json['iterations'])
 
     def print_(self):
         print('Processing Parameters:')

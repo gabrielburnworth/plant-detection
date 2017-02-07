@@ -1,7 +1,7 @@
 """Image Pixel Location to Machine Coordinate Conversion."""
 
 import numpy as np
-import os
+import sys, os
 from Parameters import Parameters
 from Capture import Capture
 from Image import Image
@@ -12,14 +12,9 @@ class Pixel2coord():
     in images. Finds object coordinates in image.
     """
     def __init__(self, db, calibration_image=None):
-        self.cparams = Parameters()
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        self.parameters_file = "pixel2coord_calibration_parameters.txt"
-        if calibration_image is not None:
-            self.temp_cimage = Image(Parameters(), DB())
-            self.temp_cimage.load(calibration_image)
+        self.parameters_file = "p2c_calibration_parameters.txt"
 
-        # Parameters imported from file (or defaults below)
         self.coord_scale = None
         self.total_rotation_angle = 0
         self.center_pixel_location = None
@@ -29,13 +24,36 @@ class Pixel2coord():
         self.camera_offset_coordinates = None
         self.iterations = None
         self.test_coordinates = None
+        self.params_loaded_from_json = False
 
         self.db = db
+        if self.db.calibration_parameters:
+            self.cparams = self.db.calibration_parameters
+            self.params_loaded_from_json = True
+        else:
+            self.cparams = Parameters()
         self.load_calibration_parameters()
 
         if calibration_image is not None:
             self.image = Image(self.cparams, self.db)
-            self.image.load(calibration_image)
+            if isinstance(calibration_image, str):
+                self.image.load(calibration_image)
+            else:
+                self.image.image = calibration_image
+                try:
+                    testfile = 'test_write.try_to_write'
+                    f = open(testfile,"w")
+                    f.close()
+                    os.remove(testfile)
+                except IOError:
+                    self.image.dir = '/tmp/images/'
+                    self.image.save('capture')
+                    self.image.load(self.image.dir + 'capture.jpg')
+                    self.image.dir = self.dir[:-3]
+                else:
+                    self.image.save('capture')
+                    self.image.load(self.dir[:-3] + 'capture.jpg')
+            self.center_pixel_location = np.array(self.image.image.shape[:2][::-1]) / 2
         self.camera_rotation = 0
         if self.camera_rotation > 0:
             self.image.image = np.rot90(self.image)
@@ -46,10 +64,7 @@ class Pixel2coord():
         self.viewoutputimage = False  # overridden as True if running script
         self.output_text = True
         self.get_bot_coordinates = Capture()._getcoordinates
-
-        # Run calibration sequence for provided image
-        if calibration_image is not None:
-            self.calibration()
+        self.debug = False
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
@@ -82,7 +97,8 @@ class Pixel2coord():
         """Load calibration parameters from file
         or use defaults and save to file."""
         def load(directory):  # Load calibration parameters from file
-            self.cparams.load(directory, self.parameters_file)
+            if not self.params_loaded_from_json:
+                self.cparams.load(directory, self.parameters_file)
             with open(directory + self.parameters_file, 'r') as f:
                 lines = f.readlines()
                 for line in lines:
@@ -121,7 +137,8 @@ class Pixel2coord():
             except IOError:
                 self.db.tmp_dir = "/tmp/"
                 load(self.db.tmp_dir)
-        except IOError:  # Use defaults and save to file
+        except IOError:  # Use defaults
+            self.db.tmp_dir = None
             self.calibration_circles_xaxis = True  # calib. circles along xaxis
             self.image_bot_origin_location = [0, 1]  # image bot axes locations
             self.calibration_circle_separation = 1000  # distance btwn red dots
@@ -132,7 +149,6 @@ class Pixel2coord():
             self.cparams.morph_amount = 15
             self.cparams.HSV_min = [160, 100, 100]  # to wrap (reds), use H_min > H_max
             self.cparams.HSV_max = [20, 255, 255]
-            self.center_pixel_location = np.array(self.temp_cimage.image.shape[:2][::-1]) / 2
 
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
@@ -154,12 +170,18 @@ class Pixel2coord():
         if difference > threshold:
             rotation_angle_radians = np.tan(trig)
             self.rotationangle = 180. / np.pi * rotation_angle_radians
+        else:
+            self.rotationangle = 0
 
-    def process(self):
+    def process_image(self):
         """Prepare image for contour detection."""
+        if self.debug: self.cparams.print_()
         self.image.blur()
+        if self.debug: self.image.show()
         self.image.mask()
+        if self.debug: self.image.show()
         self.image.morph()
+        if self.debug: self.image.show()
 
     def calibrate(self):
         """Determine coordinate conversion parameters."""
@@ -229,27 +251,37 @@ class Pixel2coord():
         and image rotation angle."""
         self.total_rotation_angle = 0
         for i in range(0, self.iterations):
-            self.process()
+            self.process_image()
             self.image.find(calibration=True)
+            if len(self.db.calibration_pixel_locations) == 0:
+                print("ERROR: Calibration failed. No objects detected.")
+                sys.exit(0)
+            if i == 0:
+                self.db.print_count(calibration=True)  # print number of objects detected
+                if self.db.object_count != 2:
+                    print(" Warning: {} objects detected. "
+                          "Exactly 2 reccomended.".format(self.db.object_count))
             if i != (self.iterations - 1):
                 self.rotationdetermination()
-                self.image.rotate(self.rotationangle)
+                self.image.rotate_main_images(self.rotationangle)
                 self.total_rotation_angle += self.rotationangle
         if self.total_rotation_angle != 0:
             print(" Note: required rotation executed = {:.2f} degrees".format(
                 self.total_rotation_angle))
-        self.db.print_count(calibration=True)  # print number of objects detected
         self.calibrate()
         self.db.print_coordinates()
         if self.viewoutputimage:
             self.image.image = self.image.marked
             self.image.show()
         self.save_calibration_parameters()
+        if self.params_loaded_from_json:
+            self.image.image = self.image.marked
+            self.image.save('calibration_result')
 
     def determine_coordinates(self):
         """Use calibration parameters to determine locations of objects."""
-        self.image.rotate(self.total_rotation_angle)
-        self.process()
+        self.image.rotate_main_images(self.total_rotation_angle)
+        self.process_image()
         self.image.find(calibration=True)
         self.db.print_count(calibration=True)  # print number of objects detected
         self.p2c(self.db)
@@ -264,18 +296,18 @@ if __name__ == "__main__":
     P2C = Pixel2coord(DB(), calibration_image=folder + "p2c_test_calibration.jpg")
     P2C.viewoutputimage = True
     # Calibration
-    P2C.image.rotate(P2C.test_rotation)
+    P2C.image.rotate_main_images(P2C.test_rotation)
     P2C.calibration()
     # Tests
     # Object detection
     print("Calibration object test...")
     P2C.image.load(folder + "p2c_test_objects.jpg")
-    P2C.image.rotate(P2C.test_rotation)
+    P2C.image.rotate_main_images(P2C.test_rotation)
     P2C.determine_coordinates()
     # Color range
     print("Calibration color range...")
     P2C.image.load(folder + "p2c_test_color.jpg")
-    P2C.process()
+    P2C.process_image()
     P2C.image.find(circle=False)
     if P2C.viewoutputimage:
         P2C.image.image = P2C.image.marked

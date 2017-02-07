@@ -81,6 +81,8 @@ class Plant_Detection():
                 self.parameters_from_file = kwargs[key]
             if key == 'parameters_from_json':
                 self.parameters_from_json = kwargs[key]
+            if key == 'calibration_parameters_from_json':
+                self.calibration_parameters_from_json = kwargs[key]
         if self.calibration_img is not None:
             self.coordinates = True
         self.grey_out = False
@@ -97,8 +99,15 @@ class Plant_Detection():
             # Calibration requested, but no image provided.
             # Take a calibration image.
             self.calibration_img = self.capture()
-        # Call coordinate conversion module, calibrate and save values
+        if self.calibration_parameters_from_json:
+            try:
+                self.params.load_json()
+                self.db.calibration_parameters = self.params
+            except KeyError:
+                print("JSON parameters load failed.")
+        # Call coordinate conversion module
         P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
+        P2C.calibration()  # calibrate and save values
 
     def detect_plants(self):
         """Detect the green objects in the image."""
@@ -108,7 +117,10 @@ class Plant_Detection():
 
         if self.parameters_from_json:
             # Requested to load detection parameters from json ENV variable
-            self.params.load_json()
+            try:
+                self.params.load_json()
+            except KeyError:
+                print("JSON parameters load failed.")
 
         if self.output_text:
             self.params.print_()
@@ -170,7 +182,8 @@ class Plant_Detection():
 
         else:  # No coordinate conversion
             self.image.find()  # get pixel locations of objects
-            self.image.save_annotated('contours')
+            if self.debug:
+                self.image.save_annotated('contours')
             if self.output_text:
                 self.db.print_count()  # print number of objects detected
                 self.db.print_pixel()  # print object pixel location text
