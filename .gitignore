@@ -1,10 +1,7 @@
 # Plant Detection results
-*.png
-*.jpg
+*
+!.gitignore
+!*.py
+!*.md
 !soil_image.jpg
 !p2c*.jpg
-*.csv
-*.txt
-
-# Python byte-compiled / optimized / DLL files
-*.py[cod]

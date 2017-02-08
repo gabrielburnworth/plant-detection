@@ -40,16 +40,18 @@ class FarmBotJSON():
         return wrapper
 
     @_print_json
-    def add_point(self, x, y, z):
+    def add_point(self, x, y, z, radius):
         """Kind:
-                point
+                add_point
            Arguments:
                 Location:
                     Coordinate (x, y, z)
+                Radius
         """
         args = {}
         args['location'] = self._coordinate_node(x, y, z)
-        point = self._create_node('point', args)
+        args['radius'] = radius
+        point = self._create_node('add_point', args)
         return point
 
     @_print_json
@@ -105,7 +107,7 @@ if __name__ == "__main__":
     radius = 48.00
 
     FarmBot = FarmBotJSON()
-    FarmBot.add_point(x, y, z)
+    FarmBot.add_point(x, y, z, radius)
     print
     FarmBot.move_absolute([x, y, z], [x_offset, y_offset, z_offset], speed)
     print

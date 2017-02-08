@@ -96,7 +96,7 @@ class Plant_Detection():
         self.grey_out = False
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.output_text = True
-        self.output_json = False
+        self.output_json = True
         self.input_parameters_filename = "plant-detection_inputs.txt"
         self.input_parameters_file = self.dir + self.input_parameters_filename
         self.known_plants_filename = "plant-detection_known-plants.txt"
@@ -111,6 +111,8 @@ class Plant_Detection():
             self.blur_amount = int(params_json['blur'])
             self.morph_amount = int(params_json['morph'])
             self.iterations = int(params_json['iterations'])
+            db_json = json.loads(os.environ['DB'])
+            print(json.dumps(db_json, indent=2, separators=(',', ': ')))
         except KeyError:
             pass
 
@@ -551,7 +553,8 @@ class Plant_Detection():
                 FarmBot = FarmBotJSON()
                 for mark in marked:
                     x, y = round(mark[0], 2), round(mark[1], 2)
-                    FarmBot.add_point(x, y, 0)
+                    r = round(mark[2], 2)
+                    FarmBot.add_point(x, y, 0, r)
                 for unmark in unmarked:
                     x, y = round(unmark[0], 2), round(unmark[1], 2)
                     r = round(unmark[2], 2)
