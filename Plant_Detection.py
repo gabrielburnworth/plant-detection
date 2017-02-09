@@ -112,7 +112,7 @@ class Plant_Detection():
             self.morph_amount = int(params_json['morph'])
             self.iterations = int(params_json['iterations'])
             db_json = json.loads(os.environ['DB'])
-            print(json.dumps(db_json, indent=2, separators=(',', ': ')))
+            self.known_plants = db_json['plants']
         except KeyError:
             pass
 
@@ -558,7 +558,7 @@ class Plant_Detection():
                 for unmark in unmarked:
                     x, y = round(unmark[0], 2), round(unmark[1], 2)
                     r = round(unmark[2], 2)
-                    FarmBot.add_plant(0, [x, y, 0], r)
+                    # FarmBot.add_plant(0, [x, y, 0], r)
 
             # Save plant coordinates to file
             save_detected_plants(unmarked, marked)
