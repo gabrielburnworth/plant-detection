@@ -4,6 +4,7 @@
 For Plant Detection.
 """
 import sys, os
+import json
 import numpy as np
 from CeleryPy import FarmBotJSON
 
@@ -45,7 +46,7 @@ class DB():
             self.save_detected_plants(save, remove)
 
     def load_known_plants(self):
-        # Load input parameters from file
+        # Load known plant inputs from file
         with open(self.dir + self.known_plants_file, 'r') as f:
             lines = f.readlines()
             known_plants = []
@@ -57,11 +58,22 @@ class DB():
             if len(known_plants) > 0:
                 self.known_plants = known_plants
 
+    def load_known_plants_from_json(self):
+        # Load known plant inputs from json
+        self.known_plants = []
+        db_json = json.loads(os.environ['DB'])
+        known_plants = db_json['plants']
+        for jplant in known_plants:
+            # TODO: This will really be 'x', 'y', and 'radius' instead of 'id'
+            #       and 'device_id' once the serialized db has them
+            known_plant = [jplant['id'], jplant['device_id'], jplant['id']]
+            self.known_plants.append(known_plant)
+
     def identify(self):
         # Find unknown
         self.marked = []
         self.unmarked = []
-        if self.known_plants is None:
+        if self.known_plants is None or self.known_plants == []:
             self.known_plants = [[0, 0, 0]]
         kplants = np.array(self.known_plants)
         for plant_coord in self.coordinate_locations:
@@ -72,6 +84,8 @@ class DB():
                 self.marked.append([x, y, r])
             else:
                 self.unmarked.append([x, y, r])
+        if self.known_plants == [[0, 0, 0]]:
+            self.known_plants = []
 
     def print_count(self, calibration=False):
         if self.output_text:
@@ -137,11 +151,12 @@ class DB():
         FarmBot = FarmBotJSON()
         for mark in self.marked:
             x, y = round(mark[0], 2), round(mark[1], 2)
-            FarmBot.add_point(x, y, 0)
+            r = round(mark[2], 2)
+            FarmBot.add_point(x, y, 0, r)
         for unmark in self.unmarked:
             x, y = round(unmark[0], 2), round(unmark[1], 2)
             r = round(unmark[2], 2)
-            FarmBot.add_plant(0, [x, y, 0], r)
+            # FarmBot.add_plant(0, [x, y, 0], r)
 
         # Save plant coordinates to file
         self.save_detected_plants(self.unmarked, self.marked)

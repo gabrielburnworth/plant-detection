@@ -56,10 +56,13 @@ class Capture():
             sleep(0.1)
             camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1600)
             camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1200)
+            for _ in range(20):
+                camera.grab()
             self.ret, self.image = camera.read()
             camera.release()
         if not self.ret:
-            raise IOError("No camera detected.")
+            print("No camera detected.")
+            sys.exit(0)
         return self.image
 
 if __name__ == "__main__":

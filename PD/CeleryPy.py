@@ -3,6 +3,7 @@
 
 Python wrappers for FarmBot Celery Script JSON nodes.
 """
+import os
 import json
 from functools import wraps
 
@@ -21,6 +22,12 @@ class FarmBotJSON():
         node['args'] = args
         return node
 
+    def _create_pair(self, label, value):
+        pair = {}
+        pair['label'] = label
+        pair['value'] = value
+        return pair
+
     def _saved_location_node(self, name, id):
         args = {}
         args[name + '_id'] = id
@@ -35,21 +42,29 @@ class FarmBotJSON():
     def _print_json(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            print(json.dumps(function(*args, **kwargs),
-                             indent=2, separators=(',', ': ')))
+            try:
+                print('{} {}'.format(os.environ['BEGIN_CS'],
+                                     json.dumps(function(*args, **kwargs))))
+            except KeyError:
+                print('POINT: {}'.format(json.dumps(function(*args, **kwargs),
+                                 indent=2, separators=(',', ': '))))
         return wrapper
 
     @_print_json
-    def add_point(self, x, y, z):
+    def add_point(self, x, y, z, r):
         """Kind:
-                point
+                add_point
            Arguments:
                 Location:
                     Coordinate (x, y, z)
+                Radius: r
         """
         args = {}
         args['location'] = self._coordinate_node(x, y, z)
-        point = self._create_node('point', args)
+        args['radius'] = r
+        point = self._create_node('add_point', args)
+        created_by = self._create_pair('created_by', 'plant-detection')
+        point['body'] = [self._create_node('pair', created_by)]
         return point
 
     @_print_json
@@ -105,7 +120,7 @@ if __name__ == "__main__":
     radius = 48.00
 
     FarmBot = FarmBotJSON()
-    FarmBot.add_point(x, y, z)
+    FarmBot.add_point(x, y, z, r)
     print
     FarmBot.move_absolute([x, y, z], [x_offset, y_offset, z_offset], speed)
     print

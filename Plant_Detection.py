@@ -60,6 +60,7 @@ class Plant_Detection():
         self.save = True   # default
         self.parameters_from_file = False  # default
         self.parameters_from_json = False  # default
+        self.calibration_parameters_from_json = False  # default
         self.params = Parameters()
         self.db = DB()
         self.capture = Capture().capture
@@ -88,7 +89,7 @@ class Plant_Detection():
         self.grey_out = False
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.output_text = True
-        self.output_json = False
+        self.output_json = True
         self.input_parameters_filename = "plant-detection_inputs.txt"
         self.db.tmp_dir = None
         self.final_debug_image = None
@@ -121,6 +122,10 @@ class Plant_Detection():
                 self.params.load_json()
             except KeyError:
                 print("JSON parameters load failed.")
+            try:
+                self.db.load_known_plants_from_json()
+            except KeyError:
+                print("JSON known plants load failed.")
 
         if self.output_text:
             self.params.print_()

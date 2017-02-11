@@ -5,6 +5,3 @@
 !*.py
 !soil_image.jpg
 !p2c*.jpg
-
-# Python byte-compiled / optimized / DLL files
-*.py[cod]
