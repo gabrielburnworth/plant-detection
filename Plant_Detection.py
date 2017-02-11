@@ -88,7 +88,7 @@ class Plant_Detection():
             self.coordinates = True
         self.grey_out = False
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        self.output_text = True
+        self.output_text = False
         self.output_json = True
         self.input_parameters_filename = "plant-detection_inputs.txt"
         self.db.tmp_dir = None
