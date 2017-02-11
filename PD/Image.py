@@ -6,9 +6,14 @@ For Plant Detection.
 import sys, os
 import numpy as np
 import cv2
-from Capture import Capture
-from Parameters import Parameters
-from DB import DB
+try:
+    from .Capture import Capture
+    from .Parameters import Parameters
+    from .DB import DB
+except:
+    from Capture import Capture
+    from Parameters import Parameters
+    from DB import DB
 
 class Image():
     """Provide image processes to Plant Detection"""

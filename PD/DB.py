@@ -6,7 +6,10 @@ For Plant Detection.
 import sys, os
 import json
 import numpy as np
-from CeleryPy import FarmBotJSON
+try:
+    from .CeleryPy import FarmBotJSON
+except:
+    from CeleryPy import FarmBotJSON
 
 class DB():
     """Known and detected plant data for Plant Detection"""

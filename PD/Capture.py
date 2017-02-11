@@ -52,11 +52,19 @@ class Capture():
                 self.image = rawCapture.array
         else:
             # With USB cameras:
-            camera = cv2.VideoCapture(0)
+            camera_port = 0
+            image_width = 1600
+            image_height = 1200
+            discard_frames = 20
+            camera = cv2.VideoCapture(camera_port)
             sleep(0.1)
-            camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1600)
-            camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1200)
-            for _ in range(20):
+            try:
+                camera.set(cv2.CAP_PROP_FRAME_WIDTH, image_width)
+                camera.set(cv2.CAP_PROP_FRAME_HEIGHT, image_height)
+            except AttributeError:
+                camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, image_width)
+                camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, image_height)
+            for _ in range(discard_frames):
                 camera.grab()
             self.ret, self.image = camera.read()
             camera.release()

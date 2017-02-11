@@ -2,10 +2,16 @@
 
 import numpy as np
 import sys, os
-from Parameters import Parameters
-from Capture import Capture
-from Image import Image
-from DB import DB
+try:
+    from .Parameters import Parameters
+    from .Capture import Capture
+    from .Image import Image
+    from .DB import DB
+except:
+    from Parameters import Parameters
+    from Capture import Capture
+    from Image import Image
+    from DB import DB
 
 class Pixel2coord():
     """Calibrates the conversion of pixel locations to machine coordinates
