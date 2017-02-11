@@ -39,17 +39,29 @@ class Plant_Detection():
                            and Value(0-255) (default = [90, 255, 255])
            parameters_from_file (boolean): load parameters from file
                                            (default = False)
+           parameters_from_json (boolean): load input parameters from json,
+                overriding other parameter inputs, example:
+                PLANT_DETECTION_options={"blur":15,"morph":8,"iterations":4,
+                 "H":[37,82],"S":[38,255],"V":[61,255]}
+                DB={"plants":[{"id":115,"device_id":76}]}
+                (default = False)
+           calibration_parameters_from_json (boolean): load calibration
+                parameters from json overriding other parameter inputs
+                see example in parameters_from_json
+                (default = False)
 
        Examples:
-           Plant_Detection()
-           Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
+           PD = Plant_Detection()
+           PD = Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
               debug=True)
-           Plant_Detection(image='soil_image.jpg', blur=9, morph=7, iterations=4,
-              calibration_img="PD/p2c_test_calibration.jpg")
-           Plant_Detection(image='soil_image.jpg', blur=15,
+           PD = Plant_Detection(image='soil_image.jpg', blur=9, morph=7,
+              iterations=4, calibration_img="PD/p2c_test_calibration.jpg")
+           PD = Plant_Detection(image='soil_image.jpg', blur=15,
               array=[[5, 'ellipse', 'erode',  2],
                      [3, 'ellipse', 'dilate', 8]], debug=True, save=False,
               clump_buster=True, HSV_min=[15, 15, 15], HSV_max=[85, 245, 245])
+           PD.calibrate()
+           PD.detect_plants()
     """
     def __init__(self, **kwargs):
         self.image = None
@@ -92,6 +104,7 @@ class Plant_Detection():
         self.output_json = True
         self.input_parameters_filename = "plant-detection_inputs.txt"
         self.db.tmp_dir = None
+        self.db.output_text = self.output_text
         self.final_debug_image = None
 
     def calibrate(self):
@@ -172,8 +185,8 @@ class Plant_Detection():
             P2C = Pixel2coord(self.db)  # Use calibration values created by calibrate()
             self.image.coordinates(P2C)  # get coordinates of all detected objects
             self.db.identify()  # organize objects into plants and weeds
+            self.db.print_count()  # print number of objects detected
             if self.output_text:
-                self.db.print_count()  # print number of objects detected
                 self.db.print_()  # print organized object data text to stdout
             if self.output_json:
                 self.db.json_()  # print organized object data json to stdout
@@ -189,8 +202,8 @@ class Plant_Detection():
             self.image.find()  # get pixel locations of objects
             if self.debug:
                 self.image.save_annotated('contours')
+            self.db.print_count()  # print number of objects detected
             if self.output_text:
-                self.db.print_count()  # print number of objects detected
                 self.db.print_pixel()  # print object pixel location text
             self.image.image = self.image.marked  # Save marked soil image
             self.image.save('marked')
@@ -207,7 +220,7 @@ if __name__ == "__main__":
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
             calibration_img=directory + "PD/p2c_test_calibration.jpg",
-            parameters_from_json=True,
+            parameters_from_json=True,  # This overrides input in next line
             known_plants=[[200, 600, 100], [900, 200, 120]])
         PD.calibrate()  # use calibration img to get coordinate conversion data
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants

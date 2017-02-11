@@ -58,6 +58,11 @@ class FarmBotJSON():
                 Location:
                     Coordinate (x, y, z)
                 Radius: r
+           Body:
+                Kind: pair
+                Args:
+                    label: created_by
+                    value: plant-detection
         """
         args = {}
         args['location'] = self._coordinate_node(x, y, z)
@@ -120,7 +125,7 @@ if __name__ == "__main__":
     radius = 48.00
 
     FarmBot = FarmBotJSON()
-    FarmBot.add_point(x, y, z, r)
+    FarmBot.add_point(x, y, z, radius)
     print
     FarmBot.move_absolute([x, y, z], [x_offset, y_offset, z_offset], speed)
     print

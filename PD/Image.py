@@ -49,19 +49,23 @@ class Image():
         self.status['image'] = True
 
     def load(self, filename):
+        """Load image from file"""
         self.original = cv2.imread(filename, 1)
         self._prepare()
 
     def capture(self):
+        """Capture image from camera"""
         self.original = Capture().capture()
         self._prepare()
 
     def save(self, title):
+        """Save image to file"""
         filename = '{}{}.jpg'.format(self.dir, title)
         cv2.imwrite(filename, self.image)
         cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.image)
 
     def save_annotated(self, title):
+        """Save annotated image to file"""
         filename = '{}{}.jpg'.format(self.dir, title)
         cv2.imwrite(filename, self.annotate())
         cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.annotate())
@@ -83,6 +87,7 @@ class Image():
         self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
 
     def rotate_main_images(self, rotationangle):
+        """Rotate relevant working images"""
         self.image = self.output  # work on output image
         self.rotate(rotationangle)  # rotate according to angle
         self.output = self.image.copy()
@@ -98,12 +103,14 @@ class Image():
         self.image = self.output
 
     def blur(self):
+        """Blur image"""
         if self.params.blur_amount % 2 == 0: self.params.blur_amount += 1
         self.blurred = cv2.medianBlur(self.image, self.params.blur_amount)
         self.image = self.blurred.copy()
         self.status['blur'] = True
 
     def mask(self):
+        """Create mask using HSV range from blurred image"""
         # Create HSV image
         hsv = cv2.cvtColor(self.blurred, cv2.COLOR_BGR2HSV)
         # Select HSV color bounds for mask and create plant mask
@@ -123,6 +130,7 @@ class Image():
         self.status['mask'] = True
 
     def mask2(self):
+        """Show regions of original image selected by mask"""
         self.masked2 = cv2.bitwise_and(self.output,
                                         self.output,
                                         mask=self.masked)
@@ -132,7 +140,7 @@ class Image():
         self.image = temp
 
     def morph(self):
-        # Process mask to try to make plants more coherent
+        """Process mask to try to make plants more coherent"""
         if self.params.array is None:
             # Single morphological transformation
             kernel_type = self.params.kt[self.params.kernel_type]
@@ -168,6 +176,7 @@ class Image():
         self.status['morph'] = True
 
     def morph2(self):
+        """Show regions of original image selected by morph"""
         self.morphed2 = cv2.bitwise_and(self.output,
                                         self.output,
                                         mask=self.morphed)
@@ -177,6 +186,8 @@ class Image():
         self.image = temp
 
     def clump_buster(self):
+        """Break up selected regions of morphed image into smaller regions
+           by splitting them into quarters"""
         try:
             contours, hierarchy = cv2.findContours(self.morphed,
                                                cv2.RETR_EXTERNAL,
@@ -200,7 +211,7 @@ class Image():
         self.status['bust'] = True
 
     def grey(self):
-        # Grey out region not selected by mask
+        """Grey out region not selected by mask"""
         grey_bg = cv2.addWeighted(np.full_like(self.marked, 255),
                                                0.4, self.marked, 0.6, 0)
         black_fg = cv2.bitwise_and(grey_bg, grey_bg,
@@ -288,7 +299,8 @@ class Image():
         self.status['mark'] = True
 
     def coordinates(self, p2c):
-        """ """
+        """Rotate image according to calibration data, detect objects and
+           their coordinates"""
         self.rotate_main_images(p2c.total_rotation_angle)  # rotate according to calibration
         self.image = self.morphed
         self.find()  # detect pixel locations of objects
@@ -296,7 +308,7 @@ class Image():
         p2c.p2c(self.db)  # convert pixel locations to coordinates
 
     def label(self, p2c):
-        # Create annotated image
+        """Draw circles on image indicating detected plants"""
         def circle(color):
             c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0)}
             p2c.c2p(self.db)
@@ -312,6 +324,7 @@ class Image():
         circle('blue')
 
     def grid(self, p2c):
+        """Draw grid on image indicating coordinate system"""
         w = self.marked.shape[1]
         textsize = w / 2000.
         textweight = int(3.5 * textsize)
@@ -366,6 +379,7 @@ class Image():
         self.image = self.marked
 
     def annotate(self):
+        """Annotate image with processing parameters"""
         tc = {'white': (255, 255, 255), 'black': (0, 0, 0)}
         bc = {'white': 255, 'black': 0}
         text_color = tc['white']

@@ -8,6 +8,7 @@ import cv2
 import json
 
 class Parameters():
+    """Input parameters for Plant Detection"""
     def __init__(self):
         self.blur_amount = 5  # default
         self.morph_amount = 5  # default
@@ -34,6 +35,7 @@ class Parameters():
         self.mt['open'] = cv2.MORPH_OPEN
 
     def save(self, directory, filename):
+        """Save input parameters to file"""
         try:
             with open(directory + filename, 'w') as f:
                 f.write('blur_amount {}\n'.format(self.blur_amount))
@@ -48,7 +50,8 @@ class Parameters():
             self.save(self.tmp_dir, filename)
 
     def load(self, directory, filename):
-        def load(directory):  # Load input parameters from file
+        """Load input parameters from file"""
+        def load(directory):
             with open(directory + filename, 'r') as f:
                 lines = f.readlines()
             for line in lines:
@@ -81,8 +84,8 @@ class Parameters():
             pass
 
     def load_json(self):
+        """Read input parameters from JSON in ENV VAR"""
         params_json = json.loads(os.environ['PLANT_DETECTION_options'])
-        # Read inputs from env vars
         self.HSV_min = [params_json['H'][0], params_json['S'][0], params_json['V'][0]]
         self.HSV_max = [params_json['H'][1], params_json['S'][1], params_json['V'][1]]
         self.blur_amount = int(params_json['blur'])
@@ -90,6 +93,7 @@ class Parameters():
         self.iterations = int(params_json['iterations'])
 
     def print_(self):
+        """Print input parameters"""
         print('Processing Parameters:')
         print('-' * 25)
         print('Blur kernel size: {}'.format(self.blur_amount))

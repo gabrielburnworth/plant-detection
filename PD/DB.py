@@ -9,6 +9,7 @@ import numpy as np
 from CeleryPy import FarmBotJSON
 
 class DB():
+    """Known and detected plant data for Plant Detection"""
     def __init__(self):
         self.output_text = True
         self.output_json = False
@@ -25,6 +26,7 @@ class DB():
         self.calibration_parameters = None
 
     def save_known_plants(self):
+        """Save known plants (X Y R) to file"""
         with open(self.dir + self.known_plants_file, 'w') as f:
             f.write('X Y Radius\n')
             if self.known_plants is not None:
@@ -32,6 +34,7 @@ class DB():
                     f.write('{} {} {}\n'.format(*plant))
 
     def save_detected_plants(self, save, remove):
+        """Save detected plants (X,Y,R) to file: 'to remove' and 'to save'"""
         if self.tmp_dir is None:
             csv_dir = self.dir
         else:
@@ -46,20 +49,23 @@ class DB():
             self.save_detected_plants(save, remove)
 
     def load_known_plants(self):
-        # Load known plant inputs from file
-        with open(self.dir + self.known_plants_file, 'r') as f:
-            lines = f.readlines()
-            known_plants = []
-            for line in lines[1:]:
-                line = line.strip().split(' ')
-                known_plants.append([float(line[0]),
-                                     float(line[1]),
-                                     float(line[2])])
-            if len(known_plants) > 0:
-                self.known_plants = known_plants
+        """Load known plants (X Y R) from file"""
+        try:
+            with open(self.dir + self.known_plants_file, 'r') as f:
+                lines = f.readlines()
+                known_plants = []
+                for line in lines[1:]:
+                    line = line.strip().split(' ')
+                    known_plants.append([float(line[0]),
+                                         float(line[1]),
+                                         float(line[2])])
+                if len(known_plants) > 0:
+                    self.known_plants = known_plants
+        except IOError:
+            pass
 
     def load_known_plants_from_json(self):
-        # Load known plant inputs from json
+        """Load known plant inputs 'x' 'y' and 'radius' from json"""
         self.known_plants = []
         db_json = json.loads(os.environ['DB'])
         known_plants = db_json['plants']
@@ -70,7 +76,7 @@ class DB():
             self.known_plants.append(known_plant)
 
     def identify(self):
-        # Find unknown
+        """Compare detected plants to known to separate plants from weeds"""
         self.marked = []
         self.unmarked = []
         if self.known_plants is None or self.known_plants == []:
@@ -88,6 +94,7 @@ class DB():
             self.known_plants = []
 
     def print_count(self, calibration=False):
+        """output text indicating the number of plants/objects detected"""
         if self.output_text:
             if calibration:
                 object_name = 'calibration objects'
@@ -97,6 +104,7 @@ class DB():
                                                     object_name))
 
     def print_(self):
+        """output text including data about identified detected plants"""
         # Known plant exclusion:
         if self.known_plants is not None:
             # Print known
@@ -131,6 +139,8 @@ class DB():
                 print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
 
     def print_coordinates(self):
+        """output text data (coordinates) about
+           detected (but not identified) plants"""
         if len(self.coordinate_locations) > 0:
             print("Detected object machine coordinates ( X Y ) with R = radius:")
             for coordinate_location in self.coordinate_locations:
@@ -140,6 +150,8 @@ class DB():
                                                         coordinate_location[2]))
 
     def print_pixel(self):
+        """output text data (pixels) about
+           detected (but not identified) plants"""
         if len(self.pixel_locations) > 0:
             print("Detected object center pixel locations ( X Y ):")
             for pixel_location in self.pixel_locations:
@@ -147,6 +159,7 @@ class DB():
                                                            pixel_location[1]))
 
     def json_(self):
+        """output JSON with identified plant coordinates and radii"""
         # Encode to CS
         FarmBot = FarmBotJSON()
         for mark in self.marked:
