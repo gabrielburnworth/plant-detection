@@ -3,6 +3,8 @@ Detects and marks green plants in a (not green) soil area image using Python Ope
 
 The goal is to mark unwanted volunteer plants for removal.
 
+For an overview of the image processing performed, see [the wiki](../../wiki/Plant Detection Image Processing Steps).
+
 ## Contents
  * [Installation](#installation)
  * [Basic Usage](#basic-usage)
