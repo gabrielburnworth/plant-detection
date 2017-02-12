@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys, os
+import json
 import cv2
 from Plant_Detection import Plant_Detection
 
@@ -14,28 +15,13 @@ HSVwindow = 'HSV Selection'
 override_HSV_defaults = 0
 HSVwindow_loaded = 0
 try:  # Load input parameters from file
-    with open(directory + "plant-detection_inputs.txt", 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip().split(' ')
-        if "blur_amount" in line:
-            blur_amount = int(line[1])
-            if blur_amount % 2 == 0:
-                blur_amount += 1
-        if "morph_amount" in line:
-            morph_amount = int(line[1])
-        if "iterations" in line:
-            iterations = int(line[1])
-        if "clump_buster" in line:
-            clump_buster = int(line[1])
-        if "HSV_min" in line:
-            HSV_min = [int(line[1]),
-                       int(line[2]),
-                       int(line[3])]
-        if "HSV_max" in line:
-            HSV_max = [int(line[1]),
-                       int(line[2]),
-                       int(line[3])]
+    with open(directory + "plant-detection_inputs.json", 'r') as f:
+        inputs = json.load(f)
+    blur_amount = inputs['blur']
+    morph_amount = inputs['morph']
+    iterations = inputs['iterations']
+    HSV_min = [inputs['H'][0], inputs['S'][0], inputs['V'][0]]
+    HSV_max = [inputs['H'][1], inputs['S'][1], inputs['V'][1]]
     HSV_bounds = [HSV_min, HSV_max]
     from_file = 1
 except IOError:
@@ -44,7 +30,6 @@ except IOError:
     blur_amount = 1
     morph_amount = 1
     iterations = 1
-    clump_buster = 0
 
 def HSV_trackbar_name(P, bound):
     if P == 'H': P = 'Hue'
@@ -79,7 +64,6 @@ def process(x):
         if override_HSV_defaults or from_file:
             PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
-                  clump_buster=clump_buster,
                   HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
                   debug=True, save=False)
             PD.detect_plants()
@@ -87,7 +71,6 @@ def process(x):
         else:
             PD = Plant_Detection(image=filename,
                   blur=blur, morph=morph, iterations=iterations,
-                  clump_buster=clump_buster,
                   debug=True, save=False)
             PD.detect_plants()
             img = PD.final_debug_image

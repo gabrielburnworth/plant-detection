@@ -109,8 +109,9 @@ class Image():
 
     def blur(self):
         """Blur image"""
-        if self.params.blur_amount % 2 == 0: self.params.blur_amount += 1
-        self.blurred = cv2.medianBlur(self.image, self.params.blur_amount)
+        if self.params.parameters['blur'] % 2 == 0:
+            self.params.parameters['blur'] += 1
+        self.blurred = cv2.medianBlur(self.image, self.params.parameters['blur'])
         self.image = self.blurred.copy()
         self.status['blur'] = True
 
@@ -120,17 +121,23 @@ class Image():
         hsv = cv2.cvtColor(self.blurred, cv2.COLOR_BGR2HSV)
         # Select HSV color bounds for mask and create plant mask
         # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
-        if self.params.HSV_min[0] > self.params.HSV_max[0]:
-            hsv_btwn_min = [0, self.params.HSV_min[1], self.params.HSV_min[2]]
-            hsv_btwn_max = [179, self.params.HSV_max[1], self.params.HSV_max[2]]
+        HSV_min = [self.params.parameters['H'][0],
+                   self.params.parameters['S'][0],
+                   self.params.parameters['V'][0]]
+        HSV_max = [self.params.parameters['H'][1],
+                   self.params.parameters['S'][1],
+                   self.params.parameters['V'][1]]
+        if HSV_min[0] > HSV_max[0]:
+            hsv_btwn_min = [0, HSV_min[1], HSV_min[2]]
+            hsv_btwn_max = [179, HSV_max[1], HSV_max[2]]
             mask_L = cv2.inRange(hsv, np.array(hsv_btwn_min),
-                                 np.array(self.params.HSV_max))
-            mask_U = cv2.inRange(hsv, np.array(self.params.HSV_min),
+                                 np.array(HSV_max))
+            mask_U = cv2.inRange(hsv, np.array(HSV_min),
                                  np.array(hsv_btwn_max))
             self.masked = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
         else:
-            self.masked = cv2.inRange(hsv, np.array(self.params.HSV_min),
-                               np.array(self.params.HSV_max))
+            self.masked = cv2.inRange(hsv, np.array(HSV_min),
+                                      np.array(HSV_max))
         self.image = self.masked.copy()
         self.status['mask'] = True
 
@@ -150,12 +157,12 @@ class Image():
             # Single morphological transformation
             kernel_type = self.params.kt[self.params.kernel_type]
             kernel = cv2.getStructuringElement(kernel_type,
-                                               (self.params.morph_amount,
-                                                self.params.morph_amount))
+                                               (self.params.parameters['morph'],
+                                                self.params.parameters['morph']))
             morph_type = self.params.mt[self.params.morph_type]
             self.morphed = cv2.morphologyEx(self.masked,
-                                    morph_type, kernel,
-                                    iterations=self.params.iterations)
+                                morph_type, kernel,
+                                iterations=self.params.parameters['iterations'])
         else:
             # List of morphological transformations
             processes = self.params.array
@@ -321,11 +328,14 @@ class Image():
                 cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
                            int(obj[2]), c[color], 4)
 
-        self.db.coordinate_locations = self.db.known_plants
+        known = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['known']]
+        self.db.coordinate_locations = known
         circle('green')
-        self.db.coordinate_locations = self.db.marked
+        remove = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['remove']]
+        self.db.coordinate_locations = remove
         circle('red')
-        self.db.coordinate_locations = self.db.unmarked
+        save = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['save']]
+        self.db.coordinate_locations = save
         circle('blue')
 
     def grid(self, p2c):
@@ -360,7 +370,8 @@ class Image():
                                                                  255)
         #grid_point([1650, 2050, 0], 'coordinates')  # test point
         grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
-        grid_point(p2c.center_pixel_location, 'pixels')  # image center
+        grid_point(p2c.calibration_params['center_pixel_location'],
+                   'pixels')  # image center
 
         grid_range = np.array([[x] for x in range(0, 20000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
@@ -390,17 +401,24 @@ class Image():
         text_color = tc['white']
         bg_color = bc['black']
         font = cv2.FONT_HERSHEY_SIMPLEX
-        lines = ["blur kernel size = {}".format(self.params.blur_amount)]  # blur
+        lines = ["blur kernel size = {}".format(self.params.parameters['blur'])]
         if self.status['mask']:
+            HSV_min = [self.params.parameters['H'][0],
+                       self.params.parameters['S'][0],
+                       self.params.parameters['V'][0]]
+            HSV_max = [self.params.parameters['H'][1],
+                       self.params.parameters['S'][1],
+                       self.params.parameters['V'][1]]
             lines = lines + [
-                "HSV lower bound = {}".format(self.params.HSV_min),
-                "HSV upper bound = {}".format(self.params.HSV_max)]
+                "HSV lower bound = {}".format(HSV_min),
+                "HSV upper bound = {}".format(HSV_max)]
             if self.status['morph'] and not self.params.array:  # single morph
                 lines = lines + [
                     "kernel type = {}".format(self.params.kernel_type),
-                    "kernel size = {}".format(self.params.morph_amount),
+                    "kernel size = {}".format(self.params.parameters['morph']),
                     "morphological transformation = {}".format(self.params.morph_type),
-                    "number of iterations = {}".format(self.params.iterations)]
+                    "number of iterations = {}".format(
+                        self.params.parameters['iterations'])]
         h = self.image.shape[0]; w = self.image.shape[1]
         textsize = w / 1200.
         lineheight = int(40 * textsize); textweight = int(3.5 * textsize)
@@ -420,7 +438,7 @@ class Image():
                         (10, lineheight + o * lineheight),
                         font, textsize, text_color, textweight)
         if self.status['morph'] and self.params.array:  # multiple morphs
-            for o, line in enumerate(array):
+            for o, line in enumerate(self.params.array):
                 cv2.putText(annotated_image, str(line),
                             (10, add_1 + o * lineheight),
                             font, textsize, text_color, textweight)

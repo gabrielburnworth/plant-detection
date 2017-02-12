@@ -14,132 +14,111 @@ except:
 class DB():
     """Known and detected plant data for Plant Detection"""
     def __init__(self):
+        self.plants = {'known': [], 'save': [], 'remove': []}
         self.output_text = True
         self.output_json = False
-        self.known_plants = None
         self.object_count = None
-        self.marked = None
-        self.unmarked = None
         self.pixel_locations = []
         self.coordinate_locations = []
         self.calibration_pixel_locations = []
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-        self.known_plants_file = "plant-detection_known-plants.txt"
+        self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
         self.calibration_parameters = None
 
-    def save_known_plants(self):
-        """Save known plants (X Y R) to file"""
-        with open(self.dir + self.known_plants_file, 'w') as f:
-            f.write('X Y Radius\n')
-            if self.known_plants is not None:
-                for plant in self.known_plants:
-                    f.write('{} {} {}\n'.format(*plant))
-
-    def save_detected_plants(self, save, remove):
-        """Save detected plants (X,Y,R) to file: 'to remove' and 'to save'"""
+    def save_plants(self):
+        """Save plant detection plants to file:
+                'known', 'remove', and 'save'
+        """
         if self.tmp_dir is None:
-            csv_dir = self.dir
+            json_dir = self.dir
         else:
-            csv_dir = self.tmp_dir
+            json_dir = self.tmp_dir
         try:
-            np.savetxt(csv_dir + "detected-plants_saved.csv", save,
-                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
-            np.savetxt(csv_dir + "detected-plants_to-remove.csv", remove,
-                       fmt='%.1f', delimiter=',', header='X,Y,Radius')
+            with open(json_dir + self.plants_file, 'w') as f:
+                json.dump(self.plants, f)
         except IOError:
             self.tmp_dir = "/tmp/"
-            self.save_detected_plants(save, remove)
+            self.save_plants()
 
-    def load_known_plants(self):
-        """Load known plants (X Y R) from file"""
+    def load_plants_from_file(self):
+        """Load plants from file"""
         try:
-            with open(self.dir + self.known_plants_file, 'r') as f:
-                lines = f.readlines()
-                known_plants = []
-                for line in lines[1:]:
-                    line = line.strip().split(' ')
-                    known_plants.append([float(line[0]),
-                                         float(line[1]),
-                                         float(line[2])])
-                if len(known_plants) > 0:
-                    self.known_plants = known_plants
+            with open(self.dir + self.plants_file, 'r') as f:
+                self.plants = json.load(f)
         except IOError:
             pass
 
-    def load_known_plants_from_json(self):
+    def load_known_plants_from_env_var(self):
         """Load known plant inputs 'x' 'y' and 'radius' from json"""
-        self.known_plants = []
         db_json = json.loads(os.environ['DB'])
-        known_plants = db_json['plants']
-        for jplant in known_plants:
-            # TODO: This will really be 'x', 'y', and 'radius' instead of 'id'
-            #       and 'device_id' once the serialized db has them
-            known_plant = [jplant['id'], jplant['device_id'], jplant['id']]
-            self.known_plants.append(known_plant)
+        self.plants['known'] = db_json['plants']
 
     def identify(self):
         """Compare detected plants to known to separate plants from weeds"""
-        self.marked = []
-        self.unmarked = []
-        if self.known_plants is None or self.known_plants == []:
-            self.known_plants = [[0, 0, 0]]
-        kplants = np.array(self.known_plants)
+        self.plants['remove'] = []
+        self.plants['save'] = []
+        if self.plants['known'] is None or self.plants['known'] == []:
+            self.plants['known'] = [{'x': 0, 'y': 0, 'radius': 0}]
+        kplants = np.array(
+            [[_['x'], _['y'], _['radius']] for _ in self.plants['known']])
         for plant_coord in self.coordinate_locations:
             x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
+            x, y, r = round(x, 2), round(y, 2), round(r, 2)
             cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
             if all((x - cx)**2 + (y - cy)**2 > cr**2
                    for cx, cy, cr in zip(cxs, cys, crs)):
-                self.marked.append([x, y, r])
+                self.plants['remove'].append({'x': x, 'y': y, 'radius': r})
             else:
-                self.unmarked.append([x, y, r])
-        if self.known_plants == [[0, 0, 0]]:
-            self.known_plants = []
+                self.plants['save'].append({'x': x, 'y': y, 'radius': r})
+        if self.plants['known'] == [{'x': 0, 'y': 0, 'radius': 0}]:
+            self.plants['known'] = []
 
     def print_count(self, calibration=False):
         """output text indicating the number of plants/objects detected"""
-        if self.output_text:
-            if calibration:
-                object_name = 'calibration objects'
-            else:
-                object_name = 'plants'
-            print("{} {} detected in image.".format(self.object_count,
-                                                    object_name))
+        if calibration:
+            object_name = 'calibration objects'
+        else:
+            object_name = 'plants'
+        print("{} {} detected in image.".format(self.object_count,
+                                                object_name))
 
     def print_(self):
         """output text including data about identified detected plants"""
-        # Known plant exclusion:
-        if self.known_plants is not None:
-            # Print known
-            print("\n{} known plants inputted.".format(
-                len(self.known_plants)))
-            if len(self.known_plants) > 0:
-                print("Plants at the following machine coordinates "
-                      "( X Y ) with R = radius are to be saved:")
-            for known_plant in self.known_plants:
-                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
-                    *known_plant))
-        else:
-            print("\n No known plants inputted.")
+        # Print known
+        print("\n{} known plants inputted.".format(
+            len(self.plants['known'])))
+        if len(self.plants['known']) > 0:
+            print("Plants at the following machine coordinates "
+                  "( X Y ) with R = radius are to be saved:")
+        for known_plant in self.plants['known']:
+            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
+                x=known_plant['x'],
+                y=known_plant['y'],
+                r=known_plant['radius']))
 
         # Print removal candidates
-        if self.marked is not None:
-            print("\n{} plants marked for removal.".format(len(self.marked)))
-            if len(self.marked) > 0:
-                print("Plants at the following machine coordinates "
-                      "( X Y ) with R = radius are to be removed:")
-                for mark in self.marked:
-                    print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*mark))
+        print("\n{} plants marked for removal.".format(len(self.plants['remove'])))
+        if len(self.plants['remove']) > 0:
+            print("Plants at the following machine coordinates "
+                  "( X Y ) with R = radius are to be removed:")
+        for remove_plant in self.plants['remove']:
+            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
+                x=remove_plant['x'],
+                y=remove_plant['y'],
+                r=remove_plant['radius']))
 
         # Print saved
-        if self.unmarked is not None:
-            print("\n{} detected plants are known or have escaped "
-                  "removal.".format(len(self.unmarked)))
-            if len(self.unmarked) > 0:
-                print("Plants at the following machine coordinates "
-                      "( X Y ) with R = radius have been saved:")
-            for unmark in self.unmarked:
-                print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(*unmark))
+        print("\n{} detected plants are known or have escaped "
+              "removal.".format(len(self.plants['save'])))
+        if len(self.plants['save']) > 0:
+            print("Plants at the following machine coordinates "
+                  "( X Y ) with R = radius have been saved:")
+        for save_plant in self.plants['save']:
+            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
+                x=save_plant['x'],
+                y=save_plant['y'],
+                r=save_plant['radius']))
 
     def print_coordinates(self):
         """output text data (coordinates) about
@@ -161,30 +140,30 @@ class DB():
                 print("    ( {:5.0f}px {:5.0f}px )".format(pixel_location[0],
                                                            pixel_location[1]))
 
-    def json_(self):
+    def output_CS(self):
         """output JSON with identified plant coordinates and radii"""
         # Encode to CS
         FarmBot = FarmBotJSON()
-        for mark in self.marked:
-            x, y = round(mark[0], 2), round(mark[1], 2)
-            r = round(mark[2], 2)
+        for mark in self.plants['remove']:
+            x, y = round(mark['x'], 2), round(mark['y'], 2)
+            r = round(mark['radius'], 2)
             FarmBot.add_point(x, y, 0, r)
-        for unmark in self.unmarked:
-            x, y = round(unmark[0], 2), round(unmark[1], 2)
-            r = round(unmark[2], 2)
+        for unmark in self.plants['save']:
+            x, y = round(unmark['x'], 2), round(unmark['y'], 2)
+            r = round(unmark['radius'], 2)
             # FarmBot.add_plant(0, [x, y, 0], r)
 
         # Save plant coordinates to file
-        self.save_detected_plants(self.unmarked, self.marked)
+        self.save_plants()
 
 
 if __name__ == "__main__":
     db = DB()
-    db.load_known_plants()
+    db.load_plants_from_file()
     db.print_()
     print('-' * 60)
-    db.known_plants = [[4.0, 3.0, 4.0]]
-    db.marked = [[4.0, 3.0, 4.0]]
-    db.unmarked = [[4.0, 3.0, 4.0]]
+    db.plants['known'] = [{'x': 3.0, 'y': 4.0, 'radius': 5.0}]
+    db.plants['save'] = [{'x': 6.0, 'y': 7.0, 'radius': 8.0}]
+    db.plants['remove'] = [{'x': 9.0, 'y': 10.0, 'radius': 11.0}]
     db.print_()
-    db.save_known_plants()
+    db.save_plants()

@@ -46,8 +46,9 @@ class FarmBotJSON():
                 print('{} {}'.format(os.environ['BEGIN_CS'],
                                      json.dumps(function(*args, **kwargs))))
             except KeyError:
-                print('POINT: {}'.format(json.dumps(function(*args, **kwargs),
-                                 indent=2, separators=(',', ': '))))
+                pass
+                # print('POINT: {}'.format(json.dumps(function(*args, **kwargs),
+                #                  indent=2, separators=(',', ': '))))
         return wrapper
 
     @_print_json
