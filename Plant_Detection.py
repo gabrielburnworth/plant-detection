@@ -77,6 +77,8 @@ class Plant_Detection():
         self.calibration_parameters_from_env_var = False  # default
         self.clump_buster = False  # default
         self.text_output = True  # default
+        self.verbose = True  # default
+        self.print_all_json = False  # default
         self.params = Parameters()
         self.db = DB()
         self.P2C = None
@@ -111,10 +113,11 @@ class Plant_Detection():
             if key == 'calibration_parameters_from_env_var':
                 self.calibration_parameters_from_env_var = kwargs[key]
             if key == 'text_output': self.text_output = kwargs[key]
+            if key == 'verbose': self.verbose = kwargs[key]
+            if key == 'print_all_json': self.print_all_json = kwargs[key]
         if self.calibration_img is not None:
             self.coordinates = True
         self.grey_out = False
-        self.verbose = False
         self.output_celeryscript = True
         self.db.tmp_dir = None
         self.db.output_text = self.verbose
@@ -135,7 +138,7 @@ class Plant_Detection():
         # Call coordinate conversion module
         self.P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
         self.P2C.calibration()  # calibrate and save values
-        if self.verbose:
+        if self.verbose and self.text_output:
             if self.P2C.calibration_params['total_rotation_angle'] != 0:
                 print(" Note: required rotation executed = {:.2f} degrees".format(
                     self.P2C.calibration_params['total_rotation_angle']))
@@ -158,7 +161,7 @@ class Plant_Detection():
             except KeyError:
                 print("Environment variable plants load failed.")
 
-        if self.verbose:
+        if self.verbose and self.text_output:
             self.params.print_()
             print("\nProcessing image: {}".format(self.image))
 
@@ -166,7 +169,8 @@ class Plant_Detection():
             # No image provided. Capture one.
             self.image = Image(self.params, self.db) # create image object
             self.image.capture()
-            self.image.save_annotated('photo')
+            if self.debug:
+                self.image.save('photo')
         else:
             # Image provided. Load it.
             filename = self.image
@@ -205,7 +209,7 @@ class Plant_Detection():
             self.db.identify()  # organize objects into plants and weeds
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
-            if self.verbose:
+            if self.verbose and self.text_output:
                 self.db.print_()  # print organized object data text to stdout
             if self.output_celeryscript:
                 self.db.output_CS()  # print organized object data json to stdout
@@ -219,11 +223,12 @@ class Plant_Detection():
 
         else:  # No coordinate conversion
             self.image.find()  # get pixel locations of objects
+            self.image.label()  # Mark plants with red circle
             if self.debug:
                 self.image.save_annotated('contours')
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
-            if self.verbose:
+            if self.verbose and self.text_output:
                 self.db.print_pixel()  # print object pixel location text
             self.image.image = self.image.marked  # Save marked soil image
             self.image.save('marked')
@@ -233,6 +238,12 @@ class Plant_Detection():
             self.params.save()
             self.db.save_plants()
 
+        if self.print_all_json:
+            print("\nJSON:")
+            print(self.params.parameters)
+            print(self.db.plants)
+            if self.P2C is not None: print(self.P2C.calibration_params)
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
@@ -240,7 +251,6 @@ if __name__ == "__main__":
         PD = Plant_Detection(image=soil_image,
             blur=15, morph=6, iterations=4,
             calibration_img=directory + "PD/p2c_test_calibration.jpg",
-            parameters_from_env_var=True,  # This overrides input in next line
             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
                           {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data

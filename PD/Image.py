@@ -34,7 +34,6 @@ class Image():
         self.db = db
         self.object_count = None
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-        self.get_bot_coordinates = Capture()._getcoordinates
         self.status = {'image': False, 'blur': False, 'mask': False,
                        'morph': False, 'bust': False, 'grey': False,
                        'mark': False, 'annotate': False}
@@ -283,10 +282,6 @@ class Image():
                 # Mark calibration object with blue circle
                 center = (int(mcx), int(mcy))
                 cv2.circle(self.marked, center, int(radius), (255, 0, 0), 4)
-            else:
-                # Mark plant with red circle
-                center = (int(cx), int(cy))
-                cv2.circle(self.marked, center, int(radius), (0, 0, 255), 4)
 
             # Draw contours
             if calibration:
@@ -316,27 +311,34 @@ class Image():
         self.rotate_main_images(p2c.total_rotation_angle)  # rotate according to calibration
         self.image = self.morphed
         self.find()  # detect pixel locations of objects
-        self.get_bot_coordinates()
         p2c.p2c(self.db)  # convert pixel locations to coordinates
 
-    def label(self, p2c):
+    def label(self, p2c=None):
         """Draw circles on image indicating detected plants"""
         def circle(color):
             c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0)}
-            p2c.c2p(self.db)
             for obj in self.db.pixel_locations:
                 cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
                            int(obj[2]), c[color], 4)
 
-        known = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['known']]
-        self.db.coordinate_locations = known
-        circle('green')
-        remove = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['remove']]
-        self.db.coordinate_locations = remove
-        circle('red')
-        save = [[_['x'], _['y'], _['radius']] for _ in self.db.plants['save']]
-        self.db.coordinate_locations = save
-        circle('blue')
+        if p2c is None:
+            circle('red')
+        else:
+            known = [[_['x'], _['y'], _['radius']] for _
+                     in self.db.plants['known']]
+            self.db.coordinate_locations = known
+            p2c.c2p(self.db)
+            circle('green')
+            remove = [[_['x'], _['y'], _['radius']] for _
+                      in self.db.plants['remove']]
+            self.db.coordinate_locations = remove
+            p2c.c2p(self.db)
+            circle('red')
+            save = [[_['x'], _['y'], _['radius']] for _
+                    in self.db.plants['save']]
+            self.db.coordinate_locations = save
+            p2c.c2p(self.db)
+            circle('blue')
 
     def grid(self, p2c):
         """Draw grid on image indicating coordinate system"""
@@ -401,7 +403,11 @@ class Image():
         text_color = tc['white']
         bg_color = bc['black']
         font = cv2.FONT_HERSHEY_SIMPLEX
-        lines = ["blur kernel size = {}".format(self.params.parameters['blur'])]
+        if self.status['blur']:
+            lines = ["blur kernel size = {}".format(
+                self.params.parameters['blur'])]
+        else:
+            return self.image
         if self.status['mask']:
             HSV_min = [self.params.parameters['H'][0],
                        self.params.parameters['S'][0],

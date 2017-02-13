@@ -51,14 +51,14 @@ class PDTestCalibration(unittest.TestCase):
             HSV_min=[160, 100, 100], HSV_max=[20, 255, 255], morph=15, blur=5,
             text_output=False)
         self.pd.calibrate()
-        self.calibration_json = {"calibration_iters": 3,
-          "calibration_circle_separation": 1000,
-          "morph": 15, "H": [160, 20], "V": [100, 255],
+        self.calibration_json = {"blur": 5, "morph": 15, "calibration_iters": 3,
+          "H": [160, 20], "S": [100, 255], "V": [100, 255],
           "calibration_circles_xaxis": True,
           "camera_offset_coordinates": [200, 100],
           "image_bot_origin_location": [0, 1],
-          "S": [100, 255], "total_rotation_angle": 0.0,
-           "blur": 5, "coord_scale": 1.7182,
+          "calibration_circle_separation": 1000,
+          "total_rotation_angle": 0.0,
+           "coord_scale": 1.7182,
            "center_pixel_location": [465, 290]}
         self.objects = [{'y': 300.69, 'x': 300.0, 'radius': 46.86},
                         {'y': 599.66, 'x': 897.94, 'radius': 46.86},
@@ -132,6 +132,10 @@ class PDTestArgs(unittest.TestCase):
         self.parameters_from_file = True
         self.parameters_from_env_var = True
         self.calibration_parameters_from_env_var = True
+        self.default_input_params = {'blur': 5, 'morph': 5, 'iterations': 1,
+            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+        self.set_input_params = {'blur': 9, 'morph': 7, 'iterations': 3,
+            'H': [15, 85], 'S': [15, 245], 'V': [15, 245]}
 
     def test_input_args(self):
         """Set all arguments"""
@@ -151,19 +155,11 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.coordinates, self.coordinates)
         self.assertEqual(pd.calibration_img, self.calibration_img)
         self.assertEqual(pd.db.plants['known'], self.known_plants)
-        self.assertEqual(pd.params.parameters['blur'], self.blur)
-        self.assertEqual(pd.params.parameters['morph'], self.morph)
-        self.assertEqual(pd.params.parameters['iterations'], self.iterations)
+        self.assertEqual(pd.params.parameters, self.set_input_params)
         self.assertEqual(pd.params.array, self.array)
         self.assertEqual(pd.debug, self.debug)
         self.assertEqual(pd.save, self.save)
         self.assertEqual(pd.clump_buster, self.clump_buster)
-        self.assertEqual([pd.params.parameters['H'][0],
-                          pd.params.parameters['S'][0],
-                          pd.params.parameters['V'][0]], self.HSV_min)
-        self.assertEqual([pd.params.parameters['H'][1],
-                          pd.params.parameters['S'][1],
-                          pd.params.parameters['V'][1]], self.HSV_max)
         self.assertEqual(pd.parameters_from_file,
                          self.parameters_from_file)
         self.assertEqual(pd.parameters_from_env_var,
@@ -178,22 +174,85 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.coordinates, False)
         self.assertEqual(pd.calibration_img, None)
         self.assertEqual(pd.db.plants['known'], [])
-        self.assertEqual(pd.params.parameters['blur'], 5)
-        self.assertEqual(pd.params.parameters['morph'], 5)
-        self.assertEqual(pd.params.parameters['iterations'], 1)
+        self.assertEqual(pd.params.parameters, self.default_input_params)
         self.assertEqual(pd.params.array, None)
         self.assertEqual(pd.debug, False)
         self.assertEqual(pd.save, True)
         self.assertEqual(pd.clump_buster, False)
-        self.assertEqual([pd.params.parameters['H'][0],
-                          pd.params.parameters['S'][0],
-                          pd.params.parameters['V'][0]], [30, 20, 20])
-        self.assertEqual([pd.params.parameters['H'][1],
-                          pd.params.parameters['S'][1],
-                          pd.params.parameters['V'][1]], [90, 255, 255])
         self.assertEqual(pd.parameters_from_file, False)
         self.assertEqual(pd.parameters_from_env_var, False)
         self.assertEqual(pd.calibration_parameters_from_env_var, False)
+
+class PDTestOutput(unittest.TestCase):
+    """Test plant detection results"""
+    def setUp(self):
+        # self.maxDiff = None
+        self.pd = Plant_Detection(image="soil_image.jpg",
+                             calibration_img = "PD/p2c_test_calibration.jpg",
+                             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
+                                           {'x': 900, 'y': 200, 'radius': 120}],
+                             blur=15, morph=6, iterations=4,
+                             text_output=False)
+        self.pd.detect_plants()
+        self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
+                             'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+        self.calibration = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
+                           'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                           'calibration_circles_xaxis': True,
+                           'camera_offset_coordinates': [200, 100],
+                           'image_bot_origin_location': [0, 1],
+                           'calibration_circle_separation': 1000,
+                           'total_rotation_angle': 0.0,
+                           'coord_scale': 1.7182,
+                           'center_pixel_location': [465, 290]}
+        self.plants = {
+            'known': [{'y': 600, 'x': 200, 'radius': 100},
+                      {'y': 200, 'x': 900, 'radius': 120}],
+            'save': [{'y': 85.91, 'x': 837.8, 'radius': 80.52},
+                     {'y': 189.01, 'x': 901.37, 'radius': 65.32},
+                     {'y': 579.04, 'x': 236.43, 'radius': 91.23}],
+            'remove': [{'y': 41.24, 'x': 1428.86, 'radius': 73.59},
+                       {'y': 42.96, 'x': 607.56, 'radius': 82.26},
+                       {'y': 103.1, 'x': 1260.48, 'radius': 3.44},
+                       {'y': 152.92, 'x': 1214.09, 'radius': 62.0},
+                       {'y': 216.5, 'x': 1373.88, 'radius': 13.82},
+                       {'y': 231.96, 'x': 1286.25, 'radius': 61.8},
+                       {'y': 285.23, 'x': 1368.72, 'radius': 14.4},
+                       {'y': 412.37, 'x': 1038.83, 'radius': 73.97},
+                       {'y': 479.38, 'x': 1531.95, 'radius': 80.96},
+                       {'y': 500.0, 'x': 765.64, 'radius': 80.02},
+                       {'y': 608.25, 'x': 1308.59, 'radius': 148.73},
+                       {'y': 676.97, 'x': 59.46, 'radius': 60.95},
+                       {'y': 914.09, 'x': 62.89, 'radius': 82.37}]
+            }
+        if cv2.__version__[0] == '3':
+            self.calibration['total_rotation_angle'] = 0.014
+            self.plants = {
+                'known': [{'y': 600, 'x': 200, 'radius': 100},
+                          {'y': 200, 'x': 900, 'radius': 120}],
+                'save': [{'y': 85.91, 'x': 837.8, 'radius': 78.18},
+                         {'y': 189.01, 'x': 901.37, 'radius': 63.42},
+                         {'y': 579.04, 'x': 236.43, 'radius': 88.57}],
+                'remove': [{'y': 39.52, 'x': 1427.14, 'radius': 72.01},
+                           {'y': 41.24, 'x': 607.56, 'radius': 80.32},
+                           {'y': 103.1, 'x': 1260.48, 'radius': 2.86},
+                           {'y': 152.92, 'x': 1214.09, 'radius': 60.53},
+                           {'y': 216.5, 'x': 1373.88, 'radius': 13.42},
+                           {'y': 231.96, 'x': 1286.25, 'radius': 60.0},
+                           {'y': 285.23, 'x': 1368.72, 'radius': 13.98},
+                           {'y': 412.37, 'x': 1038.83, 'radius': 72.26},
+                           {'y': 479.38, 'x': 1533.67, 'radius': 79.36},
+                           {'y': 500.0, 'x': 765.64, 'radius': 77.69},
+                           {'y': 608.25, 'x': 1308.59, 'radius': 146.17},
+                           {'y': 676.97, 'x': 57.74, 'radius': 59.95},
+                           {'y': 914.09, 'x': 61.17, 'radius': 80.64}]
+                }
+
+    def test_output(self):
+        """Check detect plants results"""
+        self.assertEqual(self.pd.db.plants, self.plants)
+        self.assertEqual(self.pd.params.parameters, self.input_params)
+        self.assertEqual(self.pd.P2C.calibration_params, self.calibration)
 
 if __name__ == '__main__':
     unittest.main()

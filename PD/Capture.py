@@ -31,14 +31,15 @@ class Capture():
         self.ret = None
         self.camera_port = 0
         self.timestamp = datetime.now().isoformat()
-        self.current_coordinates = None
         self.test_coordinates = [600, 400]
-        self.output_text = True
+        self.image_captured = False
 
-    def _getcoordinates(self):
+    def getcoordinates(self):
         """Get machine coordinates from bot."""
-        # For now, return testing coordintes:
-        return self.test_coordinates
+        try:  # return bot coordintes
+            return os.environ['STATUS']['location']
+        except KeyError:  # return testing coordintes
+            return self.test_coordinates
 
     def capture(self):
         """Take a photo."""
@@ -52,25 +53,28 @@ class Capture():
                 self.image = rawCapture.array
         else:
             # With USB cameras:
-            camera_port = 0
-            image_width = 1600
-            image_height = 1200
+            # image_width = 1600
+            # image_height = 1200
             discard_frames = 20
-            camera = cv2.VideoCapture(camera_port)
+            # Check for camera
+            if not os.path.exists('/dev/video' + str(self.camera_port)):
+                print("No camera detected.")
+            camera = cv2.VideoCapture(self.camera_port)
             sleep(0.1)
-            try:
-                camera.set(cv2.CAP_PROP_FRAME_WIDTH, image_width)
-                camera.set(cv2.CAP_PROP_FRAME_HEIGHT, image_height)
-            except AttributeError:
-                camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, image_width)
-                camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, image_height)
+            # try:
+            #     camera.set(cv2.CAP_PROP_FRAME_WIDTH, image_width)
+            #     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, image_height)
+            # except AttributeError:
+            #     camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, image_width)
+            #     camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, image_height)
             for _ in range(discard_frames):
                 camera.grab()
             self.ret, self.image = camera.read()
             camera.release()
         if not self.ret:
-            print("No camera detected.")
+            print("Problem getting image.")
             sys.exit(0)
+        self.image_captured = True
         return self.image
 
 if __name__ == "__main__":
@@ -85,7 +89,7 @@ if __name__ == "__main__":
 
     if exif_import:
         exif = GExiv2.Metadata(directory + 'capture.jpg')
-        current_coordinates = Capture()._getcoordinates()
+        current_coordinates = Capture().getcoordinates()
         timestamp = Capture().timestamp
         exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(
                                               current_coordinates, timestamp)

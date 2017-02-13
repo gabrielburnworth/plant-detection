@@ -68,7 +68,7 @@ class Pixel2coord():
         self.test_coordinates = [600, 400]  # calib image coord. location
         self.viewoutputimage = False  # overridden as True if running script
         self.output_text = True
-        self.get_bot_coordinates = Capture()._getcoordinates
+        self.get_bot_coordinates = Capture().getcoordinates
         self.debug = False
 
     def save_calibration_parameters(self):

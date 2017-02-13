@@ -12,5 +12,5 @@ except ValueError:
     print("No images in /tmp/images")
     sys.exit(0)
 
-PD = Plant_Detection(image=recent_image, parameters_from_json=True)
+PD = Plant_Detection(image=recent_image, parameters_from_env_var=True)
 PD.detect_plants()
