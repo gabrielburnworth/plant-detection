@@ -3,7 +3,7 @@
 
 For Plant Detection.
 """
-import sys, os
+import os
 import cv2
 import json
 

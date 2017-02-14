@@ -13,6 +13,7 @@ For an overview of the image processing performed, see [the wiki](../../wiki/Pla
    * [Option 3: GUI](#or-run-the-gui-and-move-the-sliders)
  * [Suggested Workflow](#image-file-processing-suggested-workflow)
  * [Tips](#tips)
+ * [Project Directory](#project-directory)
 
 ---
 
@@ -87,3 +88,28 @@ Annotated image: `test_image_marked.png`
 
 #### Hue range aid
 `python Plant_Detection_GUI.py pixel_to_coordinate/p2c_test_color.jpg`
+
+## Project Directory
+
+```
+plant-detection
+├── PD  - Plant Detection Package
+│   ├── __init__.py
+│   ├── Capture.py  - take photos with a camera
+│   ├── Parameters.py  - handle input parameters
+│   ├── Image.py  - image processing
+│   ├── DB.py  - handle plant data
+│   ├── P2C.py  - pixel to coordinate conversion
+│   ├── CeleryPy.py  - convert plant data to CeleryScript
+│   ├── p2c_test_calibration.jpg  - coordinate conversion calibration test image
+│   ├── p2c_test_objects.jpg  - coordinate conversion detection test image
+│   └── p2c_test_color.jpg  - color range test image
+├── soil_image.jpg  - plant detection test image
+├── Plant_Detection.py  - calibrate and detect plants
+├── Plant_Detection_GUI.py  - interactively change input parameters
+├── capture_and_calibrate.py  - quickscript: take a photo and run calibration
+├── capture_and_detect.py  - quickscript: take a photo and run plant detection
+├── load_and_detect.py  - quickscript: load newest photo in /tmp/images and run plant detection
+├── Tests.py  - project test suite
+└── README.md
+```

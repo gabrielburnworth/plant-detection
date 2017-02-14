@@ -3,7 +3,7 @@
 
 For Plant Detection.
 """
-import sys, os
+import os
 import json
 import numpy as np
 try:

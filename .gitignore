@@ -1,6 +1,7 @@
 # Plant Detection results
 *
 !.gitignore
+!.pre-commit-config.yaml
 !*.md
 !*.py
 !soil_image.jpg

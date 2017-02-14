@@ -257,7 +257,7 @@ class Pixel2coord():
         self.image.rotate_main_images(self.calibration_params['total_rotation_angle'])
         self.process_image()
         self.image.find(calibration=True)
-        self.db.print_count(calibration=True)  # print number of objects detected
+        self.db.print_count(calibration=True)  # print count of objects detected
         self.p2c(self.db)
         self.db.print_coordinates()
         if self.viewoutputimage:

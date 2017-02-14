@@ -48,8 +48,8 @@ class PDTestCalibration(unittest.TestCase):
     def setUp(self):
         self.pd = Plant_Detection(image="PD/p2c_test_objects.jpg",
             calibration_img="PD/p2c_test_calibration.jpg",
-            HSV_min=[160, 100, 100], HSV_max=[20, 255, 255], morph=15, blur=5,
-            text_output=False)
+            HSV_min=[160, 100, 100], HSV_max=[20, 255, 255],
+            morph=15, blur=5, text_output=False)
         self.pd.calibrate()
         self.calibration_json = {"blur": 5, "morph": 15, "calibration_iters": 3,
           "H": [160, 20], "S": [100, 255], "V": [100, 255],

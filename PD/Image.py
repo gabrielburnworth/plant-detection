@@ -42,7 +42,8 @@ class Image():
         height, width = self.original.shape[:2]
         if height > 600:
             self.output = cv2.resize(self.original,
-                (int(width * 600 / height), 600), interpolation=cv2.INTER_AREA)
+                (int(width * 600 / height), 600),
+                interpolation=cv2.INTER_AREA)
         else:
             self.output = self.original.copy()
 

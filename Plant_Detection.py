@@ -204,20 +204,20 @@ class Plant_Detection():
 
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
-            self.P2C = Pixel2coord(self.db)  # Use calibration values created by calibrate()
-            self.image.coordinates(self.P2C)  # get coordinates of all detected objects
+            self.P2C = Pixel2coord(self.db)  # Use saved calibration values
+            self.image.coordinates(self.P2C)  # get coordinates of objects
             self.db.identify()  # organize objects into plants and weeds
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
             if self.verbose and self.text_output:
                 self.db.print_()  # print organized object data text to stdout
             if self.output_celeryscript:
-                self.db.output_CS()  # print organized object data json to stdout
+                self.db.output_CS()  # print object data JSON to stdout
             if self.debug:
                 self.image.save_annotated('contours')
                 self.image.image = self.image.marked
                 self.image.save_annotated('coordinates_found')
-            self.image.label(self.P2C)  # mark each object with a colored circle
+            self.image.label(self.P2C)  # mark objects with colored circles
             self.image.grid(self.P2C)  # add coordinate grid and features
             self.image.save('marked')
 
