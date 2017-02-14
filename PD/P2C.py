@@ -1,6 +1,7 @@
 """Image Pixel Location to Machine Coordinate Conversion."""
 
-import sys, os
+import sys
+import os
 import json
 import numpy as np
 try:
@@ -14,10 +15,12 @@ except:
     from Image import Image
     from DB import DB
 
+
 class Pixel2coord():
     """Calibrates the conversion of pixel locations to machine coordinates
     in images. Finds object coordinates in image.
     """
+
     def __init__(self, db, calibration_image=None):
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.parameters_file = "plant-detection_p2c_calibration_parameters.json"
@@ -45,7 +48,7 @@ class Pixel2coord():
                 self.image.image = calibration_image
                 try:
                     testfile = 'test_write.try_to_write'
-                    f = open(testfile,"w")
+                    f = open(testfile, "w")
                     f.close()
                     os.remove(testfile)
                 except IOError:
@@ -56,8 +59,9 @@ class Pixel2coord():
                 else:
                     self.image.save('capture')
                     self.image.load(self.dir[:-3] + 'capture.jpg')
-            self.calibration_params['center_pixel_location'] = list(map(int,
-                np.array(self.image.image.shape[:2][::-1]) / 2))
+            self.calibration_params['center_pixel_location'
+                                    ] = list(map(int, np.array(
+                                        self.image.image.shape[:2][::-1]) / 2))
         self.camera_rotation = 0
         if self.camera_rotation > 0:
             self.image.image = np.rot90(self.image)
@@ -105,12 +109,12 @@ class Pixel2coord():
         except IOError:  # Use defaults
             self.db.tmp_dir = None
             self.calibration_params = {'blur': 5, 'morph': 15,
-               'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
-               'calibration_circles_xaxis': True,
-               'image_bot_origin_location': [0, 1],
-               'calibration_circle_separation': 1000,
-               'camera_offset_coordinates': [200, 100],
-               'calibration_iters': 3}
+                                       'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                                       'calibration_circles_xaxis': True,
+                                       'image_bot_origin_location': [0, 1],
+                                       'calibration_circle_separation': 1000,
+                                       'camera_offset_coordinates': [200, 100],
+                                       'calibration_iters': 3}
         self.cparams.parameters['blur'] = self.calibration_params['blur']
         self.cparams.parameters['morph'] = self.calibration_params['morph']
         self.cparams.parameters['H'] = self.calibration_params['H']
@@ -142,13 +146,17 @@ class Pixel2coord():
 
     def process_image(self):
         """Prepare image for contour detection."""
-        if self.debug: self.cparams.print_()
+        if self.debug:
+            self.cparams.print_()
         self.image.blur()
-        if self.debug: self.image.show()
+        if self.debug:
+            self.image.show()
         self.image.mask()
-        if self.debug: self.image.show()
+        if self.debug:
+            self.image.show()
         self.image.morph()
-        if self.debug: self.image.show()
+        if self.debug:
+            self.image.show()
 
     def calibrate(self):
         """Determine coordinate conversion parameters."""
@@ -162,7 +170,7 @@ class Pixel2coord():
             object_sep = abs(self.db.calibration_pixel_locations[0][i] -
                              self.db.calibration_pixel_locations[1][i])
             self.calibration_params['coord_scale'] = round(calibration_circle_sep
-                                                      / object_sep, 4)
+                                                           / object_sep, 4)
 
     def p2c(self, db):
         """Convert pixel locations to machine coordinates from image center."""
@@ -208,7 +216,8 @@ class Pixel2coord():
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
-        center_pixel_location = self.calibration_params['center_pixel_location'][:2]
+        center_pixel_location = self.calibration_params[
+            'center_pixel_location'][:2]
         sign = [1 if s == 1 else -1 for s
                 in self.calibration_params['image_bot_origin_location']]
         coord_scale = np.array([self.calibration_params['coord_scale'],
@@ -219,8 +228,8 @@ class Pixel2coord():
                    ((object_coordinate - camera_coordinates)
                     / (sign * coord_scale)))
             db.pixel_locations.append([opl[0], opl[1],
-                                           db.coordinate_locations[o][2]
-                                           / coord_scale[0]])
+                                       db.coordinate_locations[o][2]
+                                       / coord_scale[0]])
 
     def calibration(self):
         """Determine pixel to coordinate conversion scale
@@ -254,10 +263,11 @@ class Pixel2coord():
 
     def determine_coordinates(self):
         """Use calibration parameters to determine locations of objects."""
-        self.image.rotate_main_images(self.calibration_params['total_rotation_angle'])
+        self.image.rotate_main_images(self.calibration_params[
+                                      'total_rotation_angle'])
         self.process_image()
         self.image.find(calibration=True)
-        self.db.print_count(calibration=True)  # print count of objects detected
+        self.db.print_count(calibration=True)  # print detected objects count
         self.p2c(self.db)
         self.db.print_coordinates()
         if self.viewoutputimage:
@@ -267,7 +277,8 @@ class Pixel2coord():
 if __name__ == "__main__":
     folder = os.path.dirname(os.path.realpath(__file__)) + os.sep
     print("Calibration image load...")
-    P2C = Pixel2coord(DB(), calibration_image=folder + "p2c_test_calibration.jpg")
+    P2C = Pixel2coord(DB(), calibration_image=folder +
+                      "p2c_test_calibration.jpg")
     P2C.viewoutputimage = True
     # Calibration
     P2C.image.rotate_main_images(P2C.test_rotation)

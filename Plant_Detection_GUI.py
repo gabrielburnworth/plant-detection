@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import sys, os
+import sys
+import os
 import json
 import cv2
 from Plant_Detection import Plant_Detection
@@ -31,11 +32,16 @@ except IOError:
     morph_amount = 1
     iterations = 1
 
+
 def HSV_trackbar_name(P, bound):
-    if P == 'H': P = 'Hue'
-    if P == 'S': P = 'Saturation'
-    if P == 'V': P = 'Value'
+    if P == 'H':
+        P = 'Hue'
+    if P == 'S':
+        P = 'Saturation'
+    if P == 'V':
+        P = 'Value'
     return '{} {} {}'.format(P, bound, ' ' * (12 - len(P)))
+
 
 def process(x):
     global HSV_bounds
@@ -48,7 +54,8 @@ def process(x):
     else:
         # Get parameter values
         blur = cv2.getTrackbarPos('Blur', window)
-        if blur % 2 == 0: blur += 1
+        if blur % 2 == 0:
+            blur += 1
         morph = cv2.getTrackbarPos('Morph', window)
         iterations = cv2.getTrackbarPos('Iterations', window)
 
@@ -63,20 +70,21 @@ def process(x):
         # Process image with parameters
         if override_HSV_defaults or from_file:
             PD = Plant_Detection(image=filename,
-                  blur=blur, morph=morph, iterations=iterations,
-                  HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
-                  debug=True, save=False, text_output=False)
+                                 blur=blur, morph=morph, iterations=iterations,
+                                 HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
+                                 debug=True, save=False, text_output=False)
             PD.detect_plants()
             img = PD.final_debug_image
         else:
             PD = Plant_Detection(image=filename,
-                  blur=blur, morph=morph, iterations=iterations,
-                  debug=True, save=False, text_output=False)
+                                 blur=blur, morph=morph, iterations=iterations,
+                                 debug=True, save=False, text_output=False)
             PD.detect_plants()
             img = PD.final_debug_image
 
-        #Show processed image
+        # Show processed image
         cv2.imshow(window, img)
+
 
 def HSV_selection(open_window):
     global HSV_bounds
@@ -95,7 +103,7 @@ def HSV_selection(open_window):
                     HSV_trackbar_name('HSV'[P], bound),
                     HSVwindow, HSV_bounds[b][P])
         HSVwindow_loaded = 1
-    else: # close window
+    else:  # close window
         cv2.destroyWindow(HSVwindow)
         HSVwindow_loaded = 0
 
@@ -111,6 +119,7 @@ cv2.setTrackbarPos('Iterations', window, iterations)
 
 while(1):
     k = cv2.waitKey(1) & 0xFF
-    if k == 27: break
+    if k == 27:
+        break
 
 cv2.destroyAllWindows()

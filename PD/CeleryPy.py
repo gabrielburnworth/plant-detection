@@ -7,8 +7,10 @@ import os
 import json
 from functools import wraps
 
+
 class FarmBotJSON():
     """Python wrappers for FarmBot Celery Script."""
+
     def _encode_coordinates(self, x, y, z):
         coords = {}
         coords['x'] = x
@@ -87,7 +89,8 @@ class FarmBotJSON():
         """
         args = {}
         if len(location) == 2:
-            args['location'] = self._saved_location_node(location[0], location[1])
+            args['location'] = self._saved_location_node(
+                location[0], location[1])
         if len(location) == 3:
             args['location'] = self._coordinate_node(*location)
         args['offset'] = self._coordinate_node(*offset)

@@ -7,11 +7,13 @@ import os
 import cv2
 import json
 
+
 class Parameters():
     """Input parameters for Plant Detection"""
+
     def __init__(self):
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
-                          'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+                           'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.array = None  # default
         self.kernel_type = 'ellipse'
         self.morph_type = 'close'
@@ -69,7 +71,8 @@ class Parameters():
         print('Morph kernel size: {}'.format(self.parameters['morph']))
         print('Iterations: {}'.format(self.parameters['iterations']))
         print('Hue:\n\tMIN: {}\n\tMAX: {}'.format(*self.parameters['H']))
-        print('Saturation:\n\tMIN: {}\n\tMAX: {}'.format(*self.parameters['S']))
+        print('Saturation:\n\tMIN: {}\n\tMAX: {}'.format(
+            *self.parameters['S']))
         print('Value:\n\tMIN: {}\n\tMAX: {}'.format(*self.parameters['V']))
         print('-' * 25)
 

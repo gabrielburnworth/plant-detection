@@ -3,7 +3,8 @@
 
 For Plant Detection.
 """
-import sys, os
+import sys
+import os
 import cv2
 import platform
 from time import sleep
@@ -24,8 +25,10 @@ if platform.uname()[4].startswith("arm") and use_rpi_camera:
     from picamera import PiCamera
     using_rpi = True
 
+
 class Capture():
     """Capture image for Plant Detection"""
+
     def __init__(self):
         self.image = None
         self.ret = None

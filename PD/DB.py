@@ -11,8 +11,10 @@ try:
 except:
     from CeleryPy import FarmBotJSON
 
+
 class DB():
     """Known and detected plant data for Plant Detection"""
+
     def __init__(self):
         self.plants = {'known': [], 'save': [], 'remove': []}
         self.output_text = True
@@ -107,7 +109,8 @@ class DB():
                 r=known_plant['radius']))
 
         # Print removal candidates
-        print("\n{} plants marked for removal.".format(len(self.plants['remove'])))
+        print("\n{} plants marked for removal.".format(
+            len(self.plants['remove'])))
         if len(self.plants['remove']) > 0:
             print("Plants at the following machine coordinates "
                   "( X Y ) with R = radius are to be removed:")
@@ -136,9 +139,9 @@ class DB():
             print("Detected object machine coordinates ( X Y ) with R = radius:")
             for coordinate_location in self.coordinate_locations:
                 print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
-                                                        coordinate_location[0],
-                                                        coordinate_location[1],
-                                                        coordinate_location[2]))
+                    coordinate_location[0],
+                    coordinate_location[1],
+                    coordinate_location[2]))
 
     def print_pixel(self):
         """output text data (pixels) about

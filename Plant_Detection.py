@@ -4,12 +4,14 @@
 Detects green plants on a dirt background
  and marks them with red circles.
 """
-import sys, os
+import sys
+import os
 from PD.P2C import Pixel2coord
 from PD.Image import Image
 from PD.Parameters import Parameters
 from PD.DB import DB
 from PD.Capture import Capture
+
 
 class Plant_Detection():
     """Detect plants in image and saves an image with plants marked.
@@ -66,6 +68,7 @@ class Plant_Detection():
            PD.calibrate()
            PD.detect_plants()
     """
+
     def __init__(self, **kwargs):
         self.image = None
         self.coordinates = False
@@ -84,18 +87,28 @@ class Plant_Detection():
         self.P2C = None
         self.capture = Capture().capture
         for key in kwargs:
-            if key == 'image': self.image = kwargs[key]
-            if key == 'coordinates': self.coordinates = kwargs[key]
-            if key == 'calibration_img': self.calibration_img = kwargs[key]
-            if key == 'known_plants': self.db.plants['known'] = kwargs[key]
-            if key == 'debug': self.debug = kwargs[key]
-            if key == 'blur': self.params.parameters['blur'] = kwargs[key]
-            if key == 'morph': self.params.parameters['morph'] = kwargs[key]
+            if key == 'image':
+                self.image = kwargs[key]
+            if key == 'coordinates':
+                self.coordinates = kwargs[key]
+            if key == 'calibration_img':
+                self.calibration_img = kwargs[key]
+            if key == 'known_plants':
+                self.db.plants['known'] = kwargs[key]
+            if key == 'debug':
+                self.debug = kwargs[key]
+            if key == 'blur':
+                self.params.parameters['blur'] = kwargs[key]
+            if key == 'morph':
+                self.params.parameters['morph'] = kwargs[key]
             if key == 'iterations':
                 self.params.parameters['iterations'] = kwargs[key]
-            if key == 'array': self.params.array = kwargs[key]
-            if key == 'save': self.save = kwargs[key]
-            if key == 'clump_buster': self.clump_buster = kwargs[key]
+            if key == 'array':
+                self.params.array = kwargs[key]
+            if key == 'save':
+                self.save = kwargs[key]
+            if key == 'clump_buster':
+                self.clump_buster = kwargs[key]
             if key == 'HSV_min':
                 HSV_min = kwargs[key]
                 self.params.parameters['H'][0] = HSV_min[0]
@@ -112,9 +125,12 @@ class Plant_Detection():
                 self.parameters_from_env_var = kwargs[key]
             if key == 'calibration_parameters_from_env_var':
                 self.calibration_parameters_from_env_var = kwargs[key]
-            if key == 'text_output': self.text_output = kwargs[key]
-            if key == 'verbose': self.verbose = kwargs[key]
-            if key == 'print_all_json': self.print_all_json = kwargs[key]
+            if key == 'text_output':
+                self.text_output = kwargs[key]
+            if key == 'verbose':
+                self.verbose = kwargs[key]
+            if key == 'print_all_json':
+                self.print_all_json = kwargs[key]
         if self.calibration_img is not None:
             self.coordinates = True
         self.grey_out = False
@@ -142,7 +158,8 @@ class Plant_Detection():
             if self.P2C.calibration_params['total_rotation_angle'] != 0:
                 print(" Note: required rotation executed = {:.2f} degrees".format(
                     self.P2C.calibration_params['total_rotation_angle']))
-            self.db.print_count(calibration=True)  # print number of objects detected
+            # print number of objects detected
+            self.db.print_count(calibration=True)
 
     def detect_plants(self):
         """Detect the green objects in the image."""
@@ -167,14 +184,14 @@ class Plant_Detection():
 
         if self.image is None:
             # No image provided. Capture one.
-            self.image = Image(self.params, self.db) # create image object
+            self.image = Image(self.params, self.db)  # create image object
             self.image.capture()
             if self.debug:
                 self.image.save('photo')
         else:
             # Image provided. Load it.
             filename = self.image
-            self.image = Image(self.params, self.db) # create image object
+            self.image = Image(self.params, self.db)  # create image object
             self.image.load(filename)
 
         # Blur image to simplify and reduce noise.
@@ -242,20 +259,22 @@ class Plant_Detection():
             print("\nJSON:")
             print(self.params.parameters)
             print(self.db.plants)
-            if self.P2C is not None: print(self.P2C.calibration_params)
+            if self.P2C is not None:
+                print(self.P2C.calibration_params)
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
         soil_image = directory + 'soil_image.jpg'
         PD = Plant_Detection(image=soil_image,
-            blur=15, morph=6, iterations=4,
-            calibration_img=directory + "PD/p2c_test_calibration.jpg",
-            known_plants=[{'x': 200, 'y': 600, 'radius': 100},
-                          {'x': 900, 'y': 200, 'radius': 120}])
+                             blur=15, morph=6, iterations=4,
+                             calibration_img=directory + "PD/p2c_test_calibration.jpg",
+                             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
+                                           {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants
     else:
         soil_image = sys.argv[1]
-        PD = Plant_Detection(image=soil_image, parameters_from_file=True, debug=True)
+        PD = Plant_Detection(
+            image=soil_image, parameters_from_file=True, debug=True)
         PD.detect_plants()

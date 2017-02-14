@@ -3,7 +3,8 @@
 
 For Plant Detection.
 """
-import sys, os
+import sys
+import os
 import numpy as np
 import cv2
 try:
@@ -15,10 +16,12 @@ except:
     from Parameters import Parameters
     from DB import DB
 
+
 class Image():
     """Provide image processes to Plant Detection"""
+
     def __init__(self, parameters, db):
-        self.image = None # working image
+        self.image = None  # working image
         self.original = None
         self.output = None
         self.blurred = None
@@ -42,8 +45,8 @@ class Image():
         height, width = self.original.shape[:2]
         if height > 600:
             self.output = cv2.resize(self.original,
-                (int(width * 600 / height), 600),
-                interpolation=cv2.INTER_AREA)
+                                     (int(width * 600 / height), 600),
+                                     interpolation=cv2.INTER_AREA)
         else:
             self.output = self.original.copy()
 
@@ -111,7 +114,8 @@ class Image():
         """Blur image"""
         if self.params.parameters['blur'] % 2 == 0:
             self.params.parameters['blur'] += 1
-        self.blurred = cv2.medianBlur(self.image, self.params.parameters['blur'])
+        self.blurred = cv2.medianBlur(
+            self.image, self.params.parameters['blur'])
         self.image = self.blurred.copy()
         self.status['blur'] = True
 
@@ -144,8 +148,8 @@ class Image():
     def mask2(self):
         """Show regions of original image selected by mask"""
         self.masked2 = cv2.bitwise_and(self.output,
-                                        self.output,
-                                        mask=self.masked)
+                                       self.output,
+                                       mask=self.masked)
         temp = self.image
         self.image = self.masked2
         self.save_annotated('masked2')
@@ -161,19 +165,20 @@ class Image():
                                                 self.params.parameters['morph']))
             morph_type = self.params.mt[self.params.morph_type]
             self.morphed = cv2.morphologyEx(self.masked,
-                                morph_type, kernel,
-                                iterations=self.params.parameters['iterations'])
+                                            morph_type, kernel,
+                                            iterations=self.params.parameters[
+                                                'iterations'])
         else:
             # List of morphological transformations
             processes = self.params.array
             self.morphed = self.masked
-            for prcoess_num, process in enumerate(processes):
+            for process in processes:
                 morph_amount = process[0]
                 kernel_type = self.params.kt[process[1]]
                 morph_type = self.params.mt[process[2]]
                 iterations = process[3]
                 kernel = cv2.getStructuringElement(kernel_type,
-                                                  (morph_amount, morph_amount))
+                                                   (morph_amount, morph_amount))
                 if morph_type == 'erode':
                     self.morphed = cv2.erode(self.morphed, kernel,
                                              iterations=iterations)
@@ -182,8 +187,8 @@ class Image():
                                               iterations=iterations)
                 else:
                     self.morphed = cv2.morphologyEx(self.morphed,
-                                            morph_type, kernel,
-                                            iterations=iterations)
+                                                    morph_type, kernel,
+                                                    iterations=iterations)
         self.image = self.morphed
         self.status['morph'] = True
 
@@ -202,12 +207,12 @@ class Image():
            by splitting them into quarters"""
         try:
             contours, hierarchy = cv2.findContours(self.morphed,
-                                               cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+                                                   cv2.RETR_EXTERNAL,
+                                                   cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            unused_img, contours, hierarchy = cv2.findContours(self.morphed,
-                                               cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+            _img, contours, hierarchy = cv2.findContours(self.morphed,
+                                                         cv2.RETR_EXTERNAL,
+                                                         cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             cnt = contours[i]
             rx, ry, rw, rh = cv2.boundingRect(cnt)
@@ -216,8 +221,8 @@ class Image():
             cv2.line(self.morphed, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
                      (0), rh / 7)
         kernel = cv2.getStructuringElement(self.params.kt['ellipse'],
-                                          (self.params.morph_amount,
-                                           self.params.morph_amount))
+                                           (self.params.morph_amount,
+                                            self.params.morph_amount))
         self.morphed = cv2.dilate(self.morphed, kernel, iterations=1)
         self.image = self.morphed
         self.status['bust'] = True
@@ -225,11 +230,11 @@ class Image():
     def grey(self):
         """Grey out region not selected by mask"""
         grey_bg = cv2.addWeighted(np.full_like(self.marked, 255),
-                                               0.4, self.marked, 0.6, 0)
+                                  0.4, self.marked, 0.6, 0)
         black_fg = cv2.bitwise_and(grey_bg, grey_bg,
                                    mask=cv2.bitwise_not(self.morphed))
         plant_fg_grey_bg = cv2.add(cv2.bitwise_and(self.marked, self.marked,
-                                   mask=self.morphed), black_fg)
+                                                   mask=self.morphed), black_fg)
         self.greyed = plant_fg_grey_bg.copy()
         self.output = self.greyed
         self.status['grey'] = True
@@ -241,19 +246,23 @@ class Image():
         draw_contours = True  # default
         calibration = False  # default
         for key in kwargs:
-            if key == 'small_c': small_c = kwargs[key]
-            if key == 'circle': circle = kwargs[key]
-            if key == 'draw_contours': draw_contours = kwargs[key]
-            if key == 'calibration': calibration = kwargs[key]
+            if key == 'small_c':
+                small_c = kwargs[key]
+            if key == 'circle':
+                circle = kwargs[key]
+            if key == 'draw_contours':
+                draw_contours = kwargs[key]
+            if key == 'calibration':
+                calibration = kwargs[key]
         # Find contours (hopefully of outside edges of plants)
         try:
             contours, hierarchy = cv2.findContours(self.morphed,
-                                               cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+                                                   cv2.RETR_EXTERNAL,
+                                                   cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            unused_img, contours, hierarchy = cv2.findContours(self.morphed,
-                                               cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+            _img, contours, hierarchy = cv2.findContours(self.morphed,
+                                                         cv2.RETR_EXTERNAL,
+                                                         cv2.CHAIN_APPROX_SIMPLE)
         self.db.object_count = len(contours)
         if calibration and self.db.object_count > 10 and 0:
             print("ERROR: Too many calibration objects detected in image.")
@@ -302,14 +311,16 @@ class Image():
                             (self.db.calibration_pixel_locations,
                              [mcx, mcy, radius]))
                     except ValueError:
-                        self.db.calibration_pixel_locations = [mcx, mcy, radius]
+                        self.db.calibration_pixel_locations = [
+                            mcx, mcy, radius]
         self.image = self.morphed
         self.status['mark'] = True
 
     def coordinates(self, p2c):
         """Rotate image according to calibration data, detect objects and
            their coordinates"""
-        self.rotate_main_images(p2c.total_rotation_angle)  # rotate according to calibration
+        self.rotate_main_images(
+            p2c.total_rotation_angle)  # rotate according to calibration
         self.image = self.morphed
         self.find()  # detect pixel locations of objects
         p2c.p2c(self.db)  # convert pixel locations to coordinates
@@ -346,6 +357,7 @@ class Image():
         w = self.marked.shape[1]
         textsize = w / 2000.
         textweight = int(3.5 * textsize)
+
         def grid_point(point, pointtype):
             if pointtype == 'coordinates':
                 if len(point) < 3:
@@ -361,17 +373,17 @@ class Image():
             tps = w / 300.
             # crosshair center
             self.marked[int(y - tps):int(y + tps + 1),
-                       int(x - tps):int(x + tps + 1)] = (255, 255, 255)
+                        int(x - tps):int(x + tps + 1)] = (255, 255, 255)
             # crosshair lines
             self.marked[int(y - tps * 4):int(y + tps * 4 + 1),
-                       int(x - tps / 4):int(x + tps / 4 + 1)] = (255,
-                                                                 255,
-                                                                 255)
+                        int(x - tps / 4):int(x + tps / 4 + 1)] = (255,
+                                                                  255,
+                                                                  255)
             self.marked[int(y - tps / 4):int(y + tps / 4 + 1),
-                       int(x - tps * 4):int(x + tps * 4 + 1)] = (255,
-                                                                 255,
-                                                                 255)
-        #grid_point([1650, 2050, 0], 'coordinates')  # test point
+                        int(x - tps * 4):int(x + tps * 4 + 1)] = (255,
+                                                                  255,
+                                                                  255)
+        # grid_point([1650, 2050, 0], 'coordinates')  # test point
         grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
         grid_point(p2c.calibration_params['center_pixel_location'],
                    'pixels')  # image center
@@ -423,12 +435,15 @@ class Image():
                 lines = lines + [
                     "kernel type = {}".format(self.params.kernel_type),
                     "kernel size = {}".format(self.params.parameters['morph']),
-                    "morphological transformation = {}".format(self.params.morph_type),
+                    "morphological transformation = {}".format(
+                        self.params.morph_type),
                     "number of iterations = {}".format(
                         self.params.parameters['iterations'])]
-        h = self.image.shape[0]; w = self.image.shape[1]
+        h = self.image.shape[0]
+        w = self.image.shape[1]
         textsize = w / 1200.
-        lineheight = int(40 * textsize); textweight = int(3.5 * textsize)
+        lineheight = int(40 * textsize)
+        textweight = int(3.5 * textsize)
         add = lineheight + lineheight * len(lines)
         if self.status['morph'] and self.params.array:  # multiple morphs
             add_1 = add
