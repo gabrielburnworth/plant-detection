@@ -14,7 +14,7 @@ try:
     gi.require_version('GExiv2', '0.10')
     from gi.repository import GExiv2
     exif_import = True
-except ImportError:
+except:
     exif_import = False
 
 use_rpi_camera = False

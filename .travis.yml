@@ -1,0 +1,22 @@
+language: python
+dist: trusty
+sudo: required
+python:
+  - "2.7"
+  - "3.5"
+env:
+  - OPENCV_VERSION=2
+  - OPENCV_VERSION=3
+before_script:
+  - sudo apt-get update -qq
+  - if [[ $OPENCV_VERSION == '2' ]]; then sudo apt-get install python-opencv; fi
+  - if [[ $OPENCV_VERSION == '3' ]]; then pip install opencv-python; fi
+install: true
+script:
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python$TRAVIS_PYTHON_VERSION/dist-packages/
+  - python -c 'import cv2; print("{} {}".format("OpenCV",cv2.__version__))'
+  - python -m unittest discover -p "Test*.py" -v
+matrix:
+  exclude:
+    - env: OPENCV_VERSION=2
+      python: "3.5"

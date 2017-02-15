@@ -2,6 +2,8 @@
 *
 !.gitignore
 !.pre-commit-config.yaml
+!.travis.yml
+!requirements.txt
 !*.md
 !*.py
 !soil_image.jpg

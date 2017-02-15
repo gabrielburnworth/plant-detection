@@ -6,8 +6,28 @@ For Plant Detection.
 import os
 import json
 import unittest
-import cv2
 from Plant_Detection import Plant_Detection
+
+
+def assert_dict_values_almost_equal(assertAE, object1, object2):
+    def shape(objects):
+        if isinstance(objects, dict):
+            formatted_objects = objects
+        else:
+            formatted_objects = {}
+            formatted_objects['this'] = objects
+        return formatted_objects
+    f_object1 = shape(object1)
+    f_object2 = shape(object2)
+    for (_, dicts1), (_, dicts2) in zip(f_object1.items(), f_object2.items()):
+        for dict1, dict2 in zip(dicts1, dicts2):
+            for (_, value1), (_, value2) in zip(dict1.items(), dict2.items()):
+                assertAE(value1, value2, delta=5)
+
+
+def subset(dictionary, keylist):
+    dict_excerpt = {key: dictionary[key] for key in keylist}
+    return dict_excerpt
 
 
 class PDTestJSONinput(unittest.TestCase):
@@ -69,58 +89,41 @@ class PDTestCalibration(unittest.TestCase):
         self.objects = [{'y': 300.69, 'x': 300.0, 'radius': 46.86},
                         {'y': 599.66, 'x': 897.94, 'radius': 46.86},
                         {'y': 800.68, 'x': 98.97, 'radius': 47.53}]
-        if cv2.__version__[0] == '3':
-            self.calibration_json['total_rotation_angle'] = 0.014
-            self.objects = [{'y': 300.69, 'x': 300.0, 'radius': 45.6},
-                            {'y': 599.66, 'x': 897.94, 'radius': 45.57},
-                            {'y': 800.68, 'x': 98.97, 'radius': 46.28}]
 
     def test_calibration_inputs(self):
         """Check calibration input parameters"""
+        calibration_input_keys = ["blur", "morph", "calibration_iters",
+                                  "H", "S", "V",
+                                  "calibration_circles_xaxis",
+                                  "camera_offset_coordinates",
+                                  "image_bot_origin_location",
+                                  "calibration_circle_separation"]
         self.assertEqual(
-            self.pd.P2C.calibration_params['calibration_iters'],
-            self.calibration_json['calibration_iters'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['calibration_circle_separation'],
-            self.calibration_json['calibration_circle_separation'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['blur'],
-            self.calibration_json['blur'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['morph'],
-            self.calibration_json['morph'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['H'],
-            self.calibration_json['H'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['S'],
-            self.calibration_json['S'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['V'],
-            self.calibration_json['V'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['calibration_circles_xaxis'],
-            self.calibration_json['calibration_circles_xaxis'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['camera_offset_coordinates'],
-            self.calibration_json['camera_offset_coordinates'])
-        self.assertEqual(
-            self.pd.P2C.calibration_params['image_bot_origin_location'],
-            self.calibration_json['image_bot_origin_location'])
+            subset(self.calibration_json, calibration_input_keys),
+            subset(self.pd.P2C.calibration_params, calibration_input_keys))
 
     def test_calibration_results(self):
         """Check calibration results"""
-        self.assertEqual(self.pd.P2C.calibration_params['total_rotation_angle'],
-                         self.calibration_json['total_rotation_angle'])
-        self.assertEqual(self.pd.P2C.calibration_params['coord_scale'],
-                         self.calibration_json['coord_scale'])
-        self.assertEqual(self.pd.P2C.calibration_params['center_pixel_location'],
-                         self.calibration_json['center_pixel_location'])
+        calibration_results_keys = ["total_rotation_angle",
+                                    "coord_scale",
+                                    "center_pixel_location"]
+        static_results = subset(self.calibration_json,
+                                calibration_results_keys)
+        test_results = subset(self.pd.P2C.calibration_params,
+                              calibration_results_keys)
+        self.assertAlmostEqual(static_results['total_rotation_angle'],
+                               test_results['total_rotation_angle'], places=1)
+        self.assertAlmostEqual(static_results['coord_scale'],
+                               test_results['coord_scale'], places=3)
+        self.assertEqual(static_results['center_pixel_location'],
+                         test_results['center_pixel_location'])
 
     def test_object_coordinate_detection(self):
         """Determine coordinates of test objects"""
         self.pd.detect_plants()
-        self.assertEqual(self.pd.db.plants['remove'], self.objects)
+        assert_dict_values_almost_equal(self.assertAlmostEqual,
+                                        self.pd.db.plants['remove'],
+                                        self.objects)
 
 
 class PDTestArgs(unittest.TestCase):
@@ -239,34 +242,21 @@ class PDTestOutput(unittest.TestCase):
                        {'y': 676.97, 'x': 59.46, 'radius': 60.95},
                        {'y': 914.09, 'x': 62.89, 'radius': 82.37}]
         }
-        if cv2.__version__[0] == '3':
-            self.calibration['total_rotation_angle'] = 0.014
-            self.plants = {
-                'known': [{'y': 600, 'x': 200, 'radius': 100},
-                          {'y': 200, 'x': 900, 'radius': 120}],
-                'save': [{'y': 85.91, 'x': 837.8, 'radius': 78.18},
-                         {'y': 189.01, 'x': 901.37, 'radius': 63.42},
-                         {'y': 579.04, 'x': 236.43, 'radius': 88.57}],
-                'remove': [{'y': 39.52, 'x': 1427.14, 'radius': 72.01},
-                           {'y': 41.24, 'x': 607.56, 'radius': 80.32},
-                           {'y': 103.1, 'x': 1260.48, 'radius': 2.86},
-                           {'y': 152.92, 'x': 1214.09, 'radius': 60.53},
-                           {'y': 216.5, 'x': 1373.88, 'radius': 13.42},
-                           {'y': 231.96, 'x': 1286.25, 'radius': 60.0},
-                           {'y': 285.23, 'x': 1368.72, 'radius': 13.98},
-                           {'y': 412.37, 'x': 1038.83, 'radius': 72.26},
-                           {'y': 479.38, 'x': 1533.67, 'radius': 79.36},
-                           {'y': 500.0, 'x': 765.64, 'radius': 77.69},
-                           {'y': 608.25, 'x': 1308.59, 'radius': 146.17},
-                           {'y': 676.97, 'x': 57.74, 'radius': 59.95},
-                           {'y': 914.09, 'x': 61.17, 'radius': 80.64}]
-            }
 
     def test_output(self):
         """Check detect plants results"""
-        self.assertEqual(self.pd.db.plants, self.plants)
+        assert_dict_values_almost_equal(self.assertAlmostEqual,
+                                        self.pd.db.plants,
+                                        self.plants)
         self.assertEqual(self.pd.params.parameters, self.input_params)
-        self.assertEqual(self.pd.P2C.calibration_params, self.calibration)
+        self.assertAlmostEqual(self.calibration['total_rotation_angle'],
+                               self.pd.P2C.calibration_params[
+                               'total_rotation_angle'], places=1)
+        self.assertAlmostEqual(self.calibration['coord_scale'],
+                               self.pd.P2C.calibration_params[
+                               'coord_scale'], places=3)
+        self.assertEqual(self.calibration['center_pixel_location'],
+                         self.pd.P2C.calibration_params['center_pixel_location'])
 
 if __name__ == '__main__':
     unittest.main()
