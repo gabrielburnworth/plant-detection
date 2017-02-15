@@ -262,6 +262,14 @@ class Plant_Detection():
             if self.P2C is not None:
                 print(self.P2C.calibration_params)
 
+        if self.text_output and not self.verbose:
+            print('{}: {}'.format('known plants input',
+                                  self.db.plants['known']))
+            print('{}: {}'.format('parameters input',
+                                  self.params.parameters))
+            print('{}: {}'.format('coordinates input',
+                                  Capture().getcoordinates()))
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
