@@ -6,6 +6,10 @@ For Plant Detection.
 import os
 import cv2
 import json
+try:
+    from .CeleryPy import CeleryPy
+except:
+    from CeleryPy import CeleryPy
 
 
 class Parameters():
@@ -45,6 +49,10 @@ class Parameters():
             self.tmp_dir = "/tmp/"
             save(self.tmp_dir)
 
+    def save_to_env_var(self):
+        """Save input parameters to environment variable"""
+        CeleryPy().save_inputs_to_env_var(self.parameters)
+
     def load(self):
         """Load input parameters from file"""
         def load(directory):
@@ -60,8 +68,13 @@ class Parameters():
             pass
 
     def load_env_var(self):
-        """Read input parameters from JSON in ENV VAR"""
-        self.parameters = json.loads(os.environ['PLANT_DETECTION_options'])
+        """Read input parameters from JSON in environment variable"""
+        try:
+            self.parameters = json.loads(os.environ['PLANT_DETECTION_options'])
+        except KeyError:
+            # Load defaults for environment variable
+            self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
+                               'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
 
     def print_(self):
         """Print input parameters"""

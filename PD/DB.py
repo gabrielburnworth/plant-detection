@@ -7,9 +7,9 @@ import os
 import json
 import numpy as np
 try:
-    from .CeleryPy import FarmBotJSON
+    from .CeleryPy import CeleryPy
 except:
-    from CeleryPy import FarmBotJSON
+    from CeleryPy import CeleryPy
 
 
 class DB():
@@ -57,8 +57,8 @@ class DB():
         db_json = json.loads(os.environ['DB'])
         self.plants['known'] = db_json['plants']
         for plant in self.plants['known']:
-            plant.pop('name')
-            plant.pop('device_id')
+            plant.pop('name', None)
+            plant.pop('device_id', None)
 
     def identify(self):
         """Compare detected plants to known to separate plants from weeds"""
@@ -158,7 +158,7 @@ class DB():
     def output_CS(self):
         """output JSON with identified plant coordinates and radii"""
         # Encode to CS
-        FarmBot = FarmBotJSON()
+        FarmBot = CeleryPy()
         for mark in self.plants['remove']:
             x, y = round(mark['x'], 2), round(mark['y'], 2)
             r = round(mark['radius'], 2)

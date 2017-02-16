@@ -8,7 +8,7 @@ import json
 from functools import wraps
 
 
-class FarmBotJSON():
+class CeleryPy():
     """Python wrappers for FarmBot Celery Script."""
 
     def _encode_coordinates(self, x, y, z):
@@ -41,6 +41,12 @@ class FarmBotJSON():
         coordinate = self._create_node('coordinate', coordinates)
         return coordinate
 
+    def _set_user_env(self, label, value):
+        set_user_env = self._create_node('set_user_env', {})
+        env_var = self._create_pair(label, value)
+        set_user_env['body'] = [self._create_node('pair', env_var)]
+        return set_user_env
+
     def _print_json(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
@@ -49,7 +55,7 @@ class FarmBotJSON():
                                      json.dumps(function(*args, **kwargs))))
             except KeyError:
                 pass
-                # print('POINT: {}'.format(json.dumps(function(*args, **kwargs),
+                # print('CS: {}'.format(json.dumps(function(*args, **kwargs),
                 #                  indent=2, separators=(',', ': '))))
         return wrapper
 
@@ -74,6 +80,34 @@ class FarmBotJSON():
         created_by = self._create_pair('created_by', 'plant-detection')
         point['body'] = [self._create_node('pair', created_by)]
         return point
+
+    @_print_json
+    def save_inputs_to_env_var(self, inputs):
+        """Kind:
+                set_user_env
+           Body:
+                Kind: pair
+                Args:
+                    label: PLANT_DETECTION_options
+                    value: <input parameters>
+        """
+        input_env_cs = self._set_user_env('PLANT_DETECTION_options',
+                                          json.dumps(inputs))
+        return input_env_cs
+
+    @_print_json
+    def save_calibration_to_env_var(self, calibration):
+        """Kind:
+                set_user_env
+           Body:
+                Kind: pair
+                Args:
+                    label: PLANT_DETECTION_calibration
+                    value: <calibration parameters>
+        """
+        calibration_env_cs = self._set_user_env('PLANT_DETECTION_calibration',
+                                                json.dumps(calibration))
+        return calibration_env_cs
 
     @_print_json
     def move_absolute(self, location, offset, speed):
@@ -128,7 +162,7 @@ if __name__ == "__main__":
     plant = ['plant', plant_id]
     radius = 48.00
 
-    FarmBot = FarmBotJSON()
+    FarmBot = CeleryPy()
     FarmBot.add_point(x, y, z, radius)
     print
     FarmBot.move_absolute([x, y, z], [x_offset, y_offset, z_offset], speed)

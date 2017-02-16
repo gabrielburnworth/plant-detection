@@ -9,11 +9,13 @@ try:
     from .Capture import Capture
     from .Image import Image
     from .DB import DB
+    from .CeleryPy import CeleryPy
 except:
     from Parameters import Parameters
     from Capture import Capture
     from Image import Image
     from DB import DB
+    from CeleryPy import CeleryPy
 
 
 class Pixel2coord():
@@ -21,7 +23,7 @@ class Pixel2coord():
     in images. Finds object coordinates in image.
     """
 
-    def __init__(self, db, calibration_image=None):
+    def __init__(self, db, calibration_image=None, env_var=False):
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.parameters_file = "plant-detection_p2c_calibration_parameters.json"
 
@@ -38,7 +40,10 @@ class Pixel2coord():
             self.params_loaded_from_json = True
         else:
             self.cparams = Parameters()
-        self.load_calibration_parameters()
+        if env_var and 0:
+            self.load_calibration_parameters_from_env_var()
+        else:
+            self.load_calibration_parameters()
 
         if calibration_image is not None:
             self.image = Image(self.cparams, self.db)
@@ -84,9 +89,31 @@ class Pixel2coord():
         with open(directory + self.parameters_file, 'w') as f:
             json.dump(self.calibration_params, f)
 
+    def save_calibration_data_to_env_var(self):
+        """Save calibration parameters to file."""
+        CeleryPy().save_calibration_to_env_var(self.calibration_params)
+
+    def set_calibration_parameters_from_defaults(self):
+        """Set calibration parameters from defaults."""
+        self.calibration_params = {'blur': 5, 'morph': 15,
+                                   'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                                   'calibration_circles_xaxis': True,
+                                   'image_bot_origin_location': [0, 1],
+                                   'calibration_circle_separation': 1000,
+                                   'camera_offset_coordinates': [200, 100],
+                                   'calibration_iters': 3}
+
+    def set_input_parameters_for_calibration(self):
+        """Set input parameters from calibration parameters."""
+        self.cparams.parameters['blur'] = self.calibration_params['blur']
+        self.cparams.parameters['morph'] = self.calibration_params['morph']
+        self.cparams.parameters['H'] = self.calibration_params['H']
+        self.cparams.parameters['S'] = self.calibration_params['S']
+        self.cparams.parameters['V'] = self.calibration_params['V']
+
     def load_calibration_parameters(self):
         """Load calibration parameters from file
-        or use defaults and save to file."""
+        or use defaults."""
         def load(directory):  # Load calibration parameters from file
             with open(directory + self.parameters_file, 'r') as f:
                 self.calibration_params = json.load(f)
@@ -108,18 +135,18 @@ class Pixel2coord():
                 load(self.db.tmp_dir)
         except IOError:  # Use defaults
             self.db.tmp_dir = None
-            self.calibration_params = {'blur': 5, 'morph': 15,
-                                       'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
-                                       'calibration_circles_xaxis': True,
-                                       'image_bot_origin_location': [0, 1],
-                                       'calibration_circle_separation': 1000,
-                                       'camera_offset_coordinates': [200, 100],
-                                       'calibration_iters': 3}
-        self.cparams.parameters['blur'] = self.calibration_params['blur']
-        self.cparams.parameters['morph'] = self.calibration_params['morph']
-        self.cparams.parameters['H'] = self.calibration_params['H']
-        self.cparams.parameters['S'] = self.calibration_params['S']
-        self.cparams.parameters['V'] = self.calibration_params['V']
+            self.set_calibration_parameters_from_defaults()
+        self.set_input_parameters_for_calibration()
+
+    def load_calibration_parameters_from_env_var(self):
+        """Load calibration parameters from environment variable
+        or use defaults."""
+        try:
+            self.calibration_params = json.loads(
+                os.environ['PLANT_DETECTION_calibration'])
+        except KeyError:
+            self.set_calibration_parameters_from_defaults()
+        self.set_input_parameters_for_calibration()
 
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
@@ -279,7 +306,6 @@ class Pixel2coord():
                 total_rotation_angle -= 360
         self.calibration_params['total_rotation_angle'] = round(
             total_rotation_angle, 3)
-        self.save_calibration_parameters()
         if self.params_loaded_from_json:
             self.image.image = self.image.marked
             self.image.save('calibration_result')

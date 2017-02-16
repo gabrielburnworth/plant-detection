@@ -151,6 +151,7 @@ class Plant_Detection():
                 self.db.calibration_parameters = self.params
             except KeyError:
                 print("Environment variable parameters load failed.")
+
         # Call coordinate conversion module
         self.P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
         self.P2C.calibration()  # calibrate and save values
@@ -160,10 +161,20 @@ class Plant_Detection():
                     self.P2C.calibration_params['total_rotation_angle']))
             # print number of objects detected
             self.db.print_count(calibration=True)
+
+        # Print condensed output if verbose output is not chosen
         if self.text_output and not self.verbose:
             print("Calibration complete. (rotation:{}, scale:{})".format(
                 self.P2C.calibration_params['total_rotation_angle'],
                 self.P2C.calibration_params['coord_scale']))
+
+        # Save calibration data
+        if self.calibration_parameters_from_env_var and 0:
+            # to environment variable
+            self.P2C.save_calibration_data_to_env_var()
+        else:
+            # to file
+            self.P2C.save_calibration_parameters()
 
     def detect_plants(self):
         """Detect the green objects in the image."""
@@ -225,7 +236,10 @@ class Plant_Detection():
 
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
-            self.P2C = Pixel2coord(self.db)  # Use saved calibration values
+            if self.calibration_parameters_from_env_var and 0:
+                self.P2C = Pixel2coord(self.db, env_var=True)
+            else:
+                self.P2C = Pixel2coord(self.db)  # Use saved calibration values
             try:  # Check for coordinate conversion calibration results
                 self.P2C.calibration_params['coord_scale']
             except KeyError:
@@ -265,6 +279,7 @@ class Plant_Detection():
             self.params.save()
             self.db.save_plants()
 
+        # Print raw JSON to STDOUT
         if self.print_all_json:
             print("\nJSON:")
             print(self.params.parameters)
@@ -272,6 +287,7 @@ class Plant_Detection():
             if self.P2C is not None:
                 print(self.P2C.calibration_params)
 
+        # Print condensed inputs if verbose output is not chosen
         if self.text_output and not self.verbose:
             print('{}: {}'.format('known plants input',
                                   self.db.plants['known']))
@@ -279,6 +295,14 @@ class Plant_Detection():
                                   self.params.parameters))
             print('{}: {}'.format('coordinates input',
                                   Capture().getcoordinates()))
+
+        # Save input parameters
+        if self.parameters_from_env_var and 0:
+            # to environment variable
+            self.params.save_to_env_var()
+        else:
+            # to file
+            self.params.save()
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
