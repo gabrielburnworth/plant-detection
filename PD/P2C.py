@@ -235,18 +235,36 @@ class Pixel2coord():
         """Determine pixel to coordinate conversion scale
         and image rotation angle."""
         total_rotation_angle = 0
+        warning_issued = False
         for i in range(0, self.calibration_params['calibration_iters']):
             self.process_image()
-            self.image.find(calibration=True)
-            if len(self.db.calibration_pixel_locations) == 0:
-                print("ERROR: Calibration failed. No objects detected.")
-                sys.exit(0)
-            if i == 0:
-                if self.db.object_count != 2:
-                    print(" Warning: {} objects detected. "
-                          "Exactly 2 reccomended.".format(self.db.object_count))
+            self.image.find(calibration=True)  # find objects
+            # If not the last iteration, determine camera rotation angle
             if i != (self.calibration_params['calibration_iters'] - 1):
+                # Check number of objects detected and notify user if needed.
+                if len(self.db.calibration_pixel_locations) == 0:
+                    print("ERROR: Calibration failed. No objects detected.")
+                    sys.exit(0)
+                if self.db.object_count > 2:
+                    if not warning_issued:
+                        print(" Warning: {} objects detected. "
+                              "Exactly 2 reccomended. "
+                              "Incorrect results likely.".format(
+                                  self.db.object_count))
+                        warning_issued = True
+                if self.db.object_count < 2:
+                    print(" ERROR: {} objects detected. "
+                          "At least 2 required. Exactly 2 reccomended.".format(
+                              self.db.object_count))
+                    sys.exit(0)
+                # Use detected objects to determine required rotation angle
                 self.rotationdetermination()
+                if abs(self.rotationangle) > 120:
+                    print(" ERROR: Excessive rotation required. "
+                          "Check that the calibration objects are parallel with "
+                          "the desired axis and that they are the only two objects"
+                          " detected.")
+                    sys.exit(0)
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle
         self.calibrate()
@@ -254,6 +272,11 @@ class Pixel2coord():
         if self.viewoutputimage:
             self.image.image = self.image.marked
             self.image.show()
+        while abs(total_rotation_angle) > 360:
+            if total_rotation_angle < 0:
+                total_rotation_angle += 360
+            else:
+                total_rotation_angle -= 360
         self.calibration_params['total_rotation_angle'] = round(
             total_rotation_angle, 3)
         self.save_calibration_parameters()

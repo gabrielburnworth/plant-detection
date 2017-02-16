@@ -32,7 +32,7 @@ class Capture():
     def __init__(self):
         self.image = None
         self.ret = None
-        self.camera_port = 0
+        self.camera_port = None
         self.timestamp = datetime.now().isoformat()
         self.test_coordinates = [600, 400]
         self.image_captured = False
@@ -55,13 +55,18 @@ class Capture():
                 camera.capture(rawCapture, format="bgr")
                 self.image = rawCapture.array
         else:
+            self.camera_port = 0
             # With USB cameras:
             # image_width = 1600
             # image_height = 1200
             discard_frames = 20
             # Check for camera
             if not os.path.exists('/dev/video' + str(self.camera_port)):
-                print("No camera detected.")
+                print("No camera detected at video{}.".format(self.camera_port))
+                self.camera_port = 1
+                print("Trying video{}...".format(self.camera_port))
+                if not os.path.exists('/dev/video' + str(self.camera_port)):
+                    print("No camera detected at video{}.".format(self.camera_port))
             camera = cv2.VideoCapture(self.camera_port)
             sleep(0.1)
             # try:

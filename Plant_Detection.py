@@ -160,6 +160,10 @@ class Plant_Detection():
                     self.P2C.calibration_params['total_rotation_angle']))
             # print number of objects detected
             self.db.print_count(calibration=True)
+        if self.text_output and not self.verbose:
+            print("Calibration complete. (rotation:{}, scale:{})".format(
+                self.P2C.calibration_params['total_rotation_angle'],
+                self.P2C.calibration_params['coord_scale']))
 
     def detect_plants(self):
         """Detect the green objects in the image."""
@@ -222,6 +226,12 @@ class Plant_Detection():
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
             self.P2C = Pixel2coord(self.db)  # Use saved calibration values
+            try:  # Check for coordinate conversion calibration results
+                self.P2C.calibration_params['coord_scale']
+            except KeyError:
+                print("ERROR: Coordinate conversion calibration values "
+                      "not found. Run calibration first.")
+                sys.exit(0)
             self.image.coordinates(self.P2C)  # get coordinates of objects
             self.db.identify()  # organize objects into plants and weeds
             if self.text_output:

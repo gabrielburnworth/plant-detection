@@ -59,6 +59,9 @@ class Image():
     def load(self, filename):
         """Load image from file"""
         self.original = cv2.imread(filename, 1)
+        if self.original is None:
+            print("ERROR: Incorrect image path ({}).".format(filename))
+            sys.exit(0)
         self._prepare()
 
     def capture(self):
@@ -276,6 +279,7 @@ class Image():
 
         # Loop through contours
         self.db.pixel_locations = []
+        only_one_object = False
         for i, cnt in enumerate(contours):
             # Calculate plant location by using centroid of contour
             M = cv2.moments(cnt)
@@ -305,14 +309,21 @@ class Image():
             if calibration:
                 if i == 0:
                     self.db.calibration_pixel_locations = [mcx, mcy, radius]
+                    only_one_object = True
                 else:
                     try:
                         self.db.calibration_pixel_locations = np.vstack(
                             (self.db.calibration_pixel_locations,
                              [mcx, mcy, radius]))
+                        only_one_object = False
                     except ValueError:
                         self.db.calibration_pixel_locations = [
                             mcx, mcy, radius]
+                        only_one_object = True
+        if calibration and only_one_object:
+            self.db.calibration_pixel_locations = [
+                self.db.calibration_pixel_locations]
+            self.db.object_count = 1
         self.image = self.morphed
         self.status['mark'] = True
 

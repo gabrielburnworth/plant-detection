@@ -56,6 +56,9 @@ class DB():
         """Load known plant inputs 'x' 'y' and 'radius' from json"""
         db_json = json.loads(os.environ['DB'])
         self.plants['known'] = db_json['plants']
+        for plant in self.plants['known']:
+            plant.pop('name')
+            plant.pop('device_id')
 
     def identify(self):
         """Compare detected plants to known to separate plants from weeds"""
