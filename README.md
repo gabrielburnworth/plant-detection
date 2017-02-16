@@ -21,7 +21,11 @@ For an overview of the image processing performed, see [the wiki](../../wiki/Pla
 
 __Install OpenCV on Debian:__
 ```
-sudo apt-get install python-opencv python-numpy python-picamera
+sudo apt-get install python-opencv python-numpy
+```
+OR:
+```
+pip install -r requirements.txt
 ```
 
 ## Basic Usage
@@ -87,7 +91,7 @@ Annotated image: `test_image_marked.png`
 `python -c $'from Plant_Detection import Plant_Detection\nhelp(Plant_Detection)'`
 
 #### Hue range aid
-`python Plant_Detection_GUI.py pixel_to_coordinate/p2c_test_color.jpg`
+`python Plant_Detection_GUI.py PD/p2c_test_color.jpg`
 
 ## Project Directory
 
