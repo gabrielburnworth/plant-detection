@@ -176,10 +176,10 @@ class Image():
             processes = self.params.array
             self.morphed = self.masked
             for process in processes:
-                morph_amount = process[0]
-                kernel_type = self.params.kt[process[1]]
-                morph_type = self.params.mt[process[2]]
-                iterations = process[3]
+                morph_amount = process['size']
+                kernel_type = self.params.kt[process['kernel']]
+                morph_type = self.params.mt[process['type']]
+                iterations = process['iters']
                 kernel = cv2.getStructuringElement(kernel_type,
                                                    (morph_amount, morph_amount))
                 if morph_type == 'erode':
@@ -208,12 +208,13 @@ class Image():
     def clump_buster(self):
         """Break up selected regions of morphed image into smaller regions
            by splitting them into quarters"""
+        clump_img = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(self.morphed,
+            contours, hierarchy = cv2.findContours(clump_img,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(self.morphed,
+            _img, contours, hierarchy = cv2.findContours(clump_img,
                                                          cv2.RETR_EXTERNAL,
                                                          cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
@@ -224,22 +225,23 @@ class Image():
             cv2.line(self.morphed, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
                      (0), rh / 7)
         kernel = cv2.getStructuringElement(self.params.kt['ellipse'],
-                                           (self.params.morph_amount,
-                                            self.params.morph_amount))
+                                           (self.params.parameters['morph'],
+                                            self.params.parameters['morph']))
         self.morphed = cv2.dilate(self.morphed, kernel, iterations=1)
         self.image = self.morphed
         self.status['bust'] = True
 
     def grey(self):
         """Grey out region not selected by mask"""
-        grey_bg = cv2.addWeighted(np.full_like(self.marked, 255),
-                                  0.4, self.marked, 0.6, 0)
+        grey_bg = cv2.addWeighted(np.full_like(self.output, 255),
+                                  0.4, self.output, 0.6, 0)
         black_fg = cv2.bitwise_and(grey_bg, grey_bg,
                                    mask=cv2.bitwise_not(self.morphed))
-        plant_fg_grey_bg = cv2.add(cv2.bitwise_and(self.marked, self.marked,
+        plant_fg_grey_bg = cv2.add(cv2.bitwise_and(self.output, self.output,
                                                    mask=self.morphed), black_fg)
         self.greyed = plant_fg_grey_bg.copy()
         self.output = self.greyed
+        self.marked = self.greyed
         self.status['grey'] = True
 
     def find(self, **kwargs):

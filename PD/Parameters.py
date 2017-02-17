@@ -38,6 +38,8 @@ class Parameters():
         self.mt = {}  # morph type
         self.mt['close'] = cv2.MORPH_CLOSE
         self.mt['open'] = cv2.MORPH_OPEN
+        self.mt['erode'] = 'erode'
+        self.mt['dilate'] = 'dilate'
 
     def save(self):
         """Save input parameters to file"""

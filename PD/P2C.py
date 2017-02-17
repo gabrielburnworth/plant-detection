@@ -297,7 +297,6 @@ class Pixel2coord():
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle
         self.calibrate()
-        self.db.print_coordinates()
         if self.viewoutputimage:
             self.image.image = self.image.marked
             self.image.show()

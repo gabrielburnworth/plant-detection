@@ -72,15 +72,15 @@ def process(x):
             PD = Plant_Detection(image=filename,
                                  blur=blur, morph=morph, iterations=iterations,
                                  HSV_min=HSV_bounds[0], HSV_max=HSV_bounds[1],
-                                 debug=True, save=False, text_output=False)
+                                 save=False, text_output=False)
             PD.detect_plants()
-            img = PD.final_debug_image
+            img = PD.final_marked_image
         else:
             PD = Plant_Detection(image=filename,
                                  blur=blur, morph=morph, iterations=iterations,
-                                 debug=True, save=False, text_output=False)
+                                 save=False, text_output=False)
             PD.detect_plants()
-            img = PD.final_debug_image
+            img = PD.final_marked_image
 
         # Show processed image
         cv2.imshow(window, img)
