@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Plant Detection Test Suite
+"""Plant Detection Tests
 
 For Plant Detection.
 """
@@ -257,6 +257,3 @@ class PDTestOutput(unittest.TestCase):
                                'coord_scale'], places=3)
         self.assertEqual(self.calibration['center_pixel_location'],
                          self.pd.P2C.calibration_params['center_pixel_location'])
-
-if __name__ == '__main__':
-    unittest.main()

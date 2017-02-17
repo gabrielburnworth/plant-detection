@@ -28,6 +28,7 @@ class Parameters():
         self.output_json = False
         self.tmp_dir = None
         self.calibration_params_from_env_var = False
+        self.JSON_input_parameters = None
 
         # Create dictionaries of morph types
         self.kt = {}  # morph kernel type
@@ -51,7 +52,7 @@ class Parameters():
 
     def save_to_env_var(self):
         """Save input parameters to environment variable"""
-        CeleryPy().save_inputs_to_env_var(self.parameters)
+        self.JSON_input_parameters = CeleryPy().save_inputs_to_env_var(self.parameters)
 
     def load(self):
         """Load input parameters from file"""

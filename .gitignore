@@ -1,5 +1,7 @@
 # Plant Detection results
 *
+!PD
+!tests
 !.gitignore
 !.pre-commit-config.yaml
 !.travis.yml

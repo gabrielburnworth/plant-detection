@@ -79,6 +79,7 @@ class Pixel2coord():
         self.output_text = True
         self.get_bot_coordinates = Capture().getcoordinates
         self.debug = False
+        self.JSON_calibration_data = None
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
@@ -91,7 +92,8 @@ class Pixel2coord():
 
     def save_calibration_data_to_env_var(self):
         """Save calibration parameters to file."""
-        CeleryPy().save_calibration_to_env_var(self.calibration_params)
+        self.JSON_calibration_data = CeleryPy(
+        ).save_calibration_to_env_var(self.calibration_params)
 
     def set_calibration_parameters_from_defaults(self):
         """Set calibration parameters from defaults."""

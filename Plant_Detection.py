@@ -169,7 +169,7 @@ class Plant_Detection():
                 self.P2C.calibration_params['coord_scale']))
 
         # Save calibration data
-        if self.calibration_parameters_from_env_var and 0:
+        if self.calibration_parameters_from_env_var:
             # to environment variable
             self.P2C.save_calibration_data_to_env_var()
         else:
@@ -236,7 +236,7 @@ class Plant_Detection():
 
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
-            if self.calibration_parameters_from_env_var and 0:
+            if self.calibration_parameters_from_env_var:
                 self.P2C = Pixel2coord(self.db, env_var=True)
             else:
                 self.P2C = Pixel2coord(self.db)  # Use saved calibration values
@@ -297,7 +297,7 @@ class Plant_Detection():
                                   Capture().getcoordinates()))
 
         # Save input parameters
-        if self.parameters_from_env_var and 0:
+        if self.parameters_from_env_var:
             # to environment variable
             self.params.save_to_env_var()
         else:

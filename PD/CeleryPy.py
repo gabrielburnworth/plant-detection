@@ -57,6 +57,7 @@ class CeleryPy():
                 pass
                 # print('CS: {}'.format(json.dumps(function(*args, **kwargs),
                 #                  indent=2, separators=(',', ': '))))
+                return function(*args, **kwargs)
         return wrapper
 
     @_print_json
