@@ -14,7 +14,7 @@ from PD.Capture import Capture
 
 
 class Plant_Detection():
-    """Detect plants in image and saves an image with plants marked.
+    """Detect plants in image and output an image with plants marked.
 
        Kwargs:
            image (str): filename of image to process (default = None)
@@ -30,9 +30,11 @@ class Plant_Detection():
            morph (int): amount of filtering (default = 5)
            iterations (int): number of morphological iterations (default = 1)
            array (list): list of morphs to run
-               [[morph kernel size, morph kernel type, morph type, iterations]]
-               example: array=[[3, 'cross', 'dilate', 2],
-                               [5, 'rect',  'erode',  1]] (default = None)
+               [morph kernel size, morph kernel type, morph type, iterations]
+               example:
+               [{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+                {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
+                      (default = None)
            save (boolean): save images (default = True)
            clump_buster (boolean): attempt to break
                                    plant clusters (default = False)

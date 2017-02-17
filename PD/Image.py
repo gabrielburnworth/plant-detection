@@ -30,6 +30,7 @@ class Image():
         self.masked = None
         self.masked2 = None
         self.marked = None
+        self.contoured = None
         self.output_text = True
         self.reduce_large = True
         self.greyed = None
@@ -232,7 +233,7 @@ class Image():
         self.status['bust'] = True
 
     def grey(self):
-        """Grey out region not selected by mask"""
+        """Grey out region in output image not selected by morphed mask"""
         grey_bg = cv2.addWeighted(np.full_like(self.output, 255),
                                   0.4, self.output, 0.6, 0)
         black_fg = cv2.bitwise_and(grey_bg, grey_bg,
@@ -245,7 +246,8 @@ class Image():
         self.status['grey'] = True
 
     def find(self, **kwargs):
-        """Create contours, find locations of objects, and mark them."""
+        """Create contours, find locations of objects, and mark them.
+           Requires morphed image."""
         small_c = False  # default
         circle = True  # default
         draw_contours = True  # default
@@ -260,14 +262,16 @@ class Image():
             if key == 'calibration':
                 calibration = kwargs[key]
         # Find contours (hopefully of outside edges of plants)
+        self.contoured = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(self.morphed,
+            contours, hierarchy = cv2.findContours(self.contoured,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(self.morphed,
+            _img, contours, hierarchy = cv2.findContours(self.contoured,
                                                          cv2.RETR_EXTERNAL,
                                                          cv2.CHAIN_APPROX_SIMPLE)
+            self.contoured = np.zeros_like(self.contoured, np.uint8)
         self.db.object_count = len(contours)
         if calibration and self.db.object_count > 10 and 0:
             print("ERROR: Too many calibration objects detected in image.")
@@ -303,7 +307,7 @@ class Image():
             if calibration:
                 cv2.drawContours(self.marked, [cnt], 0, (0, 255, 0), 3)
             else:
-                cv2.drawContours(self.morphed, [cnt], 0, (255, 255, 255), 3)
+                cv2.drawContours(self.contoured, [cnt], 0, (255, 255, 255), 3)
                 cv2.drawContours(self.marked, [cnt], 0, (0, 0, 0), 6)
                 cv2.drawContours(self.marked, [cnt], 0, (255, 255, 255), 2)
 
@@ -326,7 +330,7 @@ class Image():
             self.db.calibration_pixel_locations = [
                 self.db.calibration_pixel_locations]
             self.db.object_count = 1
-        self.image = self.morphed
+        self.image = self.contoured
         self.status['mark'] = True
 
     def coordinates(self, p2c):
