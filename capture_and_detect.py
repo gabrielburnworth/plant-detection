@@ -2,5 +2,6 @@
 
 from Plant_Detection import Plant_Detection
 
-PD = Plant_Detection(parameters_from_env_var=True, verbose=False)
-PD.detect_plants()
+if __name__ == "__main__":
+    PD = Plant_Detection(parameters_from_env_var=True, verbose=False)
+    PD.detect_plants()

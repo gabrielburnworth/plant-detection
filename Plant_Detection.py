@@ -110,6 +110,7 @@ class Plant_Detection():
         self.verbose = True
         self.print_all_json = False
         self.grey_out = False
+        self.GUI = False
         # Inputs
         for key in kwargs:
             if key == 'image':
@@ -158,10 +159,15 @@ class Plant_Detection():
                 self.print_all_json = kwargs[key]
             if key == 'grey_out':
                 self.grey_out = kwargs[key]
+            if key == 'GUI':
+                self.GUI = kwargs[key]
         # Changes based on inputs
         if self.calibration_img is not None:
             self.coordinates = True
         self.db.output_text = self.verbose
+        if self.GUI:
+            self.save = False
+            self.text_output = False
 
     def calibrate(self):
         """Initialize coordinate conversion module using calibration image."""
@@ -301,7 +307,7 @@ class Plant_Detection():
         # Final marked image
         if self.save or self.debug:
             self.image.save('marked')
-        else:  # (for GUI)
+        elif self.GUI:
             self.final_marked_image = self.image.marked
 
         # Print raw JSON to STDOUT
@@ -327,6 +333,9 @@ class Plant_Detection():
             self.params.save_to_env_var()
         elif self.save:
             # to file
+            self.params.save()
+        elif self.GUI:
+            # to file for GUI
             self.params.save()
 
         # Save plants
