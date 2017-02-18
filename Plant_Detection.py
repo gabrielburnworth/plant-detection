@@ -243,23 +243,10 @@ class Plant_Detection():
             filename = self.image
             self.image = Image(self.params, self.db)  # create image object
             self.image.load(filename)
+        self.image.debug = self.debug
 
-        # Blur image to simplify and reduce noise.
-        self.image.blur()
-        if self.debug:
-            self.image.save_annotated('blurred')
-
-        # Create a mask using the color range parameters
-        self.image.mask()
-        if self.debug:
-            self.image.save_annotated('masked')
-            self.image.mask2()
-
-        # Transform mask to try to make objects more coherent
-        self.image.morph()
-        if self.debug:
-            self.image.save_annotated('morphed')
-            self.image.morph2()
+        # Process image in preparation for detecting plants (blur, mask, morph)
+        self.image.initial_processing()
 
         # Optionally break up masses by splitting them into quarters
         if self.clump_buster:

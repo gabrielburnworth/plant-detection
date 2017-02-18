@@ -37,6 +37,8 @@ class Image():
         self.params = parameters
         self.db = db
         self.object_count = None
+        self.debug = False
+        self.calibration_debug = False
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.status = {'image': False, 'blur': False, 'mask': False,
                        'morph': False, 'bust': False, 'grey': False,
@@ -205,6 +207,31 @@ class Image():
         self.image = self.morphed2
         self.save_annotated('morphed2')
         self.image = temp
+
+    def initial_processing(self):
+        """Process image in preparation for detecting plants"""
+        # Blur image to simplify and reduce noise.
+        self.blur()
+        if self.debug:
+            self.save_annotated('blurred')
+        if self.calibration_debug:
+            self.show()
+
+        # Create a mask using the color range parameters
+        self.mask()
+        if self.debug:
+            self.save_annotated('masked')
+            self.mask2()
+        if self.calibration_debug:
+            self.show()
+
+        # Transform mask to try to make objects more coherent
+        self.morph()
+        if self.debug:
+            self.save_annotated('morphed')
+            self.morph2()
+        if self.calibration_debug:
+            self.show()
 
     def clump_buster(self):
         """Break up selected regions of morphed image into smaller regions

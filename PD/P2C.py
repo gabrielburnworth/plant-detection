@@ -33,6 +33,7 @@ class Pixel2coord():
         self.center_pixel_location = None
         self.test_coordinates = None
         self.params_loaded_from_json = False
+        self.debug = False
 
         self.db = db
         if self.db.calibration_parameters:
@@ -67,6 +68,7 @@ class Pixel2coord():
             self.calibration_params['center_pixel_location'
                                     ] = list(map(int, np.array(
                                         self.image.image.shape[:2][::-1]) / 2))
+            self.image.calibration_debug = self.debug
         self.camera_rotation = 0
         if self.camera_rotation > 0:
             self.image.image = np.rot90(self.image)
@@ -78,7 +80,6 @@ class Pixel2coord():
         self.viewoutputimage = False  # overridden as True if running script
         self.output_text = True
         self.get_bot_coordinates = Capture().getcoordinates
-        self.debug = False
         self.JSON_calibration_data = None
 
     def save_calibration_parameters(self):
@@ -173,20 +174,6 @@ class Pixel2coord():
         else:
             self.rotationangle = 0
 
-    def process_image(self):
-        """Prepare image for contour detection."""
-        if self.debug:
-            self.cparams.print_()
-        self.image.blur()
-        if self.debug:
-            self.image.show()
-        self.image.mask()
-        if self.debug:
-            self.image.show()
-        self.image.morph()
-        if self.debug:
-            self.image.show()
-
     def calibrate(self):
         """Determine coordinate conversion parameters."""
         if len(self.db.calibration_pixel_locations) > 1:
@@ -265,8 +252,10 @@ class Pixel2coord():
         and image rotation angle."""
         total_rotation_angle = 0
         warning_issued = False
+        if self.debug:
+            self.cparams.print_()
         for i in range(0, self.calibration_params['calibration_iters']):
-            self.process_image()
+            self.image.initial_processing()
             self.image.find(calibration=True)  # find objects
             # If not the last iteration, determine camera rotation angle
             if i != (self.calibration_params['calibration_iters'] - 1):
@@ -315,7 +304,9 @@ class Pixel2coord():
         """Use calibration parameters to determine locations of objects."""
         self.image.rotate_main_images(self.calibration_params[
                                       'total_rotation_angle'])
-        self.process_image()
+        if self.debug:
+            self.cparams.print_()
+        self.image.initial_processing()
         self.image.find(calibration=True)
         self.db.print_count(calibration=True)  # print detected objects count
         self.p2c(self.db)
@@ -346,7 +337,8 @@ if __name__ == "__main__":
     # Color range
     print("Calibration color range...")
     P2C.image.load(folder + "p2c_test_color.jpg")
-    P2C.process_image()
+    P2C.cparams.print_()
+    P2C.image.initial_processing()
     P2C.image.find(circle=False)
     if P2C.viewoutputimage:
         P2C.image.image = P2C.image.marked
