@@ -41,12 +41,6 @@ class CeleryPy():
         coordinate = self._create_node('coordinate', coordinates)
         return coordinate
 
-    def _set_user_env(self, label, value):
-        set_user_env = self._create_node('set_user_env', {})
-        env_var = self._create_pair(label, value)
-        set_user_env['body'] = [self._create_node('pair', env_var)]
-        return set_user_env
-
     def _print_json(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
@@ -83,32 +77,19 @@ class CeleryPy():
         return point
 
     @_print_json
-    def save_inputs_to_env_var(self, inputs):
+    def set_user_env(self, label, value):
         """Kind:
                 set_user_env
            Body:
                 Kind: pair
                 Args:
-                    label: PLANT_DETECTION_options
-                    value: <input parameters>
+                    label: <ENV VAR name>
+                    value: <ENV VAR value>
         """
-        input_env_cs = self._set_user_env('PLANT_DETECTION_options',
-                                          json.dumps(inputs))
-        return input_env_cs
-
-    @_print_json
-    def save_calibration_to_env_var(self, calibration):
-        """Kind:
-                set_user_env
-           Body:
-                Kind: pair
-                Args:
-                    label: PLANT_DETECTION_calibration
-                    value: <calibration parameters>
-        """
-        calibration_env_cs = self._set_user_env('PLANT_DETECTION_calibration',
-                                                json.dumps(calibration))
-        return calibration_env_cs
+        set_user_env = self._create_node('set_user_env', {})
+        env_var = self._create_pair(label, value)
+        set_user_env['body'] = [self._create_node('pair', env_var)]
+        return set_user_env
 
     @_print_json
     def move_absolute(self, location, offset, speed):

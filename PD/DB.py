@@ -26,7 +26,6 @@ class DB():
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
-        self.calibration_parameters = None
         self.weeder_destrut_radius = 50
 
     def save_plants(self):

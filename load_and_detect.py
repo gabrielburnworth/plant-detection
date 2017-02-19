@@ -14,5 +14,5 @@ if __name__ == "__main__":
         sys.exit(0)
 
     PD = Plant_Detection(image=recent_image,
-                         parameters_from_env_var=True, verbose=False)
+                         from_env_var=True, verbose=False)
     PD.detect_plants()

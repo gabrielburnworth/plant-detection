@@ -21,14 +21,14 @@ class Parameters():
         self.array = None  # default
         self.kernel_type = 'ellipse'
         self.morph_type = 'close'
-        self.parameters_from_file = False  # default
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.input_parameters_file = "plant-detection_inputs.json"
         self.output_text = False
         self.output_json = False
         self.tmp_dir = None
-        self.calibration_params_from_env_var = False
         self.JSON_input_parameters = None
+        self.calibration_data = None
+        self.ENV_VAR_name = 'PLANT_DETECTION_options'
 
         # Create dictionaries of morph types
         self.kt = {}  # morph kernel type
@@ -54,7 +54,10 @@ class Parameters():
 
     def save_to_env_var(self):
         """Save input parameters to environment variable"""
-        self.JSON_input_parameters = CeleryPy().save_inputs_to_env_var(self.parameters)
+        self.JSON_input_parameters = CeleryPy().set_user_env(
+            self.ENV_VAR_name,
+            json.dumps(self.parameters))
+        os.environ[self.ENV_VAR_name] = json.dumps(self.parameters)
 
     def load(self):
         """Load input parameters from file"""
@@ -62,18 +65,15 @@ class Parameters():
             with open(directory + self.input_parameters_file, 'r') as f:
                 self.parameters = json.load(f)
         try:
-            try:
-                load(self.dir)
-            except IOError:
-                self.tmp_dir = "/tmp/"
-                load(self.tmp_dir)
+            load(self.dir)
         except IOError:
-            pass
+            self.tmp_dir = "/tmp/"
+            load(self.tmp_dir)
 
     def load_env_var(self):
         """Read input parameters from JSON in environment variable"""
         try:
-            self.parameters = json.loads(os.environ['PLANT_DETECTION_options'])
+            self.parameters = json.loads(os.environ[self.ENV_VAR_name])
         except KeyError:
             # Load defaults for environment variable
             self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,

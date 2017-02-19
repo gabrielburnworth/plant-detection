@@ -4,6 +4,7 @@
 For Plant Detection.
 """
 import unittest
+import json
 from PD.CeleryPy import CeleryPy
 
 
@@ -19,7 +20,8 @@ class CeleryScript(unittest.TestCase):
             'body': [{'kind': 'pair', 'args': {
                 'value': 'plant-detection', 'label': 'created_by'}}]
         }
-        self.set_env_var = self.cs.save_inputs_to_env_var({"in": "puts"})
+        self.set_env_var = self.cs.set_user_env('PLANT_DETECTION_options',
+                                                json.dumps({"in": "puts"}))
         self.set_env_var_static = {"kind": "set_user_env", "args": {},
                                    "body": [{"kind": "pair", "args": {
                                        "label": "PLANT_DETECTION_options",

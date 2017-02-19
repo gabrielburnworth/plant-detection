@@ -78,7 +78,7 @@ python Plant_Detection.py test_image.jpg
 >Or, for more options, enter a python command line: `python`
 ```python
 from Plant_Detection import Plant_Detection
-PD = Plant_Detection(image='test_image.jpg', parameters_from_file=True)
+PD = Plant_Detection(image='test_image.jpg', from_file=True)
 PD.detect_plants()
 ```
 

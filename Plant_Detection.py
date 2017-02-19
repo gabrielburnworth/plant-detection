@@ -42,19 +42,20 @@ class Plant_Detection():
                            and Value(0-255) (default = [30, 20, 20])
            HSV_max (list): green upper bound Hue(0-179), Saturation(0-255),
                            and Value(0-255) (default = [90, 255, 255])
-           parameters_from_file (boolean): load parameters from file
-                                           (default = False)
-           parameters_from_env_var (boolean): load input parameters from
-                environment variable, overriding other parameter inputs
-                Example:
-                PLANT_DETECTION_options={"blur":15,"morph":8,"iterations":4,
-                 "H":[37,82],"S":[38,255],"V":[61,255]}
-                DB={"plants":[{"id":115,"device_id":76}]}
+           from_file (boolean): load data from file
+                plant-detection_inputs.json
+                plant-detection_p2c_calibration_parameters.json
+                plant-detection_plants.json
                 (default = False)
-           calibration_parameters_from_env_var (boolean): load calibration
-                parameters from environment variable,
+           from_env_var (boolean): load data from environment variable,
                 overriding other parameter inputs
-                see example in parameters_from_env_var
+                Example:
+                PLANT_DETECTION_options={"blur": 15, "morph": 8, "iterations": 4,
+                 "H": [37, 82], "S": [38, 255], "V": [61, 255]}
+                DB={"plants": [{"x": 10, "y": 20, "radius": 30}]}
+                PLANT_DETECTION_calibration={'total_rotation_angle': 0.0,
+                                             'coord_scale': 1.7182,
+                                             'center_pixel_location': [465, 290]}
                 (default = False)
            text_output (boolean): print text to STDOUT (default = True)
            verbose (boolean): print verbose text to STDOUT.
@@ -103,9 +104,8 @@ class Plant_Detection():
         self.debug = False
         self.save = True
         self.clump_buster = False
-        self.parameters_from_file = False
-        self.parameters_from_env_var = False
-        self.calibration_parameters_from_env_var = False
+        self.from_file = False
+        self.from_env_var = False
         self.text_output = True
         self.verbose = True
         self.print_all_json = False
@@ -145,12 +145,10 @@ class Plant_Detection():
                 self.params.parameters['H'][1] = HSV_max[0]
                 self.params.parameters['S'][1] = HSV_max[1]
                 self.params.parameters['V'][1] = HSV_max[2]
-            if key == 'parameters_from_file':
-                self.parameters_from_file = kwargs[key]
-            if key == 'parameters_from_env_var':
-                self.parameters_from_env_var = kwargs[key]
-            if key == 'calibration_parameters_from_env_var':
-                self.calibration_parameters_from_env_var = kwargs[key]
+            if key == 'from_file':
+                self.from_file = kwargs[key]
+            if key == 'from_env_var':
+                self.from_env_var = kwargs[key]
             if key == 'text_output':
                 self.text_output = kwargs[key]
             if key == 'verbose':
@@ -176,18 +174,34 @@ class Plant_Detection():
             # Take a calibration image.
             self.calibration_img = self.capture()
 
-        if self.calibration_parameters_from_env_var:
-            # Load calibration parameters
+        # Set calibration input parameters
+        if self.from_env_var:
             try:
                 self.params.load_env_var()
-                self.db.calibration_parameters = self.params
-            except KeyError:
-                print("Environment variable parameters load failed.")
+                calibration_input = self.params.parameters.copy()
+            except (KeyError, ValueError):
+                print("Warning: Environment variable calibration "
+                      "parameters load failed.")
+                calibration_input = None
+        elif self.from_file:  # try to load from file
+            try:
+                self.params.load()
+                calibration_input = self.params.parameters.copy()
+            except IOError:
+                print("Warning: Calibration data file load failed. Using defaults.")
+                calibration_input = None
+        else:  # Use default calibration inputs
+            calibration_input = None
 
         # Call coordinate conversion module
-        self.P2C = Pixel2coord(self.db, calibration_image=self.calibration_img)
+        self.P2C = Pixel2coord(self.db,
+                               calibration_image=self.calibration_img,
+                               calibration_data=calibration_input)
         # Perform calibration
         self.P2C.calibration()
+        if self.save:
+            self.P2C.image.image = self.P2C.image.marked
+            self.P2C.image.save('calibration_result')
 
         # Print verbose results
         if self.verbose and self.text_output:
@@ -209,28 +223,33 @@ class Plant_Detection():
                 self.P2C.calibration_params['coord_scale']))
 
         # Save calibration data
-        if self.calibration_parameters_from_env_var:
+        if self.from_env_var:
             # to environment variable
             self.P2C.save_calibration_data_to_env_var()
-        else:  # to file
+        elif self.from_file:  # to file
             self.P2C.save_calibration_parameters()
+        else:  # to Parameters() instance
+            self.params.calibration_data = self.P2C.calibration_params
 
     def detect_plants(self):
         """Detect the green objects in the image."""
 
         # Load input parameters
-        if self.parameters_from_file:
+        if self.from_file:
             # Requested to load detection parameters from file
-            self.params.load()
-        if self.parameters_from_env_var:
+            try:
+                self.params.load()
+            except IOError:
+                print("Warning: Input parameter file load failed. Using defaults.")
+        if self.from_env_var:
             # Requested to load detection parameters from json ENV variable
             try:
                 self.params.load_env_var()
-            except KeyError:
+            except (KeyError, ValueError):
                 print("Warning: Environment variable parameters load failed.")
             try:
                 self.db.load_known_plants_from_env_var()
-            except KeyError:
+            except (KeyError, ValueError):
                 print("Warning: Environment variable plants load failed.")
 
         # Print input parameters and filename of image to process
@@ -265,11 +284,16 @@ class Plant_Detection():
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
             # Load calibration data
-            if self.calibration_parameters_from_env_var:
-                self.P2C = Pixel2coord(self.db, env_var=True)
-            else:  # Use saved calibration values
-                self.P2C = Pixel2coord(self.db)
-            try:  # Check for coordinate conversion calibration results
+            if self.from_env_var:
+                calibration_data = 'env_var'
+            elif self.from_file:
+                calibration_data = 'file'
+            else:  # use data saved in self.params
+                calibration_data = self.params.calibration_data
+            # Initialize coordinate conversion module
+            self.P2C = Pixel2coord(self.db, calibration_data=calibration_data)
+            # Check for coordinate conversion calibration results
+            try:
                 self.P2C.calibration_params['coord_scale']
             except KeyError:
                 print("ERROR: Coordinate conversion calibration values "
@@ -328,7 +352,7 @@ class Plant_Detection():
                                   Capture().getcoordinates()))
 
         # Save input parameters
-        if self.parameters_from_env_var:
+        if self.from_env_var:
             # to environment variable
             self.params.save_to_env_var()
         elif self.save:
@@ -356,5 +380,5 @@ if __name__ == "__main__":
     else:
         soil_image = sys.argv[1]
         PD = Plant_Detection(
-            image=soil_image, parameters_from_file=True, debug=True)
+            image=soil_image, from_file=True, debug=True)
         PD.detect_plants()

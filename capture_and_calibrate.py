@@ -4,5 +4,5 @@ from Plant_Detection import Plant_Detection
 
 if __name__ == "__main__":
     PD = Plant_Detection(coordinates=True,
-                         calibration_parameters_from_env_var=True, verbose=False)
+                         from_env_var=True, verbose=False)
     PD.calibrate()
