@@ -39,6 +39,7 @@ class Image():
         self.object_count = None
         self.debug = False
         self.calibration_debug = False
+        self.image_name = None
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.status = {'image': False, 'blur': False, 'mask': False,
                        'morph': False, 'bust': False, 'grey': False,
@@ -65,6 +66,7 @@ class Image():
         if self.original is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)
+        self.image_name = os.path.splitext(os.path.basename(filename))[0]
         self._prepare()
 
     def capture(self):
@@ -72,17 +74,18 @@ class Image():
         self.original = Capture().capture()
         self._prepare()
 
-    def save(self, title):
+    def save(self, title, image=None):
         """Save image to file"""
-        filename = '{}{}.jpg'.format(self.dir, title)
-        cv2.imwrite(filename, self.image)
-        cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.image)
+        if image is None:
+            image = self.image
+        filename = '{}{}_{}.jpg'.format(self.dir, self.image_name, title)
+        cv2.imwrite(filename, image)
+        cv2.imwrite('/tmp/images/{}_{}.jpg'.format(self.image_name, title),
+                    image)
 
     def save_annotated(self, title):
         """Save annotated image to file"""
-        filename = '{}{}.jpg'.format(self.dir, title)
-        cv2.imwrite(filename, self.annotate())
-        cv2.imwrite('/tmp/images/image_{}.jpg'.format(title), self.annotate())
+        self.save(title, self.annotate())
 
     def show(self):
         """Show image."""
@@ -279,6 +282,7 @@ class Image():
         circle = True  # default
         draw_contours = True  # default
         calibration = False  # default
+        safe_remove = False  # default
         for key in kwargs:
             if key == 'small_c':
                 small_c = kwargs[key]
@@ -288,6 +292,8 @@ class Image():
                 draw_contours = kwargs[key]
             if key == 'calibration':
                 calibration = kwargs[key]
+            if key == 'safe_remove':
+                safe_remove = kwargs[key]
         # Find contours (hopefully of outside edges of plants)
         self.contoured = self.morphed.copy()
         try:
@@ -299,12 +305,13 @@ class Image():
                                                          cv2.RETR_EXTERNAL,
                                                          cv2.CHAIN_APPROX_SIMPLE)
             self.contoured = np.zeros_like(self.contoured, np.uint8)
-        self.db.object_count = len(contours)
+        if not safe_remove:
+            self.db.object_count = len(contours)
         if calibration and self.db.object_count > 10 and 0:
             print("ERROR: Too many calibration objects detected in image.")
             print("\t ({}) Try changing calibration parameters.".format(
                 self.db.object_count))
-            self.params.print_()
+            self.params.print_input()
             cv2.drawContours(self.output, contours, -1, (255, 0, 0), 3)
             self.image = self.output
             self.show()
@@ -382,7 +389,7 @@ class Image():
             point = np.array(self.db.pixel_locations)[0]
             cv2.circle(self.morphed, (int(point[0]), int(point[1])),
                        int(point[2]), (0, 0, 0), -1)
-        self.find()
+        self.find(safe_remove=True)
         p2c.p2c(self.db)
         if not self.db.plants['remove']:
             self.db.plants['remove'] = []

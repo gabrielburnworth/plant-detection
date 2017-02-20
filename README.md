@@ -111,6 +111,7 @@ plant-detection
 ├── tests  - project test suite
 │   ├── __init__.py
 │   ├── test_plant_detection.py  - Plant Detection tests
+│   ├── test_DB.py  - DB tests
 │   └── test_celerypy.py  - CeleryPy tests
 ├── soil_image.jpg  - plant detection test image
 ├── Plant_Detection.py  - calibrate and detect plants

@@ -247,6 +247,7 @@ class Plant_Detection():
                 self.params.load_env_var()
             except (KeyError, ValueError):
                 print("Warning: Environment variable parameters load failed.")
+                self.params.load_defaults_for_env_var()
             try:
                 self.db.load_known_plants_from_env_var()
             except (KeyError, ValueError):
@@ -254,7 +255,7 @@ class Plant_Detection():
 
         # Print input parameters and filename of image to process
         if self.verbose and self.text_output:
-            self.params.print_()
+            self.params.print_input()
             print("\nProcessing image: {}".format(self.image))
 
         # Get image to process
@@ -309,7 +310,7 @@ class Plant_Detection():
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
             if self.verbose and self.text_output:
-                self.db.print_()  # print organized object data text to stdout
+                self.db.print_identified()  # print organized object data text to stdout
             if self.output_celeryscript:
                 self.db.output_CS()  # print object data JSON to stdout
             if self.debug:

@@ -72,14 +72,14 @@ class Parameters():
 
     def load_env_var(self):
         """Read input parameters from JSON in environment variable"""
-        try:
-            self.parameters = json.loads(os.environ[self.ENV_VAR_name])
-        except KeyError:
-            # Load defaults for environment variable
-            self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
-                               'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
+        self.parameters = json.loads(os.environ[self.ENV_VAR_name])
 
-    def print_(self):
+    def load_defaults_for_env_var(self):
+        """Load default input parameters for environment variable"""
+        self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
+                           'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
+
+    def print_input(self):
         """Print input parameters"""
         print('Processing Parameters:')
         print('-' * 25)
@@ -94,8 +94,11 @@ class Parameters():
 
 if __name__ == "__main__":
     parameters = Parameters()
-    parameters.load()
-    parameters.print_()
+    try:
+        parameters.load()
+    except IOError:
+        print("No parameters file.")
+    parameters.print_input()
     parameters.parameters['iterations'] = 4
-    parameters.print_()
+    parameters.print_input()
     parameters.save()

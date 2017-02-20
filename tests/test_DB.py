@@ -27,18 +27,16 @@ class DBTest(unittest.TestCase):
         self.save = [{'radius': 75.0, 'x': 1000.0, 'y': 1000.0},
                      {'radius': 75.0, 'x': 1090.0, 'y': 1000.0},
                      ]
+        self.db.identify()
 
     def test_plant_id_remove(self):
         """Check plants to be removed"""
-        self.db.identify()
         self.assertEqual(self.remove, self.db.plants['remove'])
 
     def test_plant_id_save(self):
         """Check plants to be saved"""
-        self.db.identify()
         self.assertEqual(self.save, self.db.plants['save'])
 
     def test_plant_id_safe_remove(self):
         """Check plants to be safely removed"""
-        self.db.identify()
         self.assertEqual(self.safe_remove, self.db.plants['safe_remove'])

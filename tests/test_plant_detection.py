@@ -229,6 +229,7 @@ class PDTestOutput(unittest.TestCase):
                             'total_rotation_angle': 0.0,
                             'coord_scale': 1.7182,
                             'center_pixel_location': [465, 290]}
+        self.object_count = 16
         self.plants = {
             'known': [{'y': 600, 'x': 200, 'radius': 100},
                       {'y': 200, 'x': 900, 'radius': 120}],
@@ -260,6 +261,10 @@ class PDTestOutput(unittest.TestCase):
                                         self.plants)
         self.assertEqual(self.pd.params.parameters, self.input_params)
         compare_calibration_results(self)
+
+    def test_object_count(self):
+        """Check for correct object count"""
+        self.assertEqual(self.pd.db.object_count, self.object_count)
 
 
 class ENV_VAR(unittest.TestCase):

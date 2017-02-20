@@ -16,7 +16,8 @@ class DB():
     """Known and detected plant data for Plant Detection"""
 
     def __init__(self):
-        self.plants = {'known': [], 'save': [], 'remove': []}
+        self.plants = {'known': [], 'save': [],
+                       'remove': [], 'safe_remove': []}
         self.output_text = True
         self.output_json = False
         self.object_count = None
@@ -30,7 +31,7 @@ class DB():
 
     def save_plants(self):
         """Save plant detection plants to file:
-                'known', 'remove', and 'save'
+                'known', 'remove', 'safe_remove', and 'save'
         """
         if self.tmp_dir is None:
             json_dir = self.dir
@@ -55,6 +56,7 @@ class DB():
         """Load known plant inputs 'x' 'y' and 'radius' from json"""
         db_json = json.loads(os.environ['DB'])
         self.plants['known'] = db_json['plants']
+        # Remove unnecessary data, if it exists
         for plant in self.plants['known']:
             plant.pop('name', None)
             plant.pop('device_id', None)
@@ -95,43 +97,40 @@ class DB():
         print("{} {} detected in image.".format(self.object_count,
                                                 object_name))
 
-    def print_(self):
+    def print_identified(self):
         """output text including data about identified detected plants"""
+        def identified_plant_text_output(title, action, plants):
+            print("\n{} {}.".format(
+                len(self.plants[plants]), title))
+            if len(self.plants[plants]) > 0:
+                print("Plants at the following machine coordinates "
+                      "( X Y ) with R = radius {}:".format(action))
+            for known_plant in self.plants[plants]:
+                print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
+                    x=known_plant['x'],
+                    y=known_plant['y'],
+                    r=known_plant['radius']))
+
         # Print known
-        print("\n{} known plants inputted.".format(
-            len(self.plants['known'])))
-        if len(self.plants['known']) > 0:
-            print("Plants at the following machine coordinates "
-                  "( X Y ) with R = radius are to be saved:")
-        for known_plant in self.plants['known']:
-            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
-                x=known_plant['x'],
-                y=known_plant['y'],
-                r=known_plant['radius']))
-
+        identified_plant_text_output(
+            title='known plants inputted',
+            action='are to be saved',
+            plants='known')
         # Print removal candidates
-        print("\n{} plants marked for removal.".format(
-            len(self.plants['remove'])))
-        if len(self.plants['remove']) > 0:
-            print("Plants at the following machine coordinates "
-                  "( X Y ) with R = radius are to be removed:")
-        for remove_plant in self.plants['remove']:
-            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
-                x=remove_plant['x'],
-                y=remove_plant['y'],
-                r=remove_plant['radius']))
-
+        identified_plant_text_output(
+            title='plants marked for removal',
+            action='are to be removed',
+            plants='remove')
+        # Print safe_remove plants
+        identified_plant_text_output(
+            title='plants marked for safe removal',
+            action='were too close to the known plant to remove completely',
+            plants='safe_remove')
         # Print saved
-        print("\n{} detected plants are known or have escaped "
-              "removal.".format(len(self.plants['save'])))
-        if len(self.plants['save']) > 0:
-            print("Plants at the following machine coordinates "
-                  "( X Y ) with R = radius have been saved:")
-        for save_plant in self.plants['save']:
-            print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
-                x=save_plant['x'],
-                y=save_plant['y'],
-                r=save_plant['radius']))
+        identified_plant_text_output(
+            title='detected plants are known or have escaped removal',
+            action='have been saved',
+            plants='save')
 
     def print_coordinates(self):
         """output text data (coordinates) about
@@ -173,10 +172,11 @@ class DB():
 if __name__ == "__main__":
     db = DB()
     db.load_plants_from_file()
-    db.print_()
+    db.print_identified()
     print('-' * 60)
     db.plants['known'] = [{'x': 3.0, 'y': 4.0, 'radius': 5.0}]
     db.plants['save'] = [{'x': 6.0, 'y': 7.0, 'radius': 8.0}]
     db.plants['remove'] = [{'x': 9.0, 'y': 10.0, 'radius': 11.0}]
-    db.print_()
+    db.plants['safe_remove'] = []
+    db.print_identified()
     db.save_plants()

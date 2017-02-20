@@ -50,11 +50,13 @@ class Pixel2coord():
                 self.load_calibration_parameters()
             except IOError:
                 print("Warning: Calibration data file load failed. Using defaults.")
+                self.calibration_params = self.defaults
         elif calibration_data == 'env_var':
             try:
                 self.load_calibration_parameters_from_env_var()
             except (KeyError, ValueError):
-                print("Warning: Calibration data file load failed. Using defaults.")
+                print("Warning: Calibration data env var load failed. Using defaults.")
+                self.calibration_params = self.defaults
         else:  # load the data provided
             self.calibration_params = calibration_data
             self.initialize_data_keys()
@@ -257,7 +259,7 @@ class Pixel2coord():
         total_rotation_angle = 0
         warning_issued = False
         if self.debug:
-            self.cparams.print_()
+            self.cparams.print_input()
         for i in range(0, self.calibration_params['calibration_iters']):
             self.image.initial_processing()
             self.image.find(calibration=True)  # find objects
@@ -310,7 +312,7 @@ class Pixel2coord():
         self.image.rotate_main_images(self.calibration_params[
                                       'total_rotation_angle'])
         if self.debug:
-            self.cparams.print_()
+            self.cparams.print_input()
         self.image.initial_processing()
         self.image.find(calibration=True)
         self.db.print_count(calibration=True)  # print detected objects count
@@ -342,7 +344,7 @@ if __name__ == "__main__":
     # Color range
     print("Calibration color range...")
     P2C.image.load(folder + "p2c_test_color.jpg")
-    P2C.cparams.print_()
+    P2C.cparams.print_input()
     P2C.image.initial_processing()
     P2C.image.find(circle=False)
     if P2C.viewoutputimage:
