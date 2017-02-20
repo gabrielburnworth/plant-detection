@@ -85,7 +85,7 @@ class Image():
 
     def save_annotated(self, title):
         """Save annotated image to file"""
-        self.save(title, self.annotate())
+        self.save(title, image=self.annotate())
 
     def show(self):
         """Show image."""
@@ -295,16 +295,16 @@ class Image():
             if key == 'safe_remove':
                 safe_remove = kwargs[key]
         # Find contours (hopefully of outside edges of plants)
-        self.contoured = self.morphed.copy()
+        contoured = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(self.contoured,
+            contours, hierarchy = cv2.findContours(contoured,
                                                    cv2.RETR_EXTERNAL,
                                                    cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(self.contoured,
+            _img, contours, hierarchy = cv2.findContours(contoured,
                                                          cv2.RETR_EXTERNAL,
                                                          cv2.CHAIN_APPROX_SIMPLE)
-            self.contoured = np.zeros_like(self.contoured, np.uint8)
+            contoured = np.zeros_like(contoured, np.uint8)
         if not safe_remove:
             self.db.object_count = len(contours)
         if calibration and self.db.object_count > 10 and 0:
@@ -341,7 +341,7 @@ class Image():
             if calibration:
                 cv2.drawContours(self.marked, [cnt], 0, (0, 255, 0), 3)
             else:
-                cv2.drawContours(self.contoured, [cnt], 0, (255, 255, 255), 3)
+                cv2.drawContours(contoured, [cnt], 0, (255, 255, 255), 3)
                 cv2.drawContours(self.marked, [cnt], 0, (0, 0, 0), 6)
                 cv2.drawContours(self.marked, [cnt], 0, (255, 255, 255), 2)
 
@@ -364,8 +364,10 @@ class Image():
             self.db.calibration_pixel_locations = [
                 self.db.calibration_pixel_locations]
             self.db.object_count = 1
-        self.image = self.contoured
-        self.status['mark'] = True
+        if not safe_remove:
+            self.contoured = contoured
+            self.image = self.contoured
+            self.status['mark'] = True
 
     def safe_remove(self, p2c):
         """Process plants marked as 'safe_remove'.
