@@ -232,9 +232,9 @@ class PDTestOutput(unittest.TestCase):
         self.plants = {
             'known': [{'y': 600, 'x': 200, 'radius': 100},
                       {'y': 200, 'x': 900, 'radius': 120}],
-            'save': [{'y': 85.91, 'x': 837.8, 'radius': 80.52},
-                     {'y': 189.01, 'x': 901.37, 'radius': 65.32},
+            'save': [{'y': 189.01, 'x': 901.37, 'radius': 65.32},
                      {'y': 579.04, 'x': 236.43, 'radius': 91.23}],
+            'safe_remove': [{'y': 85.91, 'x': 837.8, 'radius': 80.52}],
             'remove': [{'y': 41.24, 'x': 1428.86, 'radius': 73.59},
                        {'y': 42.96, 'x': 607.56, 'radius': 82.26},
                        {'y': 103.1, 'x': 1260.48, 'radius': 3.44},
@@ -247,11 +247,14 @@ class PDTestOutput(unittest.TestCase):
                        {'y': 500.0, 'x': 765.64, 'radius': 80.02},
                        {'y': 608.25, 'x': 1308.59, 'radius': 148.73},
                        {'y': 676.97, 'x': 59.46, 'radius': 60.95},
-                       {'y': 914.09, 'x': 62.89, 'radius': 82.37}]
+                       {'y': 914.09, 'x': 62.89, 'radius': 82.37},
+                       {'y': 84.2, 'x': 772.51, 'radius': 20.06}]
         }
 
     def test_output(self):
         """Check detect plants results"""
+        # self.maxDiff = None
+        # self.assertEqual(self.pd.db.plants, self.plants)
         assert_dict_values_almost_equal(self.assertAlmostEqual,
                                         self.pd.db.plants,
                                         self.plants)

@@ -26,7 +26,7 @@ class DB():
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
-        self.weeder_destrut_radius = 50
+        self.weeder_destrut_r = 50
 
     def save_plants(self):
         """Save plant detection plants to file:
@@ -63,26 +63,25 @@ class DB():
         """Compare detected plants to known to separate plants from weeds"""
         self.plants['remove'] = []
         self.plants['save'] = []
+        self.plants['safe_remove'] = []
         if self.plants['known'] is None or self.plants['known'] == []:
             self.plants['known'] = [{'x': 0, 'y': 0, 'radius': 0}]
         kplants = np.array(
-            [[_['x'], _['y'], _['radius'] + self.weeder_destrut_radius] for _
-                in self.plants['known']])
-        # TODO: The weeder destruction radius addition spares plants that
-        #       would be damaged by the weeder. It would be best to mark these
-        #       plants as 'safe-remove' and/or change their XYR to a point
-        #       along the line from the known plant center to the weed center
-        #       at which the weeder wouldn't damge the known plant. Reprocessing
-        #       of only the part of the weed outside the known plant safe zone
-        #       could easily be done for these 'safe-remove' plants.
+            [[_['x'], _['y'], _['radius']] for _ in self.plants['known']])
         for plant_coord in self.coordinate_locations:
             x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
             x, y, r = round(x, 2), round(y, 2), round(r, 2)
             cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
-            if all((x - cx)**2 + (y - cy)**2 > cr**2
+            if all((x - cx)**2 + (y - cy)**2 > (cr + self.weeder_destrut_r)**2
                    for cx, cy, cr in zip(cxs, cys, crs)):
+                # Detected plant is outside of known plant safe zone
                 self.plants['remove'].append({'x': x, 'y': y, 'radius': r})
-            else:
+            elif all((x - cx)**2 + (y - cy)**2 > cr**2
+                     for cx, cy, cr in zip(cxs, cys, crs)):
+                # Detected plant is inside known plant safe zone
+                self.plants['safe_remove'].append(
+                    {'x': x, 'y': y, 'radius': r})
+            else:  # Detected plant is within known plant area
                 self.plants['save'].append({'x': x, 'y': y, 'radius': r})
         if self.plants['known'] == [{'x': 0, 'y': 0, 'radius': 0}]:
             self.plants['known'] = []

@@ -360,6 +360,37 @@ class Image():
         self.image = self.contoured
         self.status['mark'] = True
 
+    def safe_remove(self, p2c):
+        """Process plants marked as 'safe_remove'.
+           Reprocess image to detect only the part of the plant
+           outside of the known plant safe zone."""
+        safe_remove_img = np.zeros_like(self.morphed, np.uint8)
+        for plant in self.db.plants['safe_remove']:
+            self.db.coordinate_locations = [plant['x'], plant['y'],
+                                            plant['radius']]
+            p2c.c2p(self.db)
+            point = np.array(self.db.pixel_locations)[0]
+            cv2.circle(safe_remove_img, (int(point[0]), int(point[1])),
+                       int(point[2]), (255, 255, 255), -1)
+        self.morphed = cv2.bitwise_and(self.morphed, self.morphed,
+                                       mask=safe_remove_img)
+        for plant in self.db.plants['known']:
+            self.db.coordinate_locations = [plant['x'], plant['y'],
+                                            plant['radius']
+                                            + self.db.weeder_destrut_r]
+            p2c.c2p(self.db)
+            point = np.array(self.db.pixel_locations)[0]
+            cv2.circle(self.morphed, (int(point[0]), int(point[1])),
+                       int(point[2]), (0, 0, 0), -1)
+        self.find()
+        p2c.p2c(self.db)
+        if not self.db.plants['remove']:
+            self.db.plants['remove'] = []
+        for plant_coord in self.db.coordinate_locations:
+            x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
+            x, y, r = round(x, 2), round(y, 2), round(r, 2)
+            self.db.plants['remove'].append({'x': x, 'y': y, 'radius': r})
+
     def coordinates(self, p2c):
         """Rotate image according to calibration data, detect objects and
            their coordinates"""
@@ -372,7 +403,8 @@ class Image():
     def label(self, p2c=None):
         """Draw circles on image indicating detected plants"""
         def circle(color):
-            c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0)}
+            c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0),
+                 'cyan': (255, 255, 0)}
             for obj in self.db.pixel_locations:
                 cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
                            int(obj[2]), c[color], 4)
@@ -395,6 +427,11 @@ class Image():
             self.db.coordinate_locations = save
             p2c.c2p(self.db)
             circle('blue')
+            safe_remove = [[_['x'], _['y'], _['radius']] for _
+                           in self.db.plants['safe_remove']]
+            self.db.coordinate_locations = safe_remove
+            p2c.c2p(self.db)
+            circle('cyan')
 
     def grid(self, p2c):
         """Draw grid on image indicating coordinate system"""

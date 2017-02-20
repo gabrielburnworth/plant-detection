@@ -303,6 +303,8 @@ class Plant_Detection():
             self.image.coordinates(self.P2C)
             # Organize objects into plants and weeds
             self.db.identify()
+            if self.db.plants['safe_remove']:
+                self.image.safe_remove(self.P2C)
             # Print and output results
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
