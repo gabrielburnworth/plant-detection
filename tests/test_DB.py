@@ -38,5 +38,7 @@ class DBTest(unittest.TestCase):
         self.db.identify()
         self.assertEqual(self.save, self.db.plants['save'])
 
-    def tearDown(self):
-        self.db.plants['known'] = None
+    def test_plant_id_safe_remove(self):
+        """Check plants to be safely removed"""
+        self.db.identify()
+        self.assertEqual(self.safe_remove, self.db.plants['safe_remove'])
