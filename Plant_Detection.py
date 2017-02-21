@@ -159,6 +159,8 @@ class Plant_Detection():
                 self.grey_out = kwargs[key]
             if key == 'GUI':
                 self.GUI = kwargs[key]
+            if key == 'app':
+                self.app = kwargs[key]
         # Changes based on inputs
         if self.calibration_img is not None:
             self.coordinates = True
@@ -166,6 +168,9 @@ class Plant_Detection():
         if self.GUI:
             self.save = False
             self.text_output = False
+        if self.app:
+            self.verbose = False
+            self.from_env_var = True
 
     def calibrate(self):
         """Initialize coordinate conversion module using calibration image."""

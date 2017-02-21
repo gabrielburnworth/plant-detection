@@ -13,6 +13,5 @@ if __name__ == "__main__":
         print("No images in /tmp/images")
         sys.exit(0)
 
-    PD = Plant_Detection(image=recent_image,
-                         from_env_var=True, verbose=False)
+    PD = Plant_Detection(image=recent_image, app=True)
     PD.detect_plants()

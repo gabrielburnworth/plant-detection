@@ -33,7 +33,7 @@ class Capture():
         self.image = None
         self.ret = None
         self.camera_port = None
-        self.timestamp = datetime.now().isoformat()
+        self.timestamp = None
         self.test_coordinates = [600, 400]
         self.image_captured = False
 
@@ -46,6 +46,7 @@ class Capture():
 
     def capture(self):
         """Take a photo."""
+        self.timestamp = datetime.now().isoformat()
         if using_rpi and use_rpi_camera:
             # With Raspberry Pi Camera:
             with PiCamera() as camera:

@@ -2,6 +2,7 @@
 *
 !PD
 !tests
+!quickscripts
 !.gitignore
 !.pre-commit-config.yaml
 !.travis.yml
