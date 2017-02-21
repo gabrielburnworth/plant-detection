@@ -111,6 +111,7 @@ class Plant_Detection():
         self.print_all_json = False
         self.grey_out = False
         self.GUI = False
+        self.app = False
         # Inputs
         for key in kwargs:
             if key == 'image':
