@@ -1,7 +1,6 @@
 """Load (recent image) and Detect commands to load as farmware.
 
-
-load newest photo in /tmp/images and run plant detection
+load newest photo in /tmp/images and run calibration
 """
 
 import os
@@ -20,5 +19,5 @@ if __name__ == "__main__":
         print("No images in /tmp/images")
         sys.exit(0)
 
-    PD = Plant_Detection(image=recent_image, app=True)
-    PD.detect_plants()
+    PD = Plant_Detection(calibration_img=recent_image, app=True)
+    PD.calibrate()

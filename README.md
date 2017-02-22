@@ -110,9 +110,6 @@ plant-detection
 │   └── p2c_test_color.jpg  - color range test image
 ├── tests  - project test suite
 ├── quickscripts  - scripts to run specific tasks
-│   ├── capture_and_calibrate.py  - take a photo and run calibration
-│   ├── capture_and_detect.py  - take a photo and run plant detection
-│   └── load_and_detect.py  - load newest photo in /tmp/images and run plant detection
 ├── soil_image.jpg  - plant detection test image
 ├── Plant_Detection.py  - calibrate and detect plants
 ├── Plant_Detection_GUI.py  - interactively change input parameters

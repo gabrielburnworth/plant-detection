@@ -2,6 +2,7 @@
 
 
 load newest photo in /tmp/images and run plant detection
+and coordinate conversion
 """
 
 import os
@@ -20,5 +21,5 @@ if __name__ == "__main__":
         print("No images in /tmp/images")
         sys.exit(0)
 
-    PD = Plant_Detection(image=recent_image, app=True)
+    PD = Plant_Detection(image=recent_image, coordinates=True, app=True)
     PD.detect_plants()

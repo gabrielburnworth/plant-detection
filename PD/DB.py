@@ -5,6 +5,7 @@ For Plant Detection.
 """
 import os
 import json
+import requests
 import numpy as np
 try:
     from .CeleryPy import CeleryPy
@@ -28,6 +29,31 @@ class DB():
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
         self.weeder_destrut_r = 50
+
+        # API requests setup
+        try:
+            API_TOKEN = os.environ['API_TOKEN']
+        except KeyError:
+            API_TOKEN = 'none'
+        self.headers = {'Authorization': 'Bearer {}'.format(API_TOKEN),
+                        'content-type': "application/json"}
+        self.errors = {}
+
+    def API_response_error_collector(self, response):
+        """catch and log errors from API requests"""
+        if response.status_code != 200:
+            try:
+                self.errors[str(response.status_code)] += 1
+            except KeyError:
+                self.errors[str(response.status_code)] = 1
+
+    def API_response_error_printer(self):
+        """Print API response error output"""
+        error_string = ''
+        for key, value in self.errors.items():
+            error_string += '{} {} errors '.format(value, key)
+        print(error_string)
+        self.errors = {}  # reset
 
     def save_plants(self):
         """Save plant detection plants to file:
@@ -60,6 +86,16 @@ class DB():
         for plant in self.plants['known']:
             plant.pop('name', None)
             plant.pop('device_id', None)
+
+    def load_plants_from_web_app(self):
+        """Download known plants from the FarmBot Web App API"""
+        response = requests.get('https://staging.farmbot.io/api/plants',
+                                headers=self.headers)
+        self.API_response_error_collector(response)
+        self.API_response_error_printer()
+        plants = response.json()
+        if response.status_code == 200:
+            self.plants['known'] = plants
 
     def identify(self):
         """Compare detected plants to known to separate plants from weeds"""
@@ -165,9 +201,20 @@ class DB():
             r = round(unmark['radius'], 2)
             # FarmBot.add_plant(0, [x, y, 0], r)
 
-        # Save plant coordinates to file
-        self.save_plants()
-
+    def upload_weeds(self):
+        """Add plants marked for removal to FarmBot Web App Farm Designer"""
+        for mark in self.plants['remove']:
+            # payload
+            x, y = round(mark['x'], 2), round(mark['y'], 2)
+            r = round(mark['radius'], 2)
+            plant = {'x': str(x), 'y': str(y),
+                     'radius': str(r)}
+            payload = json.dumps(plant)
+            # API Request
+            response = requests.post('https://staging.farmbot.io/api/points',
+                                     data=payload, headers=self.headers)
+            self.API_response_error_collector(response)
+        self.API_response_error_printer()
 
 if __name__ == "__main__":
     db = DB()

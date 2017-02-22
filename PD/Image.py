@@ -78,9 +78,13 @@ class Image():
         """Save image to file"""
         if image is None:
             image = self.image
-        filename = '{}{}_{}.jpg'.format(self.dir, self.image_name, title)
+        if self.image_name is None:
+            name = ''
+        else:
+            name = '{}_'.format(self.image_name)
+        filename = '{}{}{}.jpg'.format(self.dir, name, title)
         cv2.imwrite(filename, image)
-        cv2.imwrite('/tmp/images/{}_{}.jpg'.format(self.image_name, title),
+        cv2.imwrite('/tmp/images/{}{}.jpg'.format(name, title),
                     image)
 
     def save_annotated(self, title):

@@ -50,17 +50,11 @@ class PDTestJSONinput(unittest.TestCase):
                                   text_output=False)
         self.json_params = {"blur": 15, "morph": 6, "iterations": 4,
                             "H": [30, 90], "S": [20, 255], "V": [20, 255]}
-        self.json_db = {"device_id": 1,
-                        "plants": [{"x": 100, "y": 200, "radius": 300},
-                                   {"x": 400, "y": 500, "radius": 600}]}
-        self.json_known_plants = self.json_db['plants']
         os.environ["PLANT_DETECTION_options"] = json.dumps(self.json_params)
-        os.environ["DB"] = json.dumps(self.json_db)
         self.pd.detect_plants()
 
     def test_json_parameters_input(self):
         """Load JSON input parameters from ENV VAR"""
-        self.assertEqual(self.pd.db.plants['known'], self.json_known_plants)
         self.assertEqual(self.pd.params.parameters, self.json_params)
 
 

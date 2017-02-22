@@ -94,7 +94,7 @@ class Plant_Detection():
         self.P2C = None
         self.capture = Capture().capture
         self.final_marked_image = None
-        self.output_celeryscript = True
+        self.output_celeryscript_points = False
         self.db.tmp_dir = None
 
         # Arguments
@@ -247,6 +247,8 @@ class Plant_Detection():
                 self.params.load()
             except IOError:
                 print("Warning: Input parameter file load failed. Using defaults.")
+        if self.app:
+            self.db.load_plants_from_web_app()
         if self.from_env_var:
             # Requested to load detection parameters from json ENV variable
             try:
@@ -254,10 +256,6 @@ class Plant_Detection():
             except (KeyError, ValueError):
                 print("Warning: Environment variable parameters load failed.")
                 self.params.load_defaults_for_env_var()
-            try:
-                self.db.load_known_plants_from_env_var()
-            except (KeyError, ValueError):
-                print("Warning: Environment variable plants load failed.")
 
         # Print input parameters and filename of image to process
         if self.verbose and self.text_output:
@@ -317,8 +315,10 @@ class Plant_Detection():
                 self.db.print_count()  # print number of objects detected
             if self.verbose and self.text_output:
                 self.db.print_identified()  # print organized object data text to stdout
-            if self.output_celeryscript:
+            if self.output_celeryscript_points:
                 self.db.output_CS()  # print object data JSON to stdout
+            if self.app:
+                self.db.upload_weeds()  # add weeds to FarmBot Farm Designer
             if self.debug:
                 self.image.save_annotated('contours')
                 self.image.image = self.image.marked
