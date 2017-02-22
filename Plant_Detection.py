@@ -64,6 +64,12 @@ class Plant_Detection():
                 (defalut = False)
            grey_out (boolean): grey out regions in image that have
                 not been selected (default = False)
+           draw_contours (boolean): draw an outline around the boundary of
+                detected plants (default = True)
+           circle_plants (boolean): draw an enclosing circle around
+                detected plants (default = True)
+           GUI (boolean): settings for the local GUI (default = False)
+           app (boolean): connect to the FarmBot web app (default = False)
 
        Examples:
            PD = Plant_Detection()
@@ -110,6 +116,8 @@ class Plant_Detection():
         self.verbose = True
         self.print_all_json = False
         self.grey_out = False
+        self.draw_contours = True
+        self.circle_plants = True
         self.GUI = False
         self.app = False
         # Inputs
@@ -158,6 +166,10 @@ class Plant_Detection():
                 self.print_all_json = kwargs[key]
             if key == 'grey_out':
                 self.grey_out = kwargs[key]
+            if key == 'draw_contours':
+                self.draw_contours = kwargs[key]
+            if key == 'circle_plants':
+                self.circle_plants = kwargs[key]
             if key == 'GUI':
                 self.GUI = kwargs[key]
             if key == 'app':
@@ -323,19 +335,22 @@ class Plant_Detection():
                 self.image.save_annotated('contours')
                 self.image.image = self.image.marked
                 self.image.save_annotated('coordinates_found')
-            self.image.label(self.P2C)  # mark objects with colored circles
+            if self.circle_plants:
+                self.image.label(self.P2C)  # mark objects with colored circles
             self.image.grid(self.P2C)  # add coordinate grid and features
 
         else:  # No coordinate conversion
-            self.image.find()  # get pixel locations of objects
-            self.image.label()  # Mark plants with red circle
+            # get pixel locations of objects
+            self.image.find(draw_contours=self.draw_contours)
+            if self.circle_plants:
+                self.image.label()  # Mark plants with red circle
             if self.debug:
                 self.image.save_annotated('contours')
             if self.text_output:
                 self.db.print_count()  # print number of objects detected
             if self.verbose and self.text_output:
                 self.db.print_pixel()  # print object pixel location text
-            self.image.image = self.image.marked  # Save marked soil image
+            self.image.image = self.image.marked
 
         # Final marked image
         if self.save or self.debug:

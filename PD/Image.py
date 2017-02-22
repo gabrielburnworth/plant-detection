@@ -279,25 +279,10 @@ class Image():
         self.marked = self.greyed
         self.status['grey'] = True
 
-    def find(self, **kwargs):
+    def find(self, calibration=False, safe_remove=False,
+             small_c=False, draw_contours=True):
         """Create contours, find locations of objects, and mark them.
            Requires morphed image."""
-        small_c = False  # default
-        circle = True  # default
-        draw_contours = True  # default
-        calibration = False  # default
-        safe_remove = False  # default
-        for key in kwargs:
-            if key == 'small_c':
-                small_c = kwargs[key]
-            if key == 'circle':
-                circle = kwargs[key]
-            if key == 'draw_contours':
-                draw_contours = kwargs[key]
-            if key == 'calibration':
-                calibration = kwargs[key]
-            if key == 'safe_remove':
-                safe_remove = kwargs[key]
         # Find contours (hopefully of outside edges of plants)
         contoured = self.morphed.copy()
         try:
@@ -342,9 +327,9 @@ class Image():
                 cv2.circle(self.marked, center, int(radius), (255, 0, 0), 4)
 
             # Draw contours
-            if calibration:
+            if calibration and draw_contours:
                 cv2.drawContours(self.marked, [cnt], 0, (0, 255, 0), 3)
-            else:
+            elif draw_contours:
                 cv2.drawContours(contoured, [cnt], 0, (255, 255, 255), 3)
                 cv2.drawContours(self.marked, [cnt], 0, (0, 0, 0), 6)
                 cv2.drawContours(self.marked, [cnt], 0, (255, 255, 255), 2)
