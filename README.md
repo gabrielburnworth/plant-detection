@@ -81,6 +81,7 @@ from Plant_Detection import Plant_Detection
 PD = Plant_Detection(image='test_image.jpg', from_file=True)
 PD.detect_plants()
 ```
+>(_For examples of output for graphic-related keyword arguments, see [the wiki](../../wiki/IO#graphics))_
 
 #### 4. View output
 Annotated image: `test_image_marked.png`
