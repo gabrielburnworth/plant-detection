@@ -170,6 +170,10 @@ class Image():
 
     def morph(self):
         """Process mask to try to make plants more coherent"""
+        if self.params.parameters['morph'] == 0:
+            self.params.parameters['morph'] = 1
+        if self.params.parameters['iterations'] == 0:
+            self.params.parameters['iterations'] = 1
         if self.params.array is None:
             # Single morphological transformation
             kernel_type = self.params.kt[self.params.kernel_type]
@@ -389,14 +393,17 @@ class Image():
             x, y, r = round(x, 2), round(y, 2), round(r, 2)
             self.db.plants['remove'].append({'x': x, 'y': y, 'radius': r})
 
-    def coordinates(self, p2c):
+    def coordinates(self, p2c, draw_contours=True):
         """Rotate image according to calibration data, detect objects and
            their coordinates"""
-        self.rotate_main_images(
-            p2c.total_rotation_angle)  # rotate according to calibration
+        # rotate according to calibration
+        self.rotate_main_images(p2c.calibration_params['total_rotation_angle'])
+        # set working image
         self.image = self.morphed
-        self.find()  # detect pixel locations of objects
-        p2c.p2c(self.db)  # convert pixel locations to coordinates
+        # detect pixel locations of objects
+        self.find(draw_contours=draw_contours)
+        # convert pixel locations to coordinates
+        p2c.p2c(self.db)
 
     def label(self, p2c=None):
         """Draw circles on image indicating detected plants"""

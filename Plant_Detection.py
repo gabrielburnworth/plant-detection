@@ -259,6 +259,7 @@ class Plant_Detection():
                 self.params.load()
             except IOError:
                 print("Warning: Input parameter file load failed. Using defaults.")
+            self.db.load_plants_from_file()
         if self.app:
             self.db.load_plants_from_web_app()
         if self.from_env_var:
@@ -317,7 +318,7 @@ class Plant_Detection():
                       "not found. Run calibration first.")
                 sys.exit(0)
             # Determine object coordinates
-            self.image.coordinates(self.P2C)
+            self.image.coordinates(self.P2C, draw_contours=self.draw_contours)
             # Organize objects into plants and weeds
             self.db.identify()
             if self.db.plants['safe_remove']:

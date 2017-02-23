@@ -198,7 +198,8 @@ class Pixel2coord():
         """Convert pixel locations to machine coordinates from image center."""
         db.pixel_locations = np.array(db.pixel_locations)
         if len(db.pixel_locations) == 0:
-            return [], []
+            db.coordinate_locations = []
+            return
         try:
             db.pixel_locations.shape[1]
         except IndexError:

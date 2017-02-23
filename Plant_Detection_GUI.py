@@ -55,8 +55,6 @@ class Plant_Detection_GUI():
         else:
             # Get parameter values
             blur = cv2.getTrackbarPos('Blur', self.window)
-            if blur % 2 == 0:
-                blur += 1
             morph = cv2.getTrackbarPos('Morph', self.window)
             iterations = cv2.getTrackbarPos('Iterations', self.window)
 

@@ -141,11 +141,11 @@ class DB():
             if len(self.plants[plants]) > 0:
                 print("Plants at the following machine coordinates "
                       "( X Y ) with R = radius {}:".format(action))
-            for known_plant in self.plants[plants]:
+            for plant in self.plants[plants]:
                 print("    ( {x:5.0f} {y:5.0f} ) R = {r:.0f}".format(
-                    x=known_plant['x'],
-                    y=known_plant['y'],
-                    r=known_plant['radius']))
+                    x=plant['x'],
+                    y=plant['y'],
+                    r=plant['radius']))
 
         # Print known
         identified_plant_text_output(
