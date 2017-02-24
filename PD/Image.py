@@ -405,11 +405,11 @@ class Image():
         # convert pixel locations to coordinates
         p2c.p2c(self.db)
 
-    def label(self, p2c=None):
+    def label(self, p2c=None, weeder_remove=False, weeder_safe_remove=False):
         """Draw circles on image indicating detected plants"""
         def circle(color):
             c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0),
-                 'cyan': (255, 255, 0)}
+                 'cyan': (255, 255, 0), 'grey': (200, 200, 200)}
             for obj in self.db.pixel_locations:
                 cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
                            int(obj[2]), c[color], 4)
@@ -417,26 +417,51 @@ class Image():
         if p2c is None:
             circle('red')
         else:
+            # Mark known plants
             known = [[_['x'], _['y'], _['radius']] for _
                      in self.db.plants['known']]
             self.db.coordinate_locations = known
             p2c.c2p(self.db)
             circle('green')
+
+            # Mark weeds
             remove = [[_['x'], _['y'], _['radius']] for _
                       in self.db.plants['remove']]
             self.db.coordinate_locations = remove
             p2c.c2p(self.db)
             circle('red')
+
+            # Mark weeder size for weeds
+            if weeder_remove:
+                weeder_size = self.db.weeder_destrut_r
+                remove_circle = [[_['x'], _['y'], weeder_size] for _
+                                 in self.db.plants['remove']]
+                self.db.coordinate_locations = remove_circle
+                p2c.c2p(self.db)
+                circle('grey')
+
+            # Mark saved plants
             save = [[_['x'], _['y'], _['radius']] for _
                     in self.db.plants['save']]
             self.db.coordinate_locations = save
             p2c.c2p(self.db)
             circle('blue')
+
+            # Mark safe-remove weeds
             safe_remove = [[_['x'], _['y'], _['radius']] for _
                            in self.db.plants['safe_remove']]
             self.db.coordinate_locations = safe_remove
             p2c.c2p(self.db)
             circle('cyan')
+
+            # Mark weeder size for safe-remove weeds
+            if weeder_safe_remove:
+                weeder_size = self.db.weeder_destrut_r
+                safe_remove_circle = [[_['x'], _['y'], weeder_size] for _
+                                      in self.db.plants['safe_remove']]
+                self.db.coordinate_locations = safe_remove_circle
+                p2c.c2p(self.db)
+                circle('grey')
 
     def grid(self, p2c):
         """Draw grid on image indicating coordinate system"""
