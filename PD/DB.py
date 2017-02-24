@@ -14,9 +14,10 @@ except:
 
 
 class DB():
-    """Known and detected plant data for Plant Detection"""
+    """Known and detected plant data for Plant Detection."""
 
     def __init__(self):
+        """Set initial attributes."""
         self.plants = {'known': [], 'save': [],
                        'remove': [], 'safe_remove': []}
         self.output_text = True
@@ -32,23 +33,23 @@ class DB():
 
         # API requests setup
         try:
-            API_TOKEN = os.environ['API_TOKEN']
+            api_token = os.environ['API_TOKEN']
         except KeyError:
-            API_TOKEN = 'none'
-        self.headers = {'Authorization': 'Bearer {}'.format(API_TOKEN),
+            api_token = 'none'
+        self.headers = {'Authorization': 'Bearer {}'.format(api_token),
                         'content-type': "application/json"}
         self.errors = {}
 
-    def API_response_error_collector(self, response):
-        """catch and log errors from API requests"""
+    def api_response_error_collector(self, response):
+        """Catch and log errors from API requests."""
         if response.status_code != 200:
             try:
                 self.errors[str(response.status_code)] += 1
             except KeyError:
                 self.errors[str(response.status_code)] = 1
 
-    def API_response_error_printer(self):
-        """Print API response error output"""
+    def api_response_error_printer(self):
+        """Print API response error output."""
         error_string = ''
         for key, value in self.errors.items():
             error_string += '{} {} errors '.format(value, key)
@@ -56,8 +57,9 @@ class DB():
         self.errors = {}  # reset
 
     def save_plants(self):
-        """Save plant detection plants to file:
-                'known', 'remove', 'safe_remove', and 'save'
+        """Save plant detection plants to file.
+
+        'known', 'remove', 'safe_remove', and 'save'
         """
         if self.tmp_dir is None:
             json_dir = self.dir
@@ -71,7 +73,7 @@ class DB():
             self.save_plants()
 
     def load_plants_from_file(self):
-        """Load plants from file"""
+        """Load plants from file."""
         try:
             with open(self.dir + self.plants_file, 'r') as f:
                 self.plants = json.load(f)
@@ -79,7 +81,7 @@ class DB():
             pass
 
     def load_known_plants_from_env_var(self):
-        """Load known plant inputs 'x' 'y' and 'radius' from json"""
+        """Load known plant inputs 'x' 'y' and 'radius' from json."""
         db_json = json.loads(os.environ['DB'])
         self.plants['known'] = db_json['plants']
         # Remove unnecessary data, if it exists
@@ -88,17 +90,17 @@ class DB():
             plant.pop('device_id', None)
 
     def load_plants_from_web_app(self):
-        """Download known plants from the FarmBot Web App API"""
+        """Download known plants from the FarmBot Web App API."""
         response = requests.get('https://staging.farmbot.io/api/plants',
                                 headers=self.headers)
-        self.API_response_error_collector(response)
-        self.API_response_error_printer()
+        self.api_response_error_collector(response)
+        self.api_response_error_printer()
         plants = response.json()
         if response.status_code == 200:
             self.plants['known'] = plants
 
     def identify(self):
-        """Compare detected plants to known to separate plants from weeds"""
+        """Compare detected plants to known to separate plants from weeds."""
         self.plants['remove'] = []
         self.plants['save'] = []
         self.plants['safe_remove'] = []
@@ -125,7 +127,7 @@ class DB():
             self.plants['known'] = []
 
     def print_count(self, calibration=False):
-        """output text indicating the number of plants/objects detected"""
+        """Output text indicating the number of plants/objects detected."""
         if calibration:
             object_name = 'calibration objects'
         else:
@@ -134,7 +136,7 @@ class DB():
                                                 object_name))
 
     def print_identified(self):
-        """output text including data about identified detected plants"""
+        """Output text including data about identified detected plants."""
         def identified_plant_text_output(title, action, plants):
             print("\n{} {}.".format(
                 len(self.plants[plants]), title))
@@ -169,10 +171,10 @@ class DB():
             plants='save')
 
     def print_coordinates(self):
-        """output text data (coordinates) about
-           detected (but not identified) plants"""
+        """Output coordinate data for detected (but not identified) plants."""
         if len(self.coordinate_locations) > 0:
-            print("Detected object machine coordinates ( X Y ) with R = radius:")
+            print("Detected object machine coordinates "
+                  "( X Y ) with R = radius:")
             for coordinate_location in self.coordinate_locations:
                 print("    ( {:5.0f} {:5.0f} ) R = {:.0f}".format(
                     coordinate_location[0],
@@ -180,29 +182,24 @@ class DB():
                     coordinate_location[2]))
 
     def print_pixel(self):
-        """output text data (pixels) about
-           detected (but not identified) plants"""
+        """Output text pixel data for detected (but not identified) plants."""
         if len(self.pixel_locations) > 0:
             print("Detected object center pixel locations ( X Y ):")
             for pixel_location in self.pixel_locations:
                 print("    ( {:5.0f}px {:5.0f}px )".format(pixel_location[0],
                                                            pixel_location[1]))
 
-    def output_CS(self):
-        """output JSON with identified plant coordinates and radii"""
+    def output_celery_script(self):
+        """Output JSON with identified plant coordinates and radii."""
         # Encode to CS
-        FarmBot = CeleryPy()
+        farmbot = CeleryPy()
         for mark in self.plants['remove']:
             x, y = round(mark['x'], 2), round(mark['y'], 2)
             r = round(mark['radius'], 2)
-            FarmBot.add_point(x, y, 0, r)
-        for unmark in self.plants['save']:
-            x, y = round(unmark['x'], 2), round(unmark['y'], 2)
-            r = round(unmark['radius'], 2)
-            # FarmBot.add_plant(0, [x, y, 0], r)
+            farmbot.add_point(x, y, 0, r)
 
     def upload_weeds(self):
-        """Add plants marked for removal to FarmBot Web App Farm Designer"""
+        """Add plants marked for removal to FarmBot Web App Farm Designer."""
         for mark in self.plants['remove']:
             # payload
             x, y = round(mark['x'], 2), round(mark['y'], 2)
@@ -213,8 +210,8 @@ class DB():
             # API Request
             response = requests.post('https://staging.farmbot.io/api/points',
                                      data=payload, headers=self.headers)
-            self.API_response_error_collector(response)
-        self.API_response_error_printer()
+            self.api_response_error_collector(response)
+        self.api_response_error_printer()
 
 if __name__ == "__main__":
     db = DB()

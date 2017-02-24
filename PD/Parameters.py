@@ -13,9 +13,10 @@ except:
 
 
 class Parameters():
-    """Input parameters for Plant Detection"""
+    """Input parameters for Plant Detection."""
 
     def __init__(self):
+        """Set initial attributes and defaults."""
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.array = None  # default
@@ -42,7 +43,7 @@ class Parameters():
         self.mt['dilate'] = 'dilate'
 
     def save(self):
-        """Save input parameters to file"""
+        """Save input parameters to file."""
         def save(directory):
             with open(directory + self.input_parameters_file, 'w') as f:
                 json.dump(self.parameters, f)
@@ -53,14 +54,14 @@ class Parameters():
             save(self.tmp_dir)
 
     def save_to_env_var(self):
-        """Save input parameters to environment variable"""
+        """Save input parameters to environment variable."""
         self.JSON_input_parameters = CeleryPy().set_user_env(
             self.ENV_VAR_name,
             json.dumps(self.parameters))
         os.environ[self.ENV_VAR_name] = json.dumps(self.parameters)
 
     def load(self):
-        """Load input parameters from file"""
+        """Load input parameters from file."""
         def load(directory):
             with open(directory + self.input_parameters_file, 'r') as f:
                 self.parameters = json.load(f)
@@ -71,16 +72,16 @@ class Parameters():
             load(self.tmp_dir)
 
     def load_env_var(self):
-        """Read input parameters from JSON in environment variable"""
+        """Read input parameters from JSON in environment variable."""
         self.parameters = json.loads(os.environ[self.ENV_VAR_name])
 
     def load_defaults_for_env_var(self):
-        """Load default input parameters for environment variable"""
+        """Load default input parameters for environment variable."""
         self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
                            'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
 
     def print_input(self):
-        """Print input parameters"""
+        """Print input parameters."""
         print('Processing Parameters:')
         print('-' * 25)
         print('Blur kernel size: {}'.format(self.parameters['blur']))

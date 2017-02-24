@@ -1,6 +1,5 @@
 """Load (recent image) and Detect commands to load as farmware.
 
-
 load newest photo in /tmp/images and run plant detection
 and coordinate conversion
 """

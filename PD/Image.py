@@ -18,9 +18,15 @@ except:
 
 
 class Image():
-    """Provide image processes to Plant Detection"""
+    """Provide image processes to Plant Detection."""
 
     def __init__(self, parameters, db):
+        """Set initial attributes.
+
+        Arguments:
+            Parameters() instance
+            Database() instance
+        """
         self.image = None  # working image
         self.original = None
         self.output = None
@@ -61,7 +67,7 @@ class Image():
         self.status['image'] = True
 
     def load(self, filename):
-        """Load image from file"""
+        """Load image from file."""
         self.original = cv2.imread(filename, 1)
         if self.original is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
@@ -70,12 +76,12 @@ class Image():
         self._prepare()
 
     def capture(self):
-        """Capture image from camera"""
+        """Capture image from camera."""
         self.original = Capture().capture()
         self._prepare()
 
     def save(self, title, image=None):
-        """Save image to file"""
+        """Save image to file."""
         if image is None:
             image = self.image
         if self.image_name is None:
@@ -88,7 +94,7 @@ class Image():
                     image)
 
     def save_annotated(self, title):
-        """Save annotated image to file"""
+        """Save annotated image to file."""
         self.save(title, image=self.annotate())
 
     def show(self):
@@ -108,11 +114,11 @@ class Image():
         self.image = cv2.warpAffine(self.image, mtrx, (cols, rows))
 
     def rotate_main_images(self, rotationangle):
-        """Rotate relevant working images"""
+        """Rotate relevant working images."""
         self.image = self.output  # work on output image
         self.rotate(rotationangle)  # rotate according to angle
         self.output = self.image.copy()
-        self.marked = self.image.copy()  # create copy of rotated img to mark up
+        self.marked = self.image.copy()  # create rotated img copy to mark up
 
         try:
             self.morphed.shape
@@ -124,7 +130,7 @@ class Image():
         self.image = self.output
 
     def blur(self):
-        """Blur image"""
+        """Blur image."""
         if self.params.parameters['blur'] % 2 == 0:
             self.params.parameters['blur'] += 1
         self.blurred = cv2.medianBlur(
@@ -133,33 +139,34 @@ class Image():
         self.status['blur'] = True
 
     def mask(self):
-        """Create mask using HSV range from blurred image"""
+        """Create mask using HSV range from blurred image."""
         # Create HSV image
         hsv = cv2.cvtColor(self.blurred, cv2.COLOR_BGR2HSV)
         # Select HSV color bounds for mask and create plant mask
         # Hue range: [0,179], Saturation range: [0,255], Value range: [0,255]
-        HSV_min = [self.params.parameters['H'][0],
+        hsv_min = [self.params.parameters['H'][0],
                    self.params.parameters['S'][0],
                    self.params.parameters['V'][0]]
-        HSV_max = [self.params.parameters['H'][1],
+        hsv_max = [self.params.parameters['H'][1],
                    self.params.parameters['S'][1],
                    self.params.parameters['V'][1]]
-        if HSV_min[0] > HSV_max[0]:
-            hsv_btwn_min = [0, HSV_min[1], HSV_min[2]]
-            hsv_btwn_max = [179, HSV_max[1], HSV_max[2]]
-            mask_L = cv2.inRange(hsv, np.array(hsv_btwn_min),
-                                 np.array(HSV_max))
-            mask_U = cv2.inRange(hsv, np.array(HSV_min),
-                                 np.array(hsv_btwn_max))
-            self.masked = cv2.addWeighted(mask_L, 1.0, mask_U, 1.0, 0.0)
+        if hsv_min[0] > hsv_max[0]:
+            hsv_btwn_min = [0, hsv_min[1], hsv_min[2]]
+            hsv_btwn_max = [179, hsv_max[1], hsv_max[2]]
+            mask_lower = cv2.inRange(hsv, np.array(hsv_btwn_min),
+                                     np.array(hsv_max))
+            mask_upper = cv2.inRange(hsv, np.array(hsv_min),
+                                     np.array(hsv_btwn_max))
+            self.masked = cv2.addWeighted(mask_lower, 1.0,
+                                          mask_upper, 1.0, 0.0)
         else:
-            self.masked = cv2.inRange(hsv, np.array(HSV_min),
-                                      np.array(HSV_max))
+            self.masked = cv2.inRange(hsv, np.array(hsv_min),
+                                      np.array(hsv_max))
         self.image = self.masked.copy()
         self.status['mask'] = True
 
     def mask2(self):
-        """Show regions of original image selected by mask"""
+        """Show regions of original image selected by mask."""
         self.masked2 = cv2.bitwise_and(self.output,
                                        self.output,
                                        mask=self.masked)
@@ -169,7 +176,7 @@ class Image():
         self.image = temp
 
     def morph(self):
-        """Process mask to try to make plants more coherent"""
+        """Process mask to try to make plants more coherent."""
         if self.params.parameters['morph'] == 0:
             self.params.parameters['morph'] = 1
         if self.params.parameters['iterations'] == 0:
@@ -177,9 +184,10 @@ class Image():
         if self.params.array is None:
             # Single morphological transformation
             kernel_type = self.params.kt[self.params.kernel_type]
-            kernel = cv2.getStructuringElement(kernel_type,
-                                               (self.params.parameters['morph'],
-                                                self.params.parameters['morph']))
+            kernel = cv2.getStructuringElement(
+                kernel_type,
+                (self.params.parameters['morph'],
+                 self.params.parameters['morph']))
             morph_type = self.params.mt[self.params.morph_type]
             self.morphed = cv2.morphologyEx(self.masked,
                                             morph_type, kernel,
@@ -194,8 +202,9 @@ class Image():
                 kernel_type = self.params.kt[process['kernel']]
                 morph_type = self.params.mt[process['type']]
                 iterations = process['iters']
-                kernel = cv2.getStructuringElement(kernel_type,
-                                                   (morph_amount, morph_amount))
+                kernel = cv2.getStructuringElement(
+                    kernel_type,
+                    (morph_amount, morph_amount))
                 if morph_type == 'erode':
                     self.morphed = cv2.erode(self.morphed, kernel,
                                              iterations=iterations)
@@ -210,7 +219,7 @@ class Image():
         self.status['morph'] = True
 
     def morph2(self):
-        """Show regions of original image selected by morph"""
+        """Show regions of original image selected by morph."""
         self.morphed2 = cv2.bitwise_and(self.output,
                                         self.output,
                                         mask=self.morphed)
@@ -220,7 +229,7 @@ class Image():
         self.image = temp
 
     def initial_processing(self):
-        """Process image in preparation for detecting plants"""
+        """Process image in preparation for detecting plants."""
         # Blur image to simplify and reduce noise.
         self.blur()
         if self.debug:
@@ -245,17 +254,21 @@ class Image():
             self.show()
 
     def clump_buster(self):
-        """Break up selected regions of morphed image into smaller regions
-           by splitting them into quarters"""
+        """Break up selected regions of morphed image into smaller regions.
+
+        Currently this is done by splitting the regions into quarters.
+        """
         clump_img = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(clump_img,
-                                                   cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
+            contours, hierarchy = cv2.findContours(
+                clump_img,
+                cv2.RETR_EXTERNAL,
+                cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(clump_img,
-                                                         cv2.RETR_EXTERNAL,
-                                                         cv2.CHAIN_APPROX_SIMPLE)
+            _img, contours, hierarchy = cv2.findContours(
+                clump_img,
+                cv2.RETR_EXTERNAL,
+                cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             cnt = contours[i]
             rx, ry, rw, rh = cv2.boundingRect(cnt)
@@ -271,13 +284,13 @@ class Image():
         self.status['bust'] = True
 
     def grey(self):
-        """Grey out region in output image not selected by morphed mask"""
+        """Grey out region in output image not selected by morphed mask."""
         grey_bg = cv2.addWeighted(np.full_like(self.output, 255),
                                   0.4, self.output, 0.6, 0)
         black_fg = cv2.bitwise_and(grey_bg, grey_bg,
                                    mask=cv2.bitwise_not(self.morphed))
-        plant_fg_grey_bg = cv2.add(cv2.bitwise_and(self.output, self.output,
-                                                   mask=self.morphed), black_fg)
+        plant_fg = cv2.bitwise_and(self.output, self.output, mask=self.morphed)
+        plant_fg_grey_bg = cv2.add(plant_fg, black_fg)
         self.greyed = plant_fg_grey_bg.copy()
         self.output = self.greyed
         self.marked = self.greyed
@@ -286,17 +299,21 @@ class Image():
     def find(self, calibration=False, safe_remove=False,
              small_c=False, draw_contours=True):
         """Create contours, find locations of objects, and mark them.
-           Requires morphed image."""
+
+        Requires morphed image.
+        """
         # Find contours (hopefully of outside edges of plants)
         contoured = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(contoured,
-                                                   cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
+            contours, hierarchy = cv2.findContours(
+                contoured,
+                cv2.RETR_EXTERNAL,
+                cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(contoured,
-                                                         cv2.RETR_EXTERNAL,
-                                                         cv2.CHAIN_APPROX_SIMPLE)
+            _img, contours, hierarchy = cv2.findContours(
+                contoured,
+                cv2.RETR_EXTERNAL,
+                cv2.CHAIN_APPROX_SIMPLE)
             contoured = np.zeros_like(contoured, np.uint8)
         if not safe_remove:
             self.db.object_count = len(contours)
@@ -315,10 +332,10 @@ class Image():
         only_one_object = False
         for i, cnt in enumerate(contours):
             # Calculate plant location by using centroid of contour
-            M = cv2.moments(cnt)
+            m = cv2.moments(cnt)
             try:
-                cx = int(M['m10'] / M['m00'])
-                cy = int(M['m01'] / M['m00'])
+                cx = int(m['m10'] / m['m00'])
+                cy = int(m['m01'] / m['m00'])
                 (mcx, mcy), radius = cv2.minEnclosingCircle(cnt)
             except ZeroDivisionError:
                 continue
@@ -364,8 +381,10 @@ class Image():
 
     def safe_remove(self, p2c):
         """Process plants marked as 'safe_remove'.
-           Reprocess image to detect only the part of the plant
-           outside of the known plant safe zone."""
+
+        Reprocess image to detect only the part of the plant
+        outside of the known plant safe zone.
+        """
         safe_remove_img = np.zeros_like(self.morphed, np.uint8)
         for plant in self.db.plants['safe_remove']:
             self.db.coordinate_locations = [plant['x'], plant['y'],
@@ -394,8 +413,11 @@ class Image():
             self.db.plants['remove'].append({'x': x, 'y': y, 'radius': r})
 
     def coordinates(self, p2c, draw_contours=True):
-        """Rotate image according to calibration data, detect objects and
-           their coordinates"""
+        """Detect coordinates of objects in image.
+
+        Rotate image according to calibration data, detect objects and
+        their coordinates.
+        """
         # rotate according to calibration
         self.rotate_main_images(p2c.calibration_params['total_rotation_angle'])
         # set working image
@@ -406,7 +428,7 @@ class Image():
         p2c.p2c(self.db)
 
     def label(self, p2c=None, weeder_remove=False, weeder_safe_remove=False):
-        """Draw circles on image indicating detected plants"""
+        """Draw circles on image indicating detected plants."""
         def circle(color):
             c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0),
                  'cyan': (255, 255, 0), 'grey': (200, 200, 200)}
@@ -464,7 +486,7 @@ class Image():
                 circle('grey')
 
     def grid(self, p2c):
-        """Draw grid on image indicating coordinate system"""
+        """Draw grid on image indicating coordinate system."""
         w = self.marked.shape[1]
         textsize = w / 2000.
         textweight = int(3.5 * textsize)
@@ -521,7 +543,7 @@ class Image():
         self.image = self.marked
 
     def annotate(self):
-        """Annotate image with processing parameters"""
+        """Annotate image with processing parameters."""
         tc = {'white': (255, 255, 255), 'black': (0, 0, 0)}
         bc = {'white': 255, 'black': 0}
         text_color = tc['white']
@@ -533,15 +555,15 @@ class Image():
         else:
             return self.image
         if self.status['mask']:
-            HSV_min = [self.params.parameters['H'][0],
+            hsv_min = [self.params.parameters['H'][0],
                        self.params.parameters['S'][0],
                        self.params.parameters['V'][0]]
-            HSV_max = [self.params.parameters['H'][1],
+            hsv_max = [self.params.parameters['H'][1],
                        self.params.parameters['S'][1],
                        self.params.parameters['V'][1]]
             lines = lines + [
-                "HSV lower bound = {}".format(HSV_min),
-                "HSV upper bound = {}".format(HSV_max)]
+                "HSV lower bound = {}".format(hsv_min),
+                "HSV upper bound = {}".format(hsv_max)]
             if self.status['morph'] and not self.params.array:  # single morph
                 lines = lines + [
                     "kernel type = {}".format(self.params.kernel_type),

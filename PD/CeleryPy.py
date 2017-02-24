@@ -8,6 +8,17 @@ import json
 from functools import wraps
 
 
+def _print_json(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        try:
+            print('{} {}'.format(os.environ['BEGIN_CS'],
+                                 json.dumps(function(*args, **kwargs))))
+        except KeyError:
+            return function(*args, **kwargs)
+    return wrapper
+
+
 class CeleryPy():
     """Python wrappers for FarmBot Celery Script."""
 
@@ -41,32 +52,21 @@ class CeleryPy():
         coordinate = self._create_node('coordinate', coordinates)
         return coordinate
 
-    def _print_json(function):
-        @wraps(function)
-        def wrapper(*args, **kwargs):
-            try:
-                print('{} {}'.format(os.environ['BEGIN_CS'],
-                                     json.dumps(function(*args, **kwargs))))
-            except KeyError:
-                pass
-                # print('CS: {}'.format(json.dumps(function(*args, **kwargs),
-                #                  indent=2, separators=(',', ': '))))
-                return function(*args, **kwargs)
-        return wrapper
-
     @_print_json
     def add_point(self, x, y, z, r):
-        """Kind:
-                add_point
-           Arguments:
-                Location:
-                    Coordinate (x, y, z)
-                Radius: r
-           Body:
-                Kind: pair
-                Args:
-                    label: created_by
-                    value: plant-detection
+        """Celery Script to add a point to the database.
+
+        Kind:
+            add_point
+        Arguments:
+            Location:
+                Coordinate (x, y, z)
+            Radius: r
+        Body:
+            Kind: pair
+            Args:
+                label: created_by
+                value: plant-detection
         """
         args = {}
         args['location'] = self._coordinate_node(x, y, z)
@@ -78,13 +78,15 @@ class CeleryPy():
 
     @_print_json
     def set_user_env(self, label, value):
-        """Kind:
-                set_user_env
-           Body:
-                Kind: pair
-                Args:
-                    label: <ENV VAR name>
-                    value: <ENV VAR value>
+        """Celery Script to set an environment variable.
+
+        Kind:
+            set_user_env
+        Body:
+            Kind: pair
+            Args:
+                label: <ENV VAR name>
+                value: <ENV VAR value>
         """
         set_user_env = self._create_node('set_user_env', {})
         env_var = self._create_pair(label, value)
@@ -93,15 +95,17 @@ class CeleryPy():
 
     @_print_json
     def move_absolute(self, location, offset, speed):
-        """Kind:
-                move_absolute
-           Arguments:
-                Location:
-                    Coordinate (x, y, z) or Saved Location ['tool', tool_id]
-                Offset:
-                    Distance (x, y, z)
-                Speed:
-                    Speed (mm/s)
+        """Celery Script to move to a location.
+
+        Kind:
+            move_absolute
+        Arguments:
+            Location:
+                Coordinate (x, y, z) or Saved Location ['tool', tool_id]
+            Offset:
+                Distance (x, y, z)
+            Speed:
+                Speed (mm/s)
         """
         args = {}
         if len(location) == 2:
@@ -112,26 +116,6 @@ class CeleryPy():
         args['offset'] = self._coordinate_node(*offset)
         args['speed'] = speed
         move_absolute = self._create_node('move_absolute', args)
-        return move_absolute
-
-    @_print_json
-    def add_plant(self, plant_id, location, radius):
-        """Kind:
-                add_plant
-           Arguments:
-                plant_id
-                Radius
-                Location:
-                    Coordinate (x, y, z)
-        """
-        args = {}
-        if isinstance(location, int):
-            args['location'] = self._saved_location_node('plant', plant_id)
-        if len(location) == 3:
-            args['location'] = self._coordinate_node(*location)
-        args['plant_id'] = plant_id
-        args['radius'] = radius
-        move_absolute = self._create_node('plant', args)
         return move_absolute
 
 if __name__ == "__main__":
@@ -152,5 +136,3 @@ if __name__ == "__main__":
     FarmBot.move_absolute(tool, [x_offset, y_offset, z_offset], speed)
     print
     FarmBot.move_absolute(plant, [x_offset, y_offset, z_offset], speed)
-    print
-    FarmBot.add_plant(plant_id, [x, y, z], radius)

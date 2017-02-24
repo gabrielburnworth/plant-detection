@@ -8,20 +8,24 @@ from Plant_Detection import Plant_Detection
 
 
 class Plant_Detection_GUI():
-    """Interactively change input parameters for Plant_Detection.detect_plants()"""
+    """Interactively change input parameters for Plant_Detection.detect_plants()."""
 
     def __init__(self):
-        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
-
-        if len(sys.argv) == 1:
-            self.filename = directory + 'soil_image.jpg'
-        else:
-            self.filename = sys.argv[1]
+        """Set initial attributes, get image path, and load inputs."""
         self.window = 'Plant Detection'
         self.HSVwindow = 'HSV Selection'
         self.override_HSV_defaults = 0
         self.HSVwindow_loaded = 0
-        try:  # Load input parameters from file
+        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+        # Image
+        if len(sys.argv) == 1:
+            self.filename = directory + 'soil_image.jpg'
+        else:
+            self.filename = sys.argv[1]
+
+        # Load input parameters
+        try:  # from file
             with open(directory + "plant-detection_inputs.json", 'r') as f:
                 inputs = json.load(f)
             self.blur_amount = inputs['blur']
@@ -31,7 +35,7 @@ class Plant_Detection_GUI():
             HSV_max = [inputs['H'][1], inputs['S'][1], inputs['V'][1]]
             self.HSV_bounds = [HSV_min, HSV_max]
             self.from_file = 1
-        except IOError:
+        except IOError:  # Use defaults
             self.from_file = 0
             self.HSV_bounds = [[30, 20, 20], [90, 255, 255]]
             self.blur_amount = 1
@@ -39,6 +43,7 @@ class Plant_Detection_GUI():
             self.iterations = 1
 
     def HSV_trackbar_name(self, P, bound):
+        """Create GUI trackbar name."""
         if P == 'H':
             P = 'Hue'
         if P == 'S':
@@ -48,6 +53,7 @@ class Plant_Detection_GUI():
         return '{} {} {}'.format(P, bound, ' ' * (12 - len(P)))
 
     def process(self, _):
+        """GUI trackbar callback."""
         HSVwindow_open = cv2.getTrackbarPos(
             'Open HSV Selection Window', self.window)
         if HSVwindow_open and not self.HSVwindow_loaded:
@@ -86,6 +92,7 @@ class Plant_Detection_GUI():
             cv2.imshow(self.window, img)
 
     def HSV_selection(self, open_window):
+        """HSV selection GUI."""
         self.override_HSV_defaults = 1
 
         if open_window:
@@ -104,6 +111,7 @@ class Plant_Detection_GUI():
             self.HSVwindow_loaded = 0
 
     def run(self):
+        """Start the GUI."""
         cv2.namedWindow(self.window)
         cv2.createTrackbar('Blur', self.window, 0, 100, self.process)
         cv2.createTrackbar('Morph', self.window, 1, 100, self.process)

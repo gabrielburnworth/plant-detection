@@ -9,13 +9,6 @@ import cv2
 import platform
 from time import sleep
 from datetime import datetime
-try:
-    import gi
-    gi.require_version('GExiv2', '0.10')
-    from gi.repository import GExiv2
-    exif_import = True
-except:
-    exif_import = False
 
 use_rpi_camera = False
 using_rpi = False
@@ -27,9 +20,10 @@ if platform.uname()[4].startswith("arm") and use_rpi_camera:
 
 
 class Capture():
-    """Capture image for Plant Detection"""
+    """Capture image for Plant Detection."""
 
     def __init__(self):
+        """Set initial attributes."""
         self.image = None
         self.ret = None
         self.camera_port = None
@@ -51,10 +45,10 @@ class Capture():
             # With Raspberry Pi Camera:
             with PiCamera() as camera:
                 camera.resolution = (1920, 1088)
-                rawCapture = PiRGBArray(camera)
+                raw_capture = PiRGBArray(camera)
                 sleep(0.1)
-                camera.capture(rawCapture, format="bgr")
-                self.image = rawCapture.array
+                camera.capture(raw_capture, format="bgr")
+                self.image = raw_capture.array
         else:
             self.camera_port = 0
             # With USB cameras:
@@ -63,11 +57,13 @@ class Capture():
             discard_frames = 20
             # Check for camera
             if not os.path.exists('/dev/video' + str(self.camera_port)):
-                print("No camera detected at video{}.".format(self.camera_port))
+                print("No camera detected at video{}.".format(
+                    self.camera_port))
                 self.camera_port = 1
                 print("Trying video{}...".format(self.camera_port))
                 if not os.path.exists('/dev/video' + str(self.camera_port)):
-                    print("No camera detected at video{}.".format(self.camera_port))
+                    print("No camera detected at video{}.".format(
+                        self.camera_port))
             camera = cv2.VideoCapture(self.camera_port)
             sleep(0.1)
             # try:
@@ -95,12 +91,3 @@ if __name__ == "__main__":
     wimage = Image(Parameters(), DB())
     wimage.image = image
     wimage.save("capture")
-
-    if exif_import:
-        exif = GExiv2.Metadata(directory + 'capture.jpg')
-        current_coordinates = Capture().getcoordinates()
-        timestamp = Capture().timestamp
-        exif['Exif.Image.ImageDescription'] = 'Coordinates: {}, Timestamp: {}'.format(
-                                              current_coordinates, timestamp)
-        print(exif.get_comment())
-        exif.save_file()

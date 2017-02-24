@@ -19,13 +19,26 @@ except:
 
 
 class Pixel2coord():
-    """Calibrates the conversion of pixel locations to machine coordinates
+    """Image pixel to machine coordinate conversion.
+
+    Calibrates the conversion of pixel locations to machine coordinates
     in images. Finds object coordinates in image.
     """
 
     def __init__(self, db, calibration_image=None, calibration_data=None):
+        """Set initial attributes.
+
+        Arguments:
+            Database() instance
+
+        Optional Keyword Arguments:
+            calibration_image: filename (str) or image object (default: None)
+            calibration_data: P2C().calibration_params JSON,
+                              or 'file' or 'env_var' string
+                              (default: None)
+        """
         self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        self.parameters_file = "plant-detection_p2c_calibration_parameters.json"
+        self.parameters_file = "plant-detection_calibration_parameters.json"
 
         self.calibration_params = {}
         self.coord_scale = None
@@ -49,13 +62,16 @@ class Pixel2coord():
             try:
                 self.load_calibration_parameters()
             except IOError:
-                print("Warning: Calibration data file load failed. Using defaults.")
+                print("Warning: Calibration data file load failed. "
+                      "Using defaults.")
                 self.calibration_params = self.defaults
         elif calibration_data == 'env_var':
             try:
-                self.load_calibration_parameters_from_env_var()
+                self.calibration_params = json.loads(
+                    os.environ[self.ENV_VAR_name])
             except (KeyError, ValueError):
-                print("Warning: Calibration data env var load failed. Using defaults.")
+                print("Warning: Calibration data env var load failed. "
+                      "Using defaults.")
                 self.calibration_params = self.defaults
         else:  # load the data provided
             self.calibration_params = calibration_data
@@ -117,7 +133,7 @@ class Pixel2coord():
         os.environ[self.ENV_VAR_name] = json.dumps(self.calibration_params)
 
     def initialize_data_keys(self):
-        """If using JSON with inputs only, create calibration data keys"""
+        """If using JSON with inputs only, create calibration data keys."""
         def check_for_key(key):
             try:
                 self.calibration_params[key]
@@ -140,8 +156,7 @@ class Pixel2coord():
         self.cparams.parameters['V'] = self.calibration_params['V']
 
     def load_calibration_parameters(self):
-        """Load calibration parameters from file
-        or use defaults."""
+        """Load calibration parameters from file or use defaults."""
         def load(directory):  # Load calibration parameters from file
             with open(directory + self.parameters_file, 'r') as f:
                 self.calibration_params = json.load(f)
@@ -150,12 +165,6 @@ class Pixel2coord():
         except IOError:
             self.db.tmp_dir = "/tmp/"
             load(self.db.tmp_dir)
-
-    def load_calibration_parameters_from_env_var(self):
-        """Load calibration parameters from environment variable
-        or use defaults."""
-        self.calibration_params = json.loads(
-            os.environ[self.ENV_VAR_name])
 
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
@@ -191,8 +200,8 @@ class Pixel2coord():
                 i = 1
             object_sep = abs(self.db.calibration_pixel_locations[0][i] -
                              self.db.calibration_pixel_locations[1][i])
-            self.calibration_params['coord_scale'] = round(calibration_circle_sep
-                                                           / object_sep, 4)
+            self.calibration_params['coord_scale'] = round(
+                calibration_circle_sep / object_sep, 4)
 
     def p2c(self, db):
         """Convert pixel locations to machine coordinates from image center."""
@@ -224,8 +233,7 @@ class Pixel2coord():
                 [moc[0], moc[1], coord_scale[0] * radius])
 
     def c2p(self, db):
-        """Convert machine coordinates to pixel locations
-        using image center."""
+        """Convert coordinates to pixel locations using image center."""
         db.coordinate_locations = np.array(db.coordinate_locations)
         if len(db.coordinate_locations) == 0:
             db.pixel_locations = []
@@ -255,8 +263,7 @@ class Pixel2coord():
                                        / coord_scale[0]])
 
     def calibration(self):
-        """Determine pixel to coordinate conversion scale
-        and image rotation angle."""
+        """Determine pixel to coordinate scale and image rotation angle."""
         total_rotation_angle = 0
         warning_issued = False
         if self.debug:
@@ -286,9 +293,9 @@ class Pixel2coord():
                 self.rotationdetermination()
                 if abs(self.rotationangle) > 120:
                     print(" ERROR: Excessive rotation required. "
-                          "Check that the calibration objects are parallel with "
-                          "the desired axis and that they are the only two objects"
-                          " detected.")
+                          "Check that the calibration objects are "
+                          "parallel with the desired axis and that "
+                          "they are the only two objects detected.")
                     sys.exit(0)
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle

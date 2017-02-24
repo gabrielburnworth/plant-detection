@@ -16,83 +16,84 @@ from PD.Capture import Capture
 class Plant_Detection():
     """Detect plants in image and output an image with plants marked.
 
-       Kwargs:
-           image (str): filename of image to process (default = None)
-               None -> take photo instead
-           coordinates (boolean): use coordinate conversion (default = False)
-           calibration_img (filename): calibration image filename used to
-               output coordinates instead of pixel locations (default = None)
-           known_plants (list): {'x': x, 'y': y, 'radius': radius}
-                                of known (intentional) plants
-                                (default = None)
-           debug (boolean): output debug images (default = False)
-           blur (int): blur kernel size (must be odd, default = 5)
-           morph (int): amount of filtering (default = 5)
-           iterations (int): number of morphological iterations (default = 1)
-           array (list): list of morphs to run
-               [morph kernel size, morph kernel type, morph type, iterations]
-               example:
-               [{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
-                {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
-                      (default = None)
-           save (boolean): save images (default = True)
-           clump_buster (boolean): attempt to break
-                                   plant clusters (default = False)
-           HSV_min (list): green lower bound Hue(0-179), Saturation(0-255),
-                           and Value(0-255) (default = [30, 20, 20])
-           HSV_max (list): green upper bound Hue(0-179), Saturation(0-255),
-                           and Value(0-255) (default = [90, 255, 255])
-           from_file (boolean): load data from file
-                plant-detection_inputs.json
-                plant-detection_p2c_calibration_parameters.json
-                plant-detection_plants.json
-                (default = False)
-           from_env_var (boolean): load data from environment variable,
-                overriding other parameter inputs
-                Example:
-                PLANT_DETECTION_options={"blur": 15, "morph": 8, "iterations": 4,
-                 "H": [37, 82], "S": [38, 255], "V": [61, 255]}
-                DB={"plants": [{"x": 10, "y": 20, "radius": 30}]}
-                PLANT_DETECTION_calibration={'total_rotation_angle': 0.0,
-                                             'coord_scale': 1.7182,
-                                             'center_pixel_location': [465, 290]}
-                (default = False)
-           text_output (boolean): print text to STDOUT (default = True)
-           verbose (boolean): print verbose text to STDOUT.
-                otherwise, print condensed text output (default = True)
-           print_all_json (boolean): print all JSON data used to STDOUT
-                (defalut = False)
-           grey_out (boolean): grey out regions in image that have
-                not been selected (default = False)
-           draw_contours (boolean): draw an outline around the boundary of
-                detected plants (default = True)
-           circle_plants (boolean): draw an enclosing circle around
-                detected plants (default = True)
-           GUI (boolean): settings for the local GUI (default = False)
-           app (boolean): connect to the FarmBot web app (default = False)
+    Kwargs:
+       image (str): filename of image to process (default = None)
+           None -> take photo instead
+       coordinates (boolean): use coordinate conversion (default = False)
+       calibration_img (filename): calibration image filename used to
+           output coordinates instead of pixel locations (default = None)
+       known_plants (list): {'x': x, 'y': y, 'radius': radius}
+                            of known (intentional) plants
+                            (default = None)
+       debug (boolean): output debug images (default = False)
+       blur (int): blur kernel size (must be odd, default = 5)
+       morph (int): amount of filtering (default = 5)
+       iterations (int): number of morphological iterations (default = 1)
+       array (list): list of morphs to run
+           [morph kernel size, morph kernel type, morph type, iterations]
+           example:
+           [{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+            {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
+                  (default = None)
+       save (boolean): save images (default = True)
+       clump_buster (boolean): attempt to break
+                               plant clusters (default = False)
+       HSV_min (list): green lower bound Hue(0-179), Saturation(0-255),
+                       and Value(0-255) (default = [30, 20, 20])
+       HSV_max (list): green upper bound Hue(0-179), Saturation(0-255),
+                       and Value(0-255) (default = [90, 255, 255])
+       from_file (boolean): load data from file
+            plant-detection_inputs.json
+            plant-detection_p2c_calibration_parameters.json
+            plant-detection_plants.json
+            (default = False)
+       from_env_var (boolean): load data from environment variable,
+            overriding other parameter inputs
+            Example:
+            PLANT_DETECTION_options={"blur": 15, "morph": 8, "iterations": 4,
+             "H": [37, 82], "S": [38, 255], "V": [61, 255]}
+            DB={"plants": [{"x": 10, "y": 20, "radius": 30}]}
+            PLANT_DETECTION_calibration={'total_rotation_angle': 0.0,
+                                         'coord_scale': 1.7182,
+                                         'center_pixel_location': [465, 290]}
+            (default = False)
+       text_output (boolean): print text to STDOUT (default = True)
+       verbose (boolean): print verbose text to STDOUT.
+            otherwise, print condensed text output (default = True)
+       print_all_json (boolean): print all JSON data used to STDOUT
+            (defalut = False)
+       grey_out (boolean): grey out regions in image that have
+            not been selected (default = False)
+       draw_contours (boolean): draw an outline around the boundary of
+            detected plants (default = True)
+       circle_plants (boolean): draw an enclosing circle around
+            detected plants (default = True)
+       GUI (boolean): settings for the local GUI (default = False)
+       app (boolean): connect to the FarmBot web app (default = False)
 
-       Examples:
-           PD = Plant_Detection()
-           PD.detect_plants()
+    Examples:
+       PD = Plant_Detection()
+       PD.detect_plants()
 
-           PD = Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
-              debug=True)
-           PD.detect_plants()
+       PD = Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
+          debug=True)
+       PD.detect_plants()
 
-           PD = Plant_Detection(image='soil_image.jpg', blur=9, morph=7,
-              iterations=4, calibration_img="PD/p2c_test_calibration.jpg")
-           PD.calibrate()
-           PD.detect_plants()
+       PD = Plant_Detection(image='soil_image.jpg', blur=9, morph=7,
+          iterations=4, calibration_img="PD/p2c_test_calibration.jpg")
+       PD.calibrate()
+       PD.detect_plants()
 
-           PD = Plant_Detection(image='soil_image.jpg', blur=15, grey_out=True,
-              array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
-                     {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
-                     debug=True, clump_buster=False,
-                     HSV_min=[30, 15, 15], HSV_max=[85, 245, 245])
-           PD.detect_plants()
+       PD = Plant_Detection(image='soil_image.jpg', blur=15, grey_out=True,
+          array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+                 {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
+                 debug=True, clump_buster=False,
+                 HSV_min=[30, 15, 15], HSV_max=[85, 245, 245])
+       PD.detect_plants()
     """
 
     def __init__(self, **kwargs):
+        """Read arguments (and change settings) and initialize modules."""
         # Initialization
         self.image = None
         self.params = Parameters()
@@ -251,7 +252,6 @@ class Plant_Detection():
 
     def detect_plants(self):
         """Detect the green objects in the image."""
-
         # Load input parameters
         if self.from_file:
             # Requested to load detection parameters from file
@@ -329,7 +329,7 @@ class Plant_Detection():
             if self.verbose and self.text_output:
                 self.db.print_identified()  # print organized object data text to stdout
             if self.output_celeryscript_points:
-                self.db.output_CS()  # print object data JSON to stdout
+                self.db.output_celery_script()  # print point data JSON to stdout
             if self.app:
                 self.db.upload_weeds()  # add weeds to FarmBot Farm Designer
             if self.debug:
