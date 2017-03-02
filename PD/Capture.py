@@ -7,6 +7,7 @@ import sys
 import os
 import cv2
 import platform
+import redis
 from time import sleep
 from datetime import datetime
 
@@ -34,8 +35,11 @@ class Capture():
     def getcoordinates(self):
         """Get machine coordinates from bot."""
         try:  # return bot coordintes
-            return os.environ['STATUS']['location']
-        except KeyError:  # return testing coordintes
+            r = redis.StrictRedis()
+            x = int(r.lindex('BOT_STATUS.location', 0))
+            y = int(r.lindex('BOT_STATUS.location', 1))
+            return [x, y]
+        except:  # return testing coordintes
             return self.test_coordinates
 
     def capture(self):
