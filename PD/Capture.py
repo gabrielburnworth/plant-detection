@@ -26,7 +26,7 @@ if platform.uname()[4].startswith("arm") and use_rpi_camera:
 class Capture():
     """Capture image for Plant Detection."""
 
-    def __init__(self):
+    def __init__(self, r=None):
         """Set initial attributes."""
         self.image = None
         self.ret = None
@@ -35,11 +35,15 @@ class Capture():
         self.test_coordinates = [600, 400]
         self.image_captured = False
         self.silent = False
+        self.redis = r
 
     def getcoordinates(self):
         """Get machine coordinates from bot."""
         try:  # return bot coordintes
-            r = redis.StrictRedis()
+            if self.redis is not None:
+                r = self.redis
+            else:
+                r = redis.StrictRedis()
             x = int(r.lindex('BOT_STATUS.location', 0))
             y = int(r.lindex('BOT_STATUS.location', 1))
             return [x, y]
