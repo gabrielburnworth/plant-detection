@@ -7,7 +7,10 @@ import sys
 import os
 import cv2
 import platform
-import redis
+try:
+    import redis
+except ImportError:
+    pass
 from time import sleep
 from datetime import datetime
 
