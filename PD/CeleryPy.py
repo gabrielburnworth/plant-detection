@@ -41,9 +41,9 @@ class CeleryPy():
         pair['value'] = value
         return pair
 
-    def _saved_location_node(self, name, id):
+    def _saved_location_node(self, name, _id):
         args = {}
-        args[name + '_id'] = id
+        args[name + '_id'] = _id
         saved_location = self._create_node(name, args)
         return saved_location
 
@@ -129,10 +129,19 @@ if __name__ == "__main__":
     radius = 48.00
 
     FarmBot = CeleryPy()
-    FarmBot.add_point(x, y, z, radius)
+    print(FarmBot.add_point(x, y, z, radius))
     print
-    FarmBot.move_absolute([x, y, z], [x_offset, y_offset, z_offset], speed)
+    print(FarmBot.move_absolute(
+        [x, y, z],
+        [x_offset, y_offset, z_offset],
+        speed))
     print
-    FarmBot.move_absolute(tool, [x_offset, y_offset, z_offset], speed)
+    print(FarmBot.move_absolute(
+        tool,
+        [x_offset, y_offset, z_offset],
+        speed))
     print
-    FarmBot.move_absolute(plant, [x_offset, y_offset, z_offset], speed)
+    print(FarmBot.move_absolute(
+        plant,
+        [x_offset, y_offset, z_offset],
+        speed))

@@ -302,3 +302,23 @@ class ENV_VAR(unittest.TestCase):
                              from_env_var=True,
                              text_output=False, save=False)
         pd.detect_plants()
+
+
+class TestFromFile(unittest.TestCase):
+    """Test file use"""
+
+    def setUp(self):
+        self.pd = Plant_Detection(
+            calibration_img="PD/p2c_test_calibration.jpg",
+            text_output=False, save=False)
+        self.pd.calibrate()
+        self.pd.P2C.save_calibration_parameters()
+        self.object_count = 16
+
+    def test_detect_coordinates(self):
+        """Detect coordinates, getting calibration parameters from file"""
+        pd = Plant_Detection(image="soil_image.jpg",
+                             from_file=True, coordinates=True,
+                             text_output=False, save=False)
+        pd.detect_plants()
+        self.assertEqual(pd.db.object_count, self.object_count)

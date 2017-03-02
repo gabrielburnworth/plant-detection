@@ -354,7 +354,7 @@ if __name__ == "__main__":
     P2C.image.load(folder + "p2c_test_color.jpg")
     P2C.cparams.print_input()
     P2C.image.initial_processing()
-    P2C.image.find(circle=False)
+    P2C.image.find()
     if P2C.viewoutputimage:
         P2C.image.image = P2C.image.marked
         P2C.image.show()

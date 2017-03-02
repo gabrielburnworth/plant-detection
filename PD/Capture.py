@@ -34,6 +34,7 @@ class Capture():
         self.timestamp = None
         self.test_coordinates = [600, 400]
         self.image_captured = False
+        self.silent = False
 
     def getcoordinates(self):
         """Get machine coordinates from bot."""
@@ -44,6 +45,20 @@ class Capture():
             return [x, y]
         except:  # return testing coordintes
             return self.test_coordinates
+
+    def camera_check(self):
+        """Check for camera at ports 0 and 1"""
+        if not os.path.exists('/dev/video' + str(self.camera_port)):
+            if not self.silent:
+                print("No camera detected at video{}.".format(
+                    self.camera_port))
+            self.camera_port = 1
+            if not self.silent:
+                print("Trying video{}...".format(self.camera_port))
+            if not os.path.exists('/dev/video' + str(self.camera_port)):
+                if not self.silent:
+                    print("No camera detected at video{}.".format(
+                        self.camera_port))
 
     def capture(self):
         """Take a photo."""
@@ -62,15 +77,7 @@ class Capture():
             # image_width = 1600
             # image_height = 1200
             discard_frames = 20
-            # Check for camera
-            if not os.path.exists('/dev/video' + str(self.camera_port)):
-                print("No camera detected at video{}.".format(
-                    self.camera_port))
-                self.camera_port = 1
-                print("Trying video{}...".format(self.camera_port))
-                if not os.path.exists('/dev/video' + str(self.camera_port)):
-                    print("No camera detected at video{}.".format(
-                        self.camera_port))
+            self.camera_check()  # check for camera
             camera = cv2.VideoCapture(self.camera_port)
             sleep(0.1)
             # try:
@@ -91,10 +98,5 @@ class Capture():
 
 if __name__ == "__main__":
     directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-    from Image import Image
-    from Parameters import Parameters
-    from DB import DB
     image = Capture().capture()
-    wimage = Image(Parameters(), DB())
-    wimage.image = image
-    wimage.save("capture")
+    cv2.imwrite(directory + 'capture.jpg', image)
