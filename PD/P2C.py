@@ -18,7 +18,7 @@ except:
     from CeleryPy import CeleryPy
 
 
-class Pixel2coord():
+class Pixel2coord(object):
     """Image pixel to machine coordinate conversion.
 
     Calibrates the conversion of pixel locations to machine coordinates
@@ -56,6 +56,25 @@ class Pixel2coord():
                          'camera_offset_coordinates': [200, 100],
                          'calibration_iters': 3}
 
+        # Data and parameter preparation
+        self.cparams = None
+        self._calibration_data_preparation(calibration_data)
+        # Image preparation
+        self.image = None
+        self.camera_rotation = 0
+        self._calibration_image_preparation(calibration_image)
+
+        self.proc = None
+        self.circled = None
+        self.rotationangle = 0
+        self.test_rotation = 5  # for testing, add some image rotation
+        self.test_coordinates = [600, 400]  # calib image coord. location
+        self.viewoutputimage = False  # overridden as True if running script
+        self.output_text = True
+        self.get_bot_coordinates = Capture().getcoordinates
+        self.JSON_calibration_data = None
+
+    def _calibration_data_preparation(self, calibration_data):
         if calibration_data is None:  # load defaults
             self.calibration_params = self.defaults
         elif calibration_data == 'file':
@@ -80,6 +99,7 @@ class Pixel2coord():
         self.cparams = Parameters()
         self.set_input_parameters_for_calibration()
 
+    def _calibration_image_preparation(self, calibration_image):
         if calibration_image is not None:
             self.image = Image(self.cparams, self.db)
             if isinstance(calibration_image, str):
@@ -103,18 +123,9 @@ class Pixel2coord():
                                     ] = list(map(int, np.array(
                                         self.image.image.shape[:2][::-1]) / 2))
             self.image.calibration_debug = self.debug
-        self.camera_rotation = 0
+
         if self.camera_rotation > 0:
             self.image.image = np.rot90(self.image)
-        self.proc = None
-        self.circled = None
-        self.rotationangle = 0
-        self.test_rotation = 5  # for testing, add some image rotation
-        self.test_coordinates = [600, 400]  # calib image coord. location
-        self.viewoutputimage = False  # overridden as True if running script
-        self.output_text = True
-        self.get_bot_coordinates = Capture().getcoordinates
-        self.JSON_calibration_data = None
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
@@ -276,7 +287,7 @@ class Pixel2coord():
                 # Check number of objects detected and notify user if needed.
                 if len(self.db.calibration_pixel_locations) == 0:
                     print("ERROR: Calibration failed. No objects detected.")
-                    sys.exit(0)
+                    return True
                 if self.db.object_count > 2:
                     if not warning_issued:
                         print(" Warning: {} objects detected. "
@@ -288,7 +299,7 @@ class Pixel2coord():
                     print(" ERROR: {} objects detected. "
                           "At least 2 required. Exactly 2 reccomended.".format(
                               self.db.object_count))
-                    sys.exit(0)
+                    return True
                 # Use detected objects to determine required rotation angle
                 self.rotationdetermination()
                 if abs(self.rotationangle) > 120:
@@ -296,10 +307,14 @@ class Pixel2coord():
                           "Check that the calibration objects are "
                           "parallel with the desired axis and that "
                           "they are the only two objects detected.")
-                    sys.exit(0)
+                    return True
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle
         self.calibrate()
+        fail_flag = self._calibration_output(total_rotation_angle)
+        return fail_flag
+
+    def _calibration_output(self, total_rotation_angle):
         if self.viewoutputimage:
             self.image.image = self.image.marked
             self.image.show()
@@ -312,8 +327,11 @@ class Pixel2coord():
             total_rotation_angle, 3)
         try:
             self.calibration_params['coord_scale']
+            failure_flag = False
         except KeyError:
             print("ERROR: Calibration failed.")
+            failure_flag = True
+        return failure_flag
 
     def determine_coordinates(self):
         """Use calibration parameters to determine locations of objects."""
@@ -338,7 +356,9 @@ if __name__ == "__main__":
     P2C.viewoutputimage = True
     # Calibration
     P2C.image.rotate_main_images(P2C.test_rotation)
-    P2C.calibration()
+    exit_flag = P2C.calibration()
+    if exit_flag:
+        sys.exit(0)
     P2C.db.print_count(calibration=True)  # print number of objects detected
     if P2C.calibration_params['total_rotation_angle'] != 0:
         print(" Note: required rotation executed = {:.2f} degrees".format(

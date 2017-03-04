@@ -13,7 +13,7 @@ except:
     from CeleryPy import CeleryPy
 
 
-class DB():
+class DB(object):
     """Known and detected plant data for Plant Detection."""
 
     def __init__(self):

@@ -19,7 +19,7 @@ def _print_json(function):
     return wrapper
 
 
-class CeleryPy():
+class CeleryPy(object):
     """Python wrappers for FarmBot Celery Script."""
 
     def _encode_coordinates(self, x, y, z):

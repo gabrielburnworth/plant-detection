@@ -51,6 +51,11 @@ def check_file_length(self, expected_length):
     self.outfile = open('text_output_test.txt', 'w')
 
 
+def get_average_pixel_value(image):
+    pixel_mean = round(np.mean(image), 1)
+    return pixel_mean
+
+
 class PDTestJSONinput(unittest.TestCase):
     """Test ENV VAR inputs"""
 
@@ -406,11 +411,45 @@ class PDTestGreyOut(unittest.TestCase):
                              text_output=False, save=False,
                              grey_out=True)
         pd.detect_plants()
-        self.pixel_mean = round(np.mean(pd.image.image), 1)
+        self.pixel_mean = get_average_pixel_value(pd.image.image)
         self.expected_pixel_mean = 138.7
 
     def test_grey_out(self):
         """Test grey out option"""
+        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+
+
+class PDTestCirclePlants(unittest.TestCase):
+    """Test circle plants option"""
+
+    def setUp(self):
+        pd = Plant_Detection(image="soil_image.jpg",
+                             text_output=False, save=False,
+                             draw_contours=False,
+                             circle_plants=True)
+        pd.detect_plants()
+        self.pixel_mean = get_average_pixel_value(pd.image.image)
+        self.expected_pixel_mean = 69.9
+
+    def test_circle_plants(self):
+        """Test circle plants option"""
+        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+
+
+class PDTestDrawContours(unittest.TestCase):
+    """Test draw contours option"""
+
+    def setUp(self):
+        pd = Plant_Detection(image="soil_image.jpg",
+                             text_output=False, save=False,
+                             draw_contours=True,
+                             circle_plants=False)
+        pd.detect_plants()
+        self.pixel_mean = get_average_pixel_value(pd.image.image)
+        self.expected_pixel_mean = 72.9
+
+    def test_draw_contours(self):
+        """Test draw contours option"""
         self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
 
 
@@ -477,9 +516,7 @@ class PDTestDebugMode(unittest.TestCase):
                              text_output=False, save=False,
                              debug=True)
         pd.detect_plants()
-        self.assertEqual(
-            os.path.exists('soil_image_masked2.jpg'),
-            True)
+        self.assertTrue(os.path.exists('soil_image_masked2.jpg'))
 
     def test_debug_with_coordinates(self):
         """Test debug mode with coordinate conversion"""
@@ -490,7 +527,5 @@ class PDTestDebugMode(unittest.TestCase):
             debug=True)
         pd.calibrate()
         pd.detect_plants()
-        self.assertEqual(
-            os.path.exists('soil_image_coordinates_found.jpg'),
-            True)
+        self.assertTrue(os.path.exists('soil_image_coordinates_found.jpg'))
         os.remove('soil_image_masked2.jpg')

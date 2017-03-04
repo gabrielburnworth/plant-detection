@@ -13,7 +13,7 @@ from PD.DB import DB
 from PD.Capture import Capture
 
 
-class Plant_Detection():
+class Plant_Detection(object):
     """Detect plants in image and output an image with plants marked.
 
     Kwargs:
@@ -94,87 +94,41 @@ class Plant_Detection():
 
     def __init__(self, **kwargs):
         """Read arguments (and change settings) and initialize modules."""
-        # Initialization
+        # Default Data Inputs
         self.image = None
-        self.params = Parameters()
-        self.db = DB()
-        self.P2C = None
-        self.capture = Capture().capture
-        self.final_marked_image = None
-        self.output_celeryscript_points = False
-        self.db.tmp_dir = None
-
-        # Arguments
-        # Defaults
-        self.coordinates = False
         self.calibration_img = None
-        self.debug = False
-        self.save = True
-        self.clump_buster = False
+        self.db = DB()
+
+        # Default Parameter Inputs
+        self.params = Parameters()
+
+        # Default Program Options
+        self.coordinates = False
         self.from_file = False
         self.from_env_var = False
+        self.clump_buster = False
+        self.GUI = False
+        self.app = False
+
+        # Default Output Options
+        self.debug = False
+        self.save = True
         self.text_output = True
         self.verbose = True
         self.print_all_json = False
+
+        # Default Graphic Options
         self.grey_out = False
         self.draw_contours = True
         self.circle_plants = True
-        self.GUI = False
-        self.app = False
-        # Inputs
-        for key in kwargs:
-            if key == 'image':
-                self.image = kwargs[key]
-            if key == 'coordinates':
-                self.coordinates = kwargs[key]
-            if key == 'calibration_img':
-                self.calibration_img = kwargs[key]
-            if key == 'known_plants':
-                self.db.plants['known'] = kwargs[key]
-            if key == 'debug':
-                self.debug = kwargs[key]
-            if key == 'blur':
-                self.params.parameters['blur'] = kwargs[key]
-            if key == 'morph':
-                self.params.parameters['morph'] = kwargs[key]
-            if key == 'iterations':
-                self.params.parameters['iterations'] = kwargs[key]
-            if key == 'array':
-                self.params.array = kwargs[key]
-            if key == 'save':
-                self.save = kwargs[key]
-            if key == 'clump_buster':
-                self.clump_buster = kwargs[key]
-            if key == 'HSV_min':
-                HSV_min = kwargs[key]
-                self.params.parameters['H'][0] = HSV_min[0]
-                self.params.parameters['S'][0] = HSV_min[1]
-                self.params.parameters['V'][0] = HSV_min[2]
-            if key == 'HSV_max':
-                HSV_max = kwargs[key]
-                self.params.parameters['H'][1] = HSV_max[0]
-                self.params.parameters['S'][1] = HSV_max[1]
-                self.params.parameters['V'][1] = HSV_max[2]
-            if key == 'from_file':
-                self.from_file = kwargs[key]
-            if key == 'from_env_var':
-                self.from_env_var = kwargs[key]
-            if key == 'text_output':
-                self.text_output = kwargs[key]
-            if key == 'verbose':
-                self.verbose = kwargs[key]
-            if key == 'print_all_json':
-                self.print_all_json = kwargs[key]
-            if key == 'grey_out':
-                self.grey_out = kwargs[key]
-            if key == 'draw_contours':
-                self.draw_contours = kwargs[key]
-            if key == 'circle_plants':
-                self.circle_plants = kwargs[key]
-            if key == 'GUI':
-                self.GUI = kwargs[key]
-            if key == 'app':
-                self.app = kwargs[key]
+
+        # Load keyword argument inputs
+        self._data_inputs(kwargs)
+        self._parameter_inputs(kwargs)
+        self._program_options(kwargs)
+        self._output_options(kwargs)
+        self._graphic_options(kwargs)
+
         # Changes based on inputs
         if self.calibration_img is not None:
             self.coordinates = True
@@ -186,8 +140,86 @@ class Plant_Detection():
             self.verbose = False
             self.from_env_var = True
 
-    def calibrate(self):
-        """Initialize coordinate conversion module using calibration image."""
+        # Remaining initialization
+        self.P2C = None
+        self.capture = Capture().capture
+        self.final_marked_image = None
+        self.output_celeryscript_points = False
+        self.db.tmp_dir = None
+
+    def _data_inputs(self, kwargs):
+        """Load data inputs from keyword arguments."""
+        for key in kwargs:
+            if key == 'image':
+                self.image = kwargs[key]
+            if key == 'calibration_img':
+                self.calibration_img = kwargs[key]
+            if key == 'known_plants':
+                self.db.plants['known'] = kwargs[key]
+
+    def _parameter_inputs(self, kwargs):
+        """Load parameter inputs from keyword arguments."""
+        for key in kwargs:
+            if key == 'blur':
+                self.params.parameters['blur'] = kwargs[key]
+            if key == 'morph':
+                self.params.parameters['morph'] = kwargs[key]
+            if key == 'iterations':
+                self.params.parameters['iterations'] = kwargs[key]
+            if key == 'array':
+                self.params.array = kwargs[key]
+            if key == 'HSV_min':
+                HSV_min = kwargs[key]
+                self.params.parameters['H'][0] = HSV_min[0]
+                self.params.parameters['S'][0] = HSV_min[1]
+                self.params.parameters['V'][0] = HSV_min[2]
+            if key == 'HSV_max':
+                HSV_max = kwargs[key]
+                self.params.parameters['H'][1] = HSV_max[0]
+                self.params.parameters['S'][1] = HSV_max[1]
+                self.params.parameters['V'][1] = HSV_max[2]
+
+    def _program_options(self, kwargs):
+        """Load program options from keyword arguments."""
+        for key in kwargs:
+            if key == 'coordinates':
+                self.coordinates = kwargs[key]
+            if key == 'from_file':
+                self.from_file = kwargs[key]
+            if key == 'from_env_var':
+                self.from_env_var = kwargs[key]
+            if key == 'clump_buster':
+                self.clump_buster = kwargs[key]
+            if key == 'GUI':
+                self.GUI = kwargs[key]
+            if key == 'app':
+                self.app = kwargs[key]
+
+    def _output_options(self, kwargs):
+        """Load output options from keyword arguments."""
+        for key in kwargs:
+            if key == 'debug':
+                self.debug = kwargs[key]
+            if key == 'save':
+                self.save = kwargs[key]
+            if key == 'text_output':
+                self.text_output = kwargs[key]
+            if key == 'verbose':
+                self.verbose = kwargs[key]
+            if key == 'print_all_json':
+                self.print_all_json = kwargs[key]
+
+    def _graphic_options(self, kwargs):
+        """Load graphic options from keyword arguments."""
+        for key in kwargs:
+            if key == 'grey_out':
+                self.grey_out = kwargs[key]
+            if key == 'draw_contours':
+                self.draw_contours = kwargs[key]
+            if key == 'circle_plants':
+                self.circle_plants = kwargs[key]
+
+    def _calibration_input(self):  # provide inputs to calibration
         if self.calibration_img is None and self.coordinates:
             # Calibration requested, but no image provided.
             # Take a calibration image.
@@ -207,7 +239,8 @@ class Plant_Detection():
                 self.params.load()
                 calibration_input = self.params.parameters.copy()
             except IOError:
-                print("Warning: Calibration data file load failed. Using defaults.")
+                print("Warning: Calibration data file load failed. "
+                      "Using defaults.")
                 calibration_input = None
         else:  # Use default calibration inputs
             calibration_input = None
@@ -216,8 +249,20 @@ class Plant_Detection():
         self.P2C = Pixel2coord(self.db,
                                calibration_image=self.calibration_img,
                                calibration_data=calibration_input)
-        # Perform calibration
-        self.P2C.calibration()
+
+    def calibrate(self):
+        """Calibrate the camera for plant detection.
+
+        Initialize the coordinate conversion module using a calibration image,
+        perform calibration, and save calibration data.
+        """
+        self._calibration_input()  # initialize coordinate conversion module
+        exit_flag = self.P2C.calibration()  # perform calibration
+        if exit_flag:
+            sys.exit(0)
+        self._calibration_output()  # save calibration data
+
+    def _calibration_output(self):  # save calibration data
         if self.save:
             self.P2C.image.image = self.P2C.image.marked
             self.P2C.image.save('calibration_result')
@@ -225,8 +270,9 @@ class Plant_Detection():
         # Print verbose results
         if self.verbose and self.text_output:
             if self.P2C.calibration_params['total_rotation_angle'] != 0:
-                print(" Note: required rotation executed = {:.2f} degrees".format(
-                    self.P2C.calibration_params['total_rotation_angle']))
+                print(" Note: required rotation of "
+                      "{:.2f} degrees executed.".format(
+                          self.P2C.calibration_params['total_rotation_angle']))
             if self.debug:
                 # print number of objects detected
                 self.db.print_count(calibration=True)
@@ -250,8 +296,7 @@ class Plant_Detection():
         else:  # to Parameters() instance
             self.params.calibration_data = self.P2C.calibration_params
 
-    def detect_plants(self):
-        """Detect the green objects in the image."""
+    def _detection_input(self):  # provide input to detect_plants
         # Load input parameters
         if self.from_file:
             # Requested to load detection parameters from file
@@ -275,6 +320,7 @@ class Plant_Detection():
             self.params.print_input()
             print("\nProcessing image: {}".format(self.image))
 
+    def _detection_image(self):  # get image to process
         # Get image to process
         if self.image is None:
             # No image provided. Capture one.
@@ -287,6 +333,54 @@ class Plant_Detection():
             self.image = Image(self.params, self.db)  # create image object
             self.image.load(filename)
         self.image.debug = self.debug
+
+    def _coordinate_conversion(self):  # determine detected object coordinates
+        # Load calibration data
+        if self.from_env_var:
+            calibration_data = 'env_var'
+        elif self.from_file:
+            calibration_data = 'file'
+        else:  # use data saved in self.params
+            calibration_data = self.params.calibration_data
+        # Initialize coordinate conversion module
+        self.P2C = Pixel2coord(self.db, calibration_data=calibration_data)
+        # Check for coordinate conversion calibration results
+        try:
+            self.P2C.calibration_params['coord_scale']
+        except KeyError:
+            print("ERROR: Coordinate conversion calibration values "
+                  "not found. Run calibration first.")
+            sys.exit(0)
+        # Determine object coordinates
+        self.image.coordinates(self.P2C, draw_contours=self.draw_contours)
+        # Organize objects into plants and weeds
+        self.db.identify()
+        if self.db.plants['safe_remove']:
+            self.image.safe_remove(self.P2C)
+
+    def _coordinate_conversion_output(self):  # output detected object data
+        # Print and output results
+        if self.text_output:
+            self.db.print_count()  # print number of objects detected
+        if self.verbose and self.text_output:
+            self.db.print_identified()  # print organized object data text to stdout
+        if self.output_celeryscript_points:
+            self.db.output_celery_script()  # print point data JSON to stdout
+        if self.app:
+            self.db.upload_weeds()  # add weeds to FarmBot Farm Designer
+        if self.debug:
+            self.image.save_annotated('contours')
+            self.image.image = self.image.marked
+            self.image.save_annotated('coordinates_found')
+        if self.circle_plants:
+            self.image.label(self.P2C)  # mark objects with colored circles
+        self.image.grid(self.P2C)  # add coordinate grid and features
+
+    def detect_plants(self):
+        """Detect the green objects in the image."""
+        # Gather inputs
+        self._detection_input()
+        self._detection_image()
 
         # Process image in preparation for detecting plants (blur, mask, morph)
         self.image.initial_processing()
@@ -301,45 +395,8 @@ class Plant_Detection():
 
         # Return coordinates if requested
         if self.coordinates:  # Convert pixel locations to coordinates
-            # Load calibration data
-            if self.from_env_var:
-                calibration_data = 'env_var'
-            elif self.from_file:
-                calibration_data = 'file'
-            else:  # use data saved in self.params
-                calibration_data = self.params.calibration_data
-            # Initialize coordinate conversion module
-            self.P2C = Pixel2coord(self.db, calibration_data=calibration_data)
-            # Check for coordinate conversion calibration results
-            try:
-                self.P2C.calibration_params['coord_scale']
-            except KeyError:
-                print("ERROR: Coordinate conversion calibration values "
-                      "not found. Run calibration first.")
-                sys.exit(0)
-            # Determine object coordinates
-            self.image.coordinates(self.P2C, draw_contours=self.draw_contours)
-            # Organize objects into plants and weeds
-            self.db.identify()
-            if self.db.plants['safe_remove']:
-                self.image.safe_remove(self.P2C)
-            # Print and output results
-            if self.text_output:
-                self.db.print_count()  # print number of objects detected
-            if self.verbose and self.text_output:
-                self.db.print_identified()  # print organized object data text to stdout
-            if self.output_celeryscript_points:
-                self.db.output_celery_script()  # print point data JSON to stdout
-            if self.app:
-                self.db.upload_weeds()  # add weeds to FarmBot Farm Designer
-            if self.debug:
-                self.image.save_annotated('contours')
-                self.image.image = self.image.marked
-                self.image.save_annotated('coordinates_found')
-            if self.circle_plants:
-                self.image.label(self.P2C)  # mark objects with colored circles
-            self.image.grid(self.P2C)  # add coordinate grid and features
-
+            self._coordinate_conversion()
+            self._coordinate_conversion_output()
         else:  # No coordinate conversion
             # get pixel locations of objects
             self.image.find(draw_contours=self.draw_contours)
@@ -353,12 +410,10 @@ class Plant_Detection():
                 self.db.print_pixel()  # print object pixel location text
             self.image.image = self.image.marked
 
-        # Final marked image
-        if self.save or self.debug:
-            self.image.save('marked')
-        elif self.GUI:
-            self.final_marked_image = self.image.marked
+        self._show_detection_output()  # show output data
+        self._save_detection_output()  # save output data
 
+    def _show_detection_output(self):  # show detect_plants output
         # Print raw JSON to STDOUT
         if self.print_all_json:
             print("\nJSON:")
@@ -375,6 +430,13 @@ class Plant_Detection():
                                   self.params.parameters))
             print('{}: {}'.format('coordinates input',
                                   Capture().getcoordinates()))
+
+    def _save_detection_output(self):  # save detect_plants output
+        # Final marked image
+        if self.save or self.debug:
+            self.image.save('marked')
+        elif self.GUI:
+            self.final_marked_image = self.image.marked
 
         # Save input parameters
         if self.from_env_var:

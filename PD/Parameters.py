@@ -12,7 +12,7 @@ except:
     from CeleryPy import CeleryPy
 
 
-class Parameters():
+class Parameters(object):
     """Input parameters for Plant Detection."""
 
     def __init__(self):

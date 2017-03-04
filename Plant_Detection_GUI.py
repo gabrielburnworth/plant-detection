@@ -7,7 +7,7 @@ import cv2
 from Plant_Detection import Plant_Detection
 
 
-class Plant_Detection_GUI():
+class Plant_Detection_GUI(object):
     """Interactively change input parameters for Plant_Detection.detect_plants()."""
 
     def __init__(self):

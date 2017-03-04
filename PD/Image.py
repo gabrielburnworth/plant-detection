@@ -17,7 +17,7 @@ except:
     from DB import DB
 
 
-class Image():
+class Image(object):
     """Provide image processes to Plant Detection."""
 
     def __init__(self, parameters, db):
@@ -300,12 +300,7 @@ class Image():
         self.marked = self.greyed
         self.status['grey'] = True
 
-    def find(self, calibration=False, safe_remove=False,
-             small_c=False, draw_contours=True):
-        """Create contours, find locations of objects, and mark them.
-
-        Requires morphed image.
-        """
+    def _find_contours(self):
         # Find contours (hopefully of outside edges of plants)
         contoured = self.morphed.copy()
         try:
@@ -319,19 +314,43 @@ class Image():
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
             contoured = np.zeros_like(contoured, np.uint8)
+        self.contoured = contoured
+        return contours
+
+    def _draw_contour(self, contour, calibration, draw_contours):
+        # Draw contour
+        if calibration and draw_contours:
+            cv2.drawContours(self.marked, [contour], 0, (0, 255, 0), 3)
+        elif draw_contours:
+            cv2.drawContours(self.contoured, [contour], 0, (255, 255, 255), 3)
+            cv2.drawContours(self.marked, [contour], 0, (0, 0, 0), 6)
+            cv2.drawContours(self.marked, [contour], 0, (255, 255, 255), 2)
+
+    def _save_calibration_contour(self, i, only_one_object, location=None):
+        if i == 0:
+            self.db.calibration_pixel_locations = location
+            only_one_object = True
+        else:
+            try:
+                self.db.calibration_pixel_locations = np.vstack(
+                    (self.db.calibration_pixel_locations,
+                     location))
+                only_one_object = False
+            except ValueError:
+                self.db.calibration_pixel_locations = location
+                only_one_object = True
+        return only_one_object
+
+    def find(self, calibration=False, safe_remove=False,
+             draw_contours=True):
+        """Create contours, find locations of objects, and mark them.
+
+        Requires morphed image.
+        """
+        # Loop through contours
+        contours = self._find_contours()
         if not safe_remove:
             self.db.object_count = len(contours)
-        if calibration and self.db.object_count > 10 and 0:
-            print("ERROR: Too many calibration objects detected in image.")
-            print("\t ({}) Try changing calibration parameters.".format(
-                self.db.object_count))
-            self.params.print_input()
-            cv2.drawContours(self.output, contours, -1, (255, 0, 0), 3)
-            self.image = self.output
-            self.show()
-            sys.exit(0)
-
-        # Loop through contours
         self.db.pixel_locations = []
         only_one_object = False
         for i, cnt in enumerate(contours):
@@ -344,42 +363,24 @@ class Image():
             except ZeroDivisionError:
                 continue
 
-            if small_c:
-                radius = 20
             if calibration:
                 # Mark calibration object with blue circle
                 center = (int(mcx), int(mcy))
                 cv2.circle(self.marked, center, int(radius), (255, 0, 0), 4)
 
-            # Draw contours
-            if calibration and draw_contours:
-                cv2.drawContours(self.marked, [cnt], 0, (0, 255, 0), 3)
-            elif draw_contours:
-                cv2.drawContours(contoured, [cnt], 0, (255, 255, 255), 3)
-                cv2.drawContours(self.marked, [cnt], 0, (0, 0, 0), 6)
-                cv2.drawContours(self.marked, [cnt], 0, (255, 255, 255), 2)
+            self._draw_contour(cnt, calibration, draw_contours)
 
             self.db.pixel_locations.append([cx, cy, radius])
             if calibration:
-                if i == 0:
-                    self.db.calibration_pixel_locations = [mcx, mcy, radius]
-                    only_one_object = True
-                else:
-                    try:
-                        self.db.calibration_pixel_locations = np.vstack(
-                            (self.db.calibration_pixel_locations,
-                             [mcx, mcy, radius]))
-                        only_one_object = False
-                    except ValueError:
-                        self.db.calibration_pixel_locations = [
-                            mcx, mcy, radius]
-                        only_one_object = True
+                only_one_object = self._save_calibration_contour(
+                    i, only_one_object,
+                    location=[mcx, mcy, radius])
+
         if calibration and only_one_object:
             self.db.calibration_pixel_locations = [
                 self.db.calibration_pixel_locations]
             self.db.object_count = 1
         if not safe_remove:
-            self.contoured = contoured
             self.image = self.contoured
             self.status['mark'] = True
 

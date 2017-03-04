@@ -23,7 +23,7 @@ if platform.uname()[4].startswith("arm") and use_rpi_camera:
     using_rpi = True
 
 
-class Capture():
+class Capture(object):
     """Capture image for Plant Detection."""
 
     def __init__(self, r=None):
@@ -51,7 +51,7 @@ class Capture():
             return self.test_coordinates
 
     def camera_check(self):
-        """Check for camera at ports 0 and 1"""
+        """Check for camera at ports 0 and 1."""
         if not os.path.exists('/dev/video' + str(self.camera_port)):
             if not self.silent:
                 print("No camera detected at video{}.".format(
