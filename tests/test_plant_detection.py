@@ -416,7 +416,9 @@ class PDTestGreyOut(unittest.TestCase):
 
     def test_grey_out(self):
         """Test grey out option"""
-        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+        self.assertAlmostEqual(self.pixel_mean,
+                               self.expected_pixel_mean,
+                               delta=0.25)
 
 
 class PDTestCirclePlants(unittest.TestCase):
@@ -433,7 +435,9 @@ class PDTestCirclePlants(unittest.TestCase):
 
     def test_circle_plants(self):
         """Test circle plants option"""
-        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+        self.assertAlmostEqual(self.pixel_mean,
+                               self.expected_pixel_mean,
+                               delta=0.25)
 
 
 class PDTestDrawContours(unittest.TestCase):
@@ -450,7 +454,9 @@ class PDTestDrawContours(unittest.TestCase):
 
     def test_draw_contours(self):
         """Test draw contours option"""
-        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+        self.assertAlmostEqual(self.pixel_mean,
+                               self.expected_pixel_mean,
+                               delta=0.25)
 
 
 class PDTestTextOutput(unittest.TestCase):
