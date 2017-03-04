@@ -3,8 +3,14 @@
 
 For Plant Detection.
 """
+import os
+import sys
 import unittest
-import fakeredis
+try:
+    import fakeredis
+    test_redis = True
+except ImportError:
+    test_redis = False
 from PD.Capture import Capture
 
 
@@ -19,6 +25,23 @@ class GetCoordinatesTest(unittest.TestCase):
         self.capture = Capture(r=r)
         self.capture.silent = True
 
+    @unittest.skipUnless(test_redis, "requires fakeredis")
     def test_get_coordinates(self):
         """Get location from redis"""
         self.assertEqual(self.capture.getcoordinates(), self.coordinates)
+
+
+class CheckCameraTest(unittest.TestCase):
+    """Check for camera"""
+
+    def setUp(self):
+        self.nullfile = open(os.devnull, 'w')
+        sys.stdout = self.nullfile
+
+    def test_camera_check(self):
+        """Test camera check"""
+        Capture().camera_check()
+
+    def tearDown(self):
+        self.nullfile.close()
+        sys.stdout = sys.__stdout__

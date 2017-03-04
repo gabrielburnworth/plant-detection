@@ -3,6 +3,7 @@
 
 For Plant Detection.
 """
+import sys
 import unittest
 from PD.DB import DB
 
@@ -11,6 +12,8 @@ class DBTest(unittest.TestCase):
     """Check plant identification"""
 
     def setUp(self):
+        self.outfile = open('db_text_output_test.txt', 'w')
+        sys.stdout = self.outfile
         self.db = DB()
         self.db.plants['known'] = [{'x': 1000, 'y': 1000, 'radius': 100}]
         self.db.coordinate_locations = [[1000, 1000, 75],
@@ -28,6 +31,14 @@ class DBTest(unittest.TestCase):
                      {'radius': 75.0, 'x': 1090.0, 'y': 1000.0},
                      ]
         self.db.identify()
+        self.cs = [{'body': [{'kind': 'pair', 'args': {
+            'value': 'plant-detection', 'label': 'created_by'}}],
+            'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
+                'kind': 'coordinate', 'args': {'y': 825.0, 'x': 1000.0, 'z': 0}}}},
+            {'body': [{'kind': 'pair', 'args': {
+                'value': 'plant-detection', 'label': 'created_by'}}],
+             'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
+                 'kind': 'coordinate', 'args': {'y': 1000.0, 'x': 800.0, 'z': 0}}}}]
 
     def test_plant_id_remove(self):
         """Check plants to be removed"""
@@ -40,3 +51,21 @@ class DBTest(unittest.TestCase):
     def test_plant_id_safe_remove(self):
         """Check plants to be safely removed"""
         self.assertEqual(self.safe_remove, self.db.plants['safe_remove'])
+
+    def test_api_download(self):
+        """Run (failing) plant download assuming no API_TOKEN ENV"""
+        self.db.load_plants_from_web_app()
+        self.assertEqual(self.db.errors, {'401': 1})
+
+    def test_api_upload(self):
+        """Run (failing) plant upload assuming no API_TOKEN ENV"""
+        self.db.upload_weeds()
+        self.assertEqual(self.db.errors, {'401': 1})
+
+    # def test_cs_output(self):
+    #     """Output Celery Script points"""
+    #     self.db.output_celery_script()
+
+    def tearDown(self):
+        self.outfile.close()
+        sys.stdout = sys.__stdout__

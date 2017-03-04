@@ -272,10 +272,14 @@ class Image():
         for i in range(len(contours)):
             cnt = contours[i]
             rx, ry, rw, rh = cv2.boundingRect(cnt)
-            cv2.line(self.morphed, (rx + rw / 2, ry), (rx + rw / 2, ry + rh),
-                     (0), rw / 7)
-            cv2.line(self.morphed, (rx, ry + rh / 2), (rx + rw, ry + rh / 2),
-                     (0), rh / 7)
+            cv2.line(self.morphed,
+                     (int(rx + rw / 2.), ry),
+                     (int(rx + rw / 2.), ry + rh),
+                     (0), int(rw / 7.))
+            cv2.line(self.morphed,
+                     (rx, int(ry + rh / 2.)),
+                     (rx + rw, int(ry + rh / 2.)),
+                     (0), int(rh / 7.))
         kernel = cv2.getStructuringElement(self.params.kt['ellipse'],
                                            (self.params.parameters['morph'],
                                             self.params.parameters['morph']))

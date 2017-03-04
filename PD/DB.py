@@ -42,6 +42,7 @@ class DB():
 
     def api_response_error_collector(self, response):
         """Catch and log errors from API requests."""
+        self.errors = {}  # reset
         if response.status_code != 200:
             try:
                 self.errors[str(response.status_code)] += 1
@@ -54,7 +55,6 @@ class DB():
         for key, value in self.errors.items():
             error_string += '{} {} errors '.format(value, key)
         print(error_string)
-        self.errors = {}  # reset
 
     def save_plants(self):
         """Save plant detection plants to file.

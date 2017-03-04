@@ -4,8 +4,10 @@
 For Plant Detection.
 """
 import os
+import sys
 import json
 import unittest
+import numpy as np
 from Plant_Detection import Plant_Detection
 
 
@@ -39,6 +41,14 @@ def compare_calibration_results(self):
                            'coord_scale'], places=3)
     self.assertEqual(self.calibration['center_pixel_location'],
                      self.pd.P2C.calibration_params['center_pixel_location'])
+
+
+def check_file_length(self, expected_length):
+    self.outfile.close()
+    self.outfile = open('text_output_test.txt', 'r')
+    self.assertEqual(sum(1 for line in self.outfile), expected_length)
+    self.outfile.close()
+    self.outfile = open('text_output_test.txt', 'w')
 
 
 class PDTestJSONinput(unittest.TestCase):
@@ -155,6 +165,14 @@ class PDTestArgs(unittest.TestCase):
                                      'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.set_input_params = {'blur': 9, 'morph': 7, 'iterations': 3,
                                  'H': [15, 85], 'S': [15, 245], 'V': [15, 245]}
+        self.text_output = False
+        self.verbose = False
+        self.print_all_json = True
+        self.grey_out = True
+        self.draw_contours = False
+        self.circle_plants = False
+        self.GUI = True
+        self.app = True
 
     def test_input_args(self):
         """Set all arguments"""
@@ -168,7 +186,15 @@ class PDTestArgs(unittest.TestCase):
             debug=self.debug, save=self.save, clump_buster=self.clump_buster,
             HSV_min=self.HSV_min, HSV_max=self.HSV_max,
             from_file=self.from_file,
-            from_env_var=self.from_env_var)
+            from_env_var=self.from_env_var,
+            text_output=self.text_output,
+            verbose=self.verbose,
+            print_all_json=self.print_all_json,
+            grey_out=self.grey_out,
+            draw_contours=self.draw_contours,
+            circle_plants=self.circle_plants,
+            GUI=self.GUI, app=self.app
+        )
         self.assertEqual(pd.image, self.image)
         self.assertEqual(pd.coordinates, self.coordinates)
         self.assertEqual(pd.calibration_img, self.calibration_img)
@@ -178,10 +204,16 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.debug, self.debug)
         self.assertEqual(pd.save, self.save)
         self.assertEqual(pd.clump_buster, self.clump_buster)
-        self.assertEqual(pd.from_file,
-                         self.from_file)
-        self.assertEqual(pd.from_env_var,
-                         self.from_env_var)
+        self.assertEqual(pd.from_file, self.from_file)
+        self.assertEqual(pd.from_env_var, self.from_env_var)
+        self.assertEqual(pd.text_output, self.text_output)
+        self.assertEqual(pd.verbose, self.verbose)
+        self.assertEqual(pd.print_all_json, self.print_all_json)
+        self.assertEqual(pd.grey_out, self.grey_out)
+        self.assertEqual(pd.draw_contours, self.draw_contours)
+        self.assertEqual(pd.circle_plants, self.circle_plants)
+        self.assertEqual(pd.GUI, self.GUI)
+        self.assertEqual(pd.app, self.app)
 
     def test_input_defaults(self):
         """Use defaults"""
@@ -197,6 +229,14 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.clump_buster, False)
         self.assertEqual(pd.from_file, False)
         self.assertEqual(pd.from_env_var, False)
+        self.assertEqual(pd.text_output, True)
+        self.assertEqual(pd.verbose, True)
+        self.assertEqual(pd.print_all_json, False)
+        self.assertEqual(pd.grey_out, False)
+        self.assertEqual(pd.draw_contours, True)
+        self.assertEqual(pd.circle_plants, True)
+        self.assertEqual(pd.GUI, False)
+        self.assertEqual(pd.app, False)
 
 
 class PDTestOutput(unittest.TestCase):
@@ -322,3 +362,135 @@ class TestFromFile(unittest.TestCase):
                              text_output=False, save=False)
         pd.detect_plants()
         self.assertEqual(pd.db.object_count, self.object_count)
+
+
+class PDTestArray(unittest.TestCase):
+    """Test input parameter array use"""
+
+    def setUp(self):
+        self.pd = Plant_Detection(
+            image="soil_image.jpg",
+            array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+                   {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
+            text_output=False, save=False)
+        self.pd.detect_plants()
+        self.object_count = 29
+
+    def test_detect(self):
+        """Detect plants using array input"""
+        self.assertEqual(self.pd.db.object_count, self.object_count)
+
+
+class PDTestClumpBuster(unittest.TestCase):
+    """Test other options"""
+
+    def setUp(self):
+        """Test clump buster"""
+        self.pd = Plant_Detection(
+            image="soil_image.jpg",
+            morph=10,
+            text_output=False, save=False, clump_buster=True)
+        self.pd.detect_plants()
+        self.object_count = 39
+
+    def test_clump_buster(self):
+        """Test clump buster"""
+        self.assertEqual(self.pd.db.object_count, self.object_count)
+
+
+class PDTestGreyOut(unittest.TestCase):
+    """Test grey out option"""
+
+    def setUp(self):
+        pd = Plant_Detection(image="soil_image.jpg",
+                             text_output=False, save=False,
+                             grey_out=True)
+        pd.detect_plants()
+        self.pixel_mean = round(np.mean(pd.image.image), 1)
+        self.expected_pixel_mean = 138.7
+
+    def test_grey_out(self):
+        """Test grey out option"""
+        self.assertEqual(self.pixel_mean, self.expected_pixel_mean)
+
+
+class PDTestTextOutput(unittest.TestCase):
+    """Test all text output"""
+
+    def setUp(self):
+        self.outfile = open('text_output_test.txt', 'w')
+        sys.stdout = self.outfile
+
+    def test_verbose_text_output_no_coordinates(self):
+        """Test verbpse text output without coordinate conversion"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            save=False, print_all_json=True)
+        self.outfile.truncate()
+        pd.detect_plants()
+        check_file_length(self, 71)
+
+    def test_condensed_text_output_no_coordinates(self):
+        """Test condensed text output without coordinate conversion"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            verbose=False,
+            save=False, print_all_json=True)
+        self.outfile.truncate()
+        pd.detect_plants()
+        check_file_length(self, 8)
+
+    def test_verbose_text_output(self):
+        """Test verbpse text output"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            calibration_img="PD/p2c_test_calibration.jpg",
+            save=False, print_all_json=True)
+        self.outfile.truncate()
+        pd.calibrate()
+        pd.detect_plants()
+        check_file_length(self, 80)
+
+    def test_condensed_text_output(self):
+        """Test condensed text output"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            calibration_img="PD/p2c_test_calibration.jpg",
+            verbose=False,
+            save=False, print_all_json=True)
+        self.outfile.truncate()
+        pd.calibrate()
+        pd.detect_plants()
+        check_file_length(self, 10)
+
+    def tearDown(self):
+        self.outfile.close()
+        sys.stdout = sys.__stdout__
+
+
+class PDTestDebugMode(unittest.TestCase):
+    """Test debug option"""
+
+    def test_debug_no_coordinates(self):
+        """Test debug mode without coordinate conversion"""
+        pd = Plant_Detection(image="soil_image.jpg",
+                             text_output=False, save=False,
+                             debug=True)
+        pd.detect_plants()
+        self.assertEqual(
+            os.path.exists('soil_image_masked2.jpg'),
+            True)
+
+    def test_debug_with_coordinates(self):
+        """Test debug mode with coordinate conversion"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            calibration_img="PD/p2c_test_calibration.jpg",
+            text_output=False, save=False,
+            debug=True)
+        pd.calibrate()
+        pd.detect_plants()
+        self.assertEqual(
+            os.path.exists('soil_image_coordinates_found.jpg'),
+            True)
+        os.remove('soil_image_masked2.jpg')
