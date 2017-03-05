@@ -32,7 +32,7 @@ class Capture(object):
         self.ret = None
         self.camera_port = None
         self.timestamp = None
-        self.test_coordinates = [600, 400]
+        self.test_coordinates = [600, 400, 0]
         self.image_captured = False
         self.silent = False
         self.redis = r
@@ -46,7 +46,8 @@ class Capture(object):
                 r = redis.StrictRedis()
             x = int(r.lindex('BOT_STATUS.location', 0))
             y = int(r.lindex('BOT_STATUS.location', 1))
-            return [x, y]
+            z = int(r.lindex('BOT_STATUS.location', 2))
+            return [x, y, z]
         except:  # return testing coordintes
             return self.test_coordinates
 

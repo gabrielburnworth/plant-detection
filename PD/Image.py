@@ -9,12 +9,8 @@ import numpy as np
 import cv2
 try:
     from .Capture import Capture
-    from .Parameters import Parameters
-    from .DB import DB
 except:
     from Capture import Capture
-    from Parameters import Parameters
-    from DB import DB
 
 
 class Image(object):

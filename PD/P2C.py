@@ -225,14 +225,13 @@ class Pixel2coord(object):
         except IndexError:
             db.pixel_locations = [db.pixel_locations]
         db.pixel_locations = np.array(db.pixel_locations)
-        coord = np.array(self.get_bot_coordinates(), dtype=float)
+        coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
         sign = [1 if s == 1 else -1 for s
                 in self.calibration_params['image_bot_origin_location']]
-        coord_scale = np.array([self.calibration_params['coord_scale'],
-                                self.calibration_params['coord_scale']])
+        coord_scale = np.repeat(self.calibration_params['coord_scale'], 2)
         db.coordinate_locations = []
         for o, object_pixel_location in enumerate(db.pixel_locations[:, :2]):
             radius = db.pixel_locations[:][o][2]
@@ -254,7 +253,7 @@ class Pixel2coord(object):
         except IndexError:
             db.coordinate_locations = [db.coordinate_locations]
         db.coordinate_locations = np.array(db.coordinate_locations)
-        coord = np.array(self.get_bot_coordinates(), dtype=float)
+        coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
@@ -262,8 +261,7 @@ class Pixel2coord(object):
             'center_pixel_location'][:2]
         sign = [1 if s == 1 else -1 for s
                 in self.calibration_params['image_bot_origin_location']]
-        coord_scale = np.array([self.calibration_params['coord_scale'],
-                                self.calibration_params['coord_scale']])
+        coord_scale = np.repeat(self.calibration_params['coord_scale'], 2)
         db.pixel_locations = []
         for o, object_coordinate in enumerate(db.coordinate_locations[:, :2]):
             opl = (center_pixel_location -

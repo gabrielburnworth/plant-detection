@@ -5,6 +5,7 @@ For Plant Detection.
 """
 import os
 import json
+import base64
 import requests
 import numpy as np
 try:
@@ -35,7 +36,15 @@ class DB(object):
         try:
             api_token = os.environ['API_TOKEN']
         except KeyError:
-            api_token = 'none'
+            api_token = 'x.eyJpc3MiOiAiLy9zdGFnaW5nLmZhcm1ib3QuaW86NDQzIn0.x'
+        try:
+            encoded_payload = api_token.split('.')[1]
+            encoded_payload += '=' * (4 - len(encoded_payload) % 4)
+            json_payload = base64.decodestring(encoded_payload)
+            server = json.loads(json_payload)['iss']
+        except:
+            server = '//my.farmbot.io'
+        self.api_url = 'https:' + server + '/api/'
         self.headers = {'Authorization': 'Bearer {}'.format(api_token),
                         'content-type': "application/json"}
         self.errors = {}
@@ -82,7 +91,7 @@ class DB(object):
 
     def load_plants_from_web_app(self):
         """Download known plants from the FarmBot Web App API."""
-        response = requests.get('https://staging.farmbot.io/api/plants',
+        response = requests.get(self.api_url + 'plants',
                                 headers=self.headers)
         self.api_response_error_collector(response)
         self.api_response_error_printer()
@@ -202,7 +211,7 @@ class DB(object):
                      'radius': str(r)}
             payload = json.dumps(plant)
             # API Request
-            response = requests.post('https://staging.farmbot.io/api/points',
+            response = requests.post(self.api_url + 'points',
                                      data=payload, headers=self.headers)
             self.api_response_error_collector(response)
         self.api_response_error_printer()

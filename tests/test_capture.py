@@ -18,8 +18,9 @@ class GetCoordinatesTest(unittest.TestCase):
     """Check coordinate retrieval from redis"""
 
     def setUp(self):
-        self.coordinates = [300, 500]
+        self.coordinates = [300, 500, -100]
         r = fakeredis.FakeStrictRedis()
+        r.lpush('BOT_STATUS.location', self.coordinates[2])
         r.lpush('BOT_STATUS.location', self.coordinates[1])
         r.lpush('BOT_STATUS.location', self.coordinates[0])
         self.capture = Capture(r=r)
