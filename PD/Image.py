@@ -604,22 +604,3 @@ class Image(object):
                             font, textsize, text_color, textweight)
         self.status['annotate'] = True
         return annotated_image
-
-if __name__ == "__main__":
-    image = Image(Parameters(), DB())
-
-    image.capture()
-    image.show()
-
-    if len(sys.argv) == 1:
-        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-        soil_image = directory + 'soil_image.jpg'
-    else:
-        soil_image = sys.argv[1]
-    image.load(soil_image)
-    image.save('loaded')
-
-    image.blur()
-    image.mask()
-    image.morph()
-    image.save('processed')

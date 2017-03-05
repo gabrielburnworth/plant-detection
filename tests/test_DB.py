@@ -62,9 +62,22 @@ class DBTest(unittest.TestCase):
         self.db.upload_weeds()
         self.assertEqual(self.db.errors, {'401': 1})
 
-    # def test_cs_output(self):
-    #     """Output Celery Script points"""
-    #     self.db.output_celery_script()
+    def test_print_coordinates(self):
+        """Print unidentified plant coordinate data"""
+        self.db.print_coordinates()
+        self.outfile.close()
+        self.outfile = open('db_text_output_test.txt', 'r')
+        self.assertEqual(sum(1 for line in self.outfile), 7)
+
+    def test_cs_output(self):
+        """Output Celery Script points"""
+        cs = self.db.output_celery_script()
+        self.assertEqual(cs, self.cs)
+
+    def test_save_to_tmp(self):
+        """Save plants to file in tmp directory"""
+        self.db.tmp_dir = "/tmp/"
+        self.db.save_plants()
 
     def tearDown(self):
         self.outfile.close()

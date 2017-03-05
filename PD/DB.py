@@ -80,15 +80,6 @@ class DB(object):
         except IOError:
             pass
 
-    def load_known_plants_from_env_var(self):
-        """Load known plant inputs 'x' 'y' and 'radius' from json."""
-        db_json = json.loads(os.environ['DB'])
-        self.plants['known'] = db_json['plants']
-        # Remove unnecessary data, if it exists
-        for plant in self.plants['known']:
-            plant.pop('name', None)
-            plant.pop('device_id', None)
-
     def load_plants_from_web_app(self):
         """Download known plants from the FarmBot Web App API."""
         response = requests.get('https://staging.farmbot.io/api/plants',
@@ -191,12 +182,15 @@ class DB(object):
 
     def output_celery_script(self):
         """Output JSON with identified plant coordinates and radii."""
+        unsent_cs = []
         # Encode to CS
         farmbot = CeleryPy()
         for mark in self.plants['remove']:
             x, y = round(mark['x'], 2), round(mark['y'], 2)
             r = round(mark['radius'], 2)
-            farmbot.add_point(x, y, 0, r)
+            unsent = farmbot.add_point(x, y, 0, r)
+            unsent_cs.append(unsent)
+        return unsent_cs
 
     def upload_weeds(self):
         """Add plants marked for removal to FarmBot Web App Farm Designer."""
@@ -212,15 +206,3 @@ class DB(object):
                                      data=payload, headers=self.headers)
             self.api_response_error_collector(response)
         self.api_response_error_printer()
-
-if __name__ == "__main__":
-    db = DB()
-    db.load_plants_from_file()
-    db.print_identified()
-    print('-' * 60)
-    db.plants['known'] = [{'x': 3.0, 'y': 4.0, 'radius': 5.0}]
-    db.plants['save'] = [{'x': 6.0, 'y': 7.0, 'radius': 8.0}]
-    db.plants['remove'] = [{'x': 9.0, 'y': 10.0, 'radius': 11.0}]
-    db.plants['safe_remove'] = []
-    db.print_identified()
-    db.save_plants()

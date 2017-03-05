@@ -14,6 +14,7 @@ def _print_json(function):
         try:
             print('{} {}'.format(os.environ['BEGIN_CS'],
                                  json.dumps(function(*args, **kwargs))))
+            return
         except KeyError:
             return function(*args, **kwargs)
     return wrapper
@@ -117,31 +118,3 @@ class CeleryPy(object):
         args['speed'] = speed
         move_absolute = self._create_node('move_absolute', args)
         return move_absolute
-
-if __name__ == "__main__":
-    x, y, z = 75.40, 30.00, -100.03
-    x_offset, y_offset, z_offset = 10.00, 20.00, 10.00
-    speed = 800
-    tool_id = 54
-    tool = ['tool', tool_id]
-    plant_id = 10
-    plant = ['plant', plant_id]
-    radius = 48.00
-
-    FarmBot = CeleryPy()
-    print(FarmBot.add_point(x, y, z, radius))
-    print
-    print(FarmBot.move_absolute(
-        [x, y, z],
-        [x_offset, y_offset, z_offset],
-        speed))
-    print
-    print(FarmBot.move_absolute(
-        tool,
-        [x_offset, y_offset, z_offset],
-        speed))
-    print
-    print(FarmBot.move_absolute(
-        plant,
-        [x_offset, y_offset, z_offset],
-        speed))

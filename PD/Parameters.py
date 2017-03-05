@@ -92,14 +92,3 @@ class Parameters(object):
             *self.parameters['S']))
         print('Value:\n\tMIN: {}\n\tMAX: {}'.format(*self.parameters['V']))
         print('-' * 25)
-
-if __name__ == "__main__":
-    parameters = Parameters()
-    try:
-        parameters.load()
-    except IOError:
-        print("No parameters file.")
-    parameters.print_input()
-    parameters.parameters['iterations'] = 4
-    parameters.print_input()
-    parameters.save()

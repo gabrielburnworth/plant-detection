@@ -47,8 +47,6 @@ def check_file_length(self, expected_length):
     self.outfile.close()
     self.outfile = open('text_output_test.txt', 'r')
     self.assertEqual(sum(1 for line in self.outfile), expected_length)
-    self.outfile.close()
-    self.outfile = open('text_output_test.txt', 'w')
 
 
 def get_average_pixel_value(image):
@@ -353,37 +351,67 @@ class TestFromFile(unittest.TestCase):
     """Test file use"""
 
     def setUp(self):
+        # Generate and save calibration data
         self.pd = Plant_Detection(
             calibration_img="PD/p2c_test_calibration.jpg",
             text_output=False, save=False)
         self.pd.calibrate()
         self.pd.P2C.save_calibration_parameters()
+        # Expected number of objects detected
         self.object_count = 16
 
     def test_detect_coordinates(self):
         """Detect coordinates, getting calibration parameters from file"""
+        # Set input parameters for detection
+        pdx = Plant_Detection()
+        pdx.params.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
+                                 'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+        pdx.params.save()
+        # Load the set parameters
         pd = Plant_Detection(image="soil_image.jpg",
                              from_file=True, coordinates=True,
                              text_output=False, save=False)
         pd.detect_plants()
         self.assertEqual(pd.db.object_count, self.object_count)
 
+    def test_calibration(self):
+        """Load calibration input from file"""
+        # Set input parameters for calibration
+        pdx = Plant_Detection()
+        pdx.params.parameters['H'] = [160, 20]
+        pdx.params.save()
+        # Load the set parameters
+        pd = Plant_Detection(calibration_img="PD/p2c_test_calibration.jpg",
+                             from_file=True,
+                             text_output=False, save=False, debug=True)
+        pd.calibrate()
+        self.assertEqual(pd.db.object_count, 2)
+
 
 class PDTestArray(unittest.TestCase):
     """Test input parameter array use"""
 
-    def setUp(self):
-        self.pd = Plant_Detection(
+    def test_array_detect_simple(self):
+        """Detect plants using simple array input"""
+        pd = Plant_Detection(
             image="soil_image.jpg",
             array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
                    {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
             text_output=False, save=False)
-        self.pd.detect_plants()
-        self.object_count = 29
+        pd.detect_plants()
+        object_count = 29
+        self.assertEqual(pd.db.object_count, object_count)
 
-    def test_detect(self):
-        """Detect plants using array input"""
-        self.assertEqual(self.pd.db.object_count, self.object_count)
+    def test_array_detect_debug(self):
+        """Detect plants using array input and debug"""
+        pd = Plant_Detection(
+            image="soil_image.jpg",
+            array=[{"size": 5, "kernel": 'ellipse', "type": 'close',  "iters": 2},
+                   {"size": 3, "kernel": 'ellipse', "type": 'open', "iters": 8}],
+            text_output=False, save=False, debug=True)
+        pd.detect_plants()
+        object_count = 25
+        self.assertEqual(pd.db.object_count, object_count)
 
 
 class PDTestClumpBuster(unittest.TestCase):
@@ -471,7 +499,6 @@ class PDTestTextOutput(unittest.TestCase):
         pd = Plant_Detection(
             image="soil_image.jpg",
             save=False, print_all_json=True)
-        self.outfile.truncate()
         pd.detect_plants()
         check_file_length(self, 71)
 
@@ -481,7 +508,6 @@ class PDTestTextOutput(unittest.TestCase):
             image="soil_image.jpg",
             verbose=False,
             save=False, print_all_json=True)
-        self.outfile.truncate()
         pd.detect_plants()
         check_file_length(self, 8)
 
@@ -491,7 +517,6 @@ class PDTestTextOutput(unittest.TestCase):
             image="soil_image.jpg",
             calibration_img="PD/p2c_test_calibration.jpg",
             save=False, print_all_json=True)
-        self.outfile.truncate()
         pd.calibrate()
         pd.detect_plants()
         check_file_length(self, 80)
@@ -503,7 +528,6 @@ class PDTestTextOutput(unittest.TestCase):
             calibration_img="PD/p2c_test_calibration.jpg",
             verbose=False,
             save=False, print_all_json=True)
-        self.outfile.truncate()
         pd.calibrate()
         pd.detect_plants()
         check_file_length(self, 10)
