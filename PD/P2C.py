@@ -222,7 +222,7 @@ class Pixel2coord(object):
         try:
             plant_db.pixel_locations.shape[1]
         except IndexError:
-            plant_db.pixel_locations = np.stack(
+            plant_db.pixel_locations = np.vstack(
                 [plant_db.pixel_locations])
         coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
         camera_offset = np.array(
@@ -251,7 +251,7 @@ class Pixel2coord(object):
         try:
             plant_db.coordinate_locations.shape[1]
         except IndexError:
-            plant_db.coordinate_locations = np.stack(
+            plant_db.coordinate_locations = np.vstack(
                 [plant_db.coordinate_locations])
         coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
         camera_offset = np.array(
@@ -348,15 +348,15 @@ class Pixel2coord(object):
             self.image.show()
 
 if __name__ == "__main__":
-    folder = os.path.dirname(os.path.realpath(__file__)) + os.sep
+    DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
     print("Calibration image load...")
-    P2C = Pixel2coord(DB(), calibration_image=folder +
+    P2C = Pixel2coord(DB(), calibration_image=DIR +
                       "p2c_test_calibration.jpg")
     P2C.viewoutputimage = True
     # Calibration
     P2C.image.rotate_main_images(P2C.test_rotation)
-    exit_flag = P2C.calibration()
-    if exit_flag:
+    EXIT = P2C.calibration()
+    if EXIT:
         sys.exit(0)
     P2C.plant_db.print_count(calibration=True)  # print detected object count
     if P2C.calibration_params['total_rotation_angle'] != 0:
@@ -365,12 +365,12 @@ if __name__ == "__main__":
     # Tests
     # Object detection
     print("Calibration object test...")
-    P2C.image.load(folder + "p2c_test_objects.jpg")
+    P2C.image.load(DIR + "p2c_test_objects.jpg")
     P2C.image.rotate_main_images(P2C.test_rotation)
     P2C.determine_coordinates()
     # Color range
     print("Calibration color range...")
-    P2C.image.load(folder + "p2c_test_color.jpg")
+    P2C.image.load(DIR + "p2c_test_color.jpg")
     P2C.cparams.print_input()
     P2C.image.initial_processing()
     P2C.image.find()

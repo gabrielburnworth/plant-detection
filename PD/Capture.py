@@ -100,6 +100,6 @@ class Capture(object):
         return self.image
 
 if __name__ == "__main__":
-    directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-    image = Capture().capture()
-    cv2.imwrite(directory + 'capture.jpg', image)
+    DIR = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+    IMG = Capture().capture()
+    cv2.imwrite(DIR + 'capture.jpg', IMG)

@@ -366,9 +366,9 @@ class Plant_Detection(object):
         if self.text_output:
             self.plant_db.print_count()  # print number of objects detected
         if self.verbose and self.text_output:
-            self.plant_db.print_identified()  # print organized object data text
+            self.plant_db.print_identified()  # print organized plant data
         if self.output_celeryscript_points:
-            self.plant_db.output_celery_script()  # print point data JSON to stdout
+            self.plant_db.output_celery_script()  # print points JSON to stdout
         if self.app:
             self.plant_db.upload_weeds()  # add weeds to FarmBot Farm Designer
         if self.debug:
@@ -458,18 +458,18 @@ class Plant_Detection(object):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        soil_image = directory + 'soil_image.jpg'
+        DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        IMG = DIR + 'soil_image.jpg'
         PD = Plant_Detection(
-            image=soil_image,
+            image=IMG,
             blur=15, morph=6, iterations=4,
-            calibration_img=directory + "PD/p2c_test_calibration.jpg",
+            calibration_img=DIR + "PD/p2c_test_calibration.jpg",
             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
                           {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants
     else:
-        soil_image = sys.argv[1]
+        IMG = sys.argv[1]
         PD = Plant_Detection(
-            image=soil_image, from_file=True, debug=True)
+            image=IMG, from_file=True, debug=True)
         PD.detect_plants()
