@@ -37,7 +37,7 @@ class DB(object):
         try:
             encoded_payload = api_token.split('.')[1]
             encoded_payload += '=' * (4 - len(encoded_payload) % 4)
-            json_payload = base64.b64decode(encoded_payload)
+            json_payload = base64.b64decode(encoded_payload).decode('utf-8')
             server = json.loads(json_payload)['iss']
         except:
             server = '//my.farmbot.io'
@@ -215,3 +215,5 @@ class DB(object):
                                      data=payload, headers=self.headers)
             self.api_response_error_collector(response)
         self.api_response_error_printer()
+        unsent_cs = CeleryPy.data_update('points', '*')
+        return unsent_cs

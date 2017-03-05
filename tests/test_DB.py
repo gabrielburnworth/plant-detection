@@ -31,7 +31,7 @@ class DBTest(unittest.TestCase):
                      {'radius': 75.0, 'x': 1090.0, 'y': 1000.0},
                      ]
         self.db.identify()
-        self.cs = [{'body': [{'kind': 'pair', 'args': {
+        self.add_point = [{'body': [{'kind': 'pair', 'args': {
             'value': 'plant-detection', 'label': 'created_by'}}],
             'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
                 'kind': 'coordinate', 'args': {'y': 825.0, 'x': 1000.0, 'z': 0}}}},
@@ -39,6 +39,19 @@ class DBTest(unittest.TestCase):
                 'value': 'plant-detection', 'label': 'created_by'}}],
              'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
                  'kind': 'coordinate', 'args': {'y': 1000.0, 'x': 800.0, 'z': 0}}}}]
+        self.data_update = {
+            "kind": "data_update",
+            "args": {
+                # "value": "updated"
+            },
+            "body": [
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "*"
+                    }}
+            ]}
 
     def test_plant_id_remove(self):
         """Check plants to be removed"""
@@ -69,10 +82,15 @@ class DBTest(unittest.TestCase):
         self.outfile = open('db_text_output_test.txt', 'r')
         self.assertEqual(sum(1 for line in self.outfile), 7)
 
-    def test_cs_output(self):
-        """Output Celery Script points"""
-        cs = self.db.output_celery_script()
-        self.assertEqual(cs, self.cs)
+    def test_cs_add_point(self):
+        """Output Celery Script add_point"""
+        add_point = self.db.output_celery_script()
+        self.assertEqual(add_point, self.add_point)
+
+    def test_cs_data_update(self):
+        """Output Celery Script data_update"""
+        data_update = self.db.upload_weeds()
+        self.assertEqual(data_update, self.data_update)
 
     def test_save_to_tmp(self):
         """Save plants to file in tmp directory"""

@@ -127,3 +127,23 @@ def move_absolute(location, offset, speed):
     args['speed'] = speed
     _move_absolute = _create_node('move_absolute', args)
     return _move_absolute
+
+
+@_print_json
+def data_update(endpoint, id_):
+    """Celery Script to signal that a sync is required.
+
+    Kind:
+        data_update
+    Body:
+        Kind: pair
+        Args:
+            label: endpoint
+            value: id
+    """
+    args = {}
+    # args['value'] = 'updated'
+    _data_update = _create_node('data_update', args)
+    _endpoint = _create_pair(endpoint, id_)
+    _data_update['body'] = [_create_node('pair', _endpoint)]
+    return _data_update
