@@ -5,22 +5,22 @@ For Plant Detection.
 """
 import sys
 import os
-import cv2
 import platform
+from time import sleep
+import cv2
 try:
     import redis
 except ImportError:
     pass
-from time import sleep
-from datetime import datetime
 
-use_rpi_camera = False
-using_rpi = False
 
-if platform.uname()[4].startswith("arm") and use_rpi_camera:
+USE_RPI_CAMERA = False
+USING_RPI = False
+
+if platform.uname()[4].startswith("arm") and USE_RPI_CAMERA:
     from picamera.array import PiRGBArray
     from picamera import PiCamera
-    using_rpi = True
+    USING_RPI = True
 
 
 class Capture(object):
@@ -31,7 +31,6 @@ class Capture(object):
         self.image = None
         self.ret = None
         self.camera_port = None
-        self.timestamp = None
         self.test_coordinates = [600, 400, 0]
         self.image_captured = False
         self.silent = False
@@ -41,13 +40,13 @@ class Capture(object):
         """Get machine coordinates from bot."""
         try:  # return bot coordintes
             if self.redis is not None:
-                r = self.redis
+                _redis = self.redis
             else:
-                r = redis.StrictRedis()
-            x = int(r.lindex('BOT_STATUS.location', 0))
-            y = int(r.lindex('BOT_STATUS.location', 1))
-            z = int(r.lindex('BOT_STATUS.location', 2))
-            return [x, y, z]
+                _redis = redis.StrictRedis()
+            bot_x = int(_redis.lindex('BOT_STATUS.location', 0))
+            bot_y = int(_redis.lindex('BOT_STATUS.location', 1))
+            bot_z = int(_redis.lindex('BOT_STATUS.location', 2))
+            return [bot_x, bot_y, bot_z]
         except:  # return testing coordintes
             return self.test_coordinates
 
@@ -67,8 +66,7 @@ class Capture(object):
 
     def capture(self):
         """Take a photo."""
-        self.timestamp = datetime.now().isoformat()
-        if using_rpi and use_rpi_camera:
+        if USING_RPI and USE_RPI_CAMERA:
             # With Raspberry Pi Camera:
             with PiCamera() as camera:
                 camera.resolution = (1920, 1088)

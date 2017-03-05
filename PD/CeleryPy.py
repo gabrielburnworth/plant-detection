@@ -11,7 +11,7 @@ from functools import wraps
 def _print_json(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        """Sends Celery Script or returns the JSON string.
+        """Send Celery Script or return the JSON string.
 
         Celery Script is sent by prefixing the string in the `BEGIN_CS`
         environment variable.

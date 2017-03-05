@@ -117,7 +117,7 @@ class Image(object):
         self.marked = self.image.copy()  # create rotated img copy to mark up
 
         try:
-            _ = self.morphed.shape
+            self.morphed.shape
             self.image = self.morphed  # work on morphed mask
             self.rotate(rotationangle)  # rotate according to angle
             self.morphed = self.image.copy()  # save to morphed mask

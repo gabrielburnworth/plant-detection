@@ -6,7 +6,7 @@ For Plant Detection.
 import os
 import json
 import cv2
-import CeleryPy
+from PD import CeleryPy
 
 
 class Parameters(object):

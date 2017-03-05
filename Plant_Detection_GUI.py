@@ -10,7 +10,8 @@ from Plant_Detection import Plant_Detection
 class PlantDetectionGUI(object):
     """Interactively change input parameters.
 
-    for Plant_Detection.detect_plants()."""
+    for Plant_Detection.detect_plants()
+    """
 
     def __init__(self):
         """Set initial attributes, get image path, and load inputs."""

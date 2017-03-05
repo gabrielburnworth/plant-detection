@@ -8,7 +8,7 @@ import json
 import base64
 import requests
 import numpy as np
-import CeleryPy
+from PD import CeleryPy
 
 
 class DB(object):

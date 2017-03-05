@@ -34,13 +34,13 @@ def subset(dictionary, keylist):
 
 def compare_calibration_results(self):
     self.assertAlmostEqual(self.calibration['total_rotation_angle'],
-                           self.pd.P2C.calibration_params[
+                           self.pd.p2c.calibration_params[
                            'total_rotation_angle'], places=1)
     self.assertAlmostEqual(self.calibration['coord_scale'],
-                           self.pd.P2C.calibration_params[
+                           self.pd.p2c.calibration_params[
                            'coord_scale'], places=3)
     self.assertEqual(self.calibration['center_pixel_location'],
-                     self.pd.P2C.calibration_params['center_pixel_location'])
+                     self.pd.p2c.calibration_params['center_pixel_location'])
 
 
 def check_file_length(self, expected_length):
@@ -82,7 +82,7 @@ class PDTestNoJSONinput(unittest.TestCase):
 
     def test_json_parameters_input(self):
         """Do not load JSON input parameters from ENV VAR"""
-        self.assertEqual(self.pd.db.plants['known'], [])
+        self.assertEqual(self.pd.plant_db.plants['known'], [])
         self.assertEqual(self.pd.params.parameters, self.parameters)
 
 
@@ -118,7 +118,7 @@ class PDTestCalibration(unittest.TestCase):
                                   "calibration_circle_separation"]
         self.assertEqual(
             subset(self.calibration_json, calibration_input_keys),
-            subset(self.pd.P2C.calibration_params, calibration_input_keys))
+            subset(self.pd.p2c.calibration_params, calibration_input_keys))
 
     def test_calibration_results(self):
         """Check calibration results"""
@@ -127,7 +127,7 @@ class PDTestCalibration(unittest.TestCase):
                                     "center_pixel_location"]
         static_results = subset(self.calibration_json,
                                 calibration_results_keys)
-        test_results = subset(self.pd.P2C.calibration_params,
+        test_results = subset(self.pd.p2c.calibration_params,
                               calibration_results_keys)
         self.assertAlmostEqual(static_results['total_rotation_angle'],
                                test_results['total_rotation_angle'], places=1)
@@ -140,7 +140,7 @@ class PDTestCalibration(unittest.TestCase):
         """Determine coordinates of test objects"""
         self.pd.detect_plants()
         assert_dict_values_almost_equal(self.assertAlmostEqual,
-                                        self.pd.db.plants['remove'],
+                                        self.pd.plant_db.plants['remove'],
                                         self.objects)
 
 
@@ -201,7 +201,7 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.image, self.image)
         self.assertEqual(pd.coordinates, self.coordinates)
         self.assertEqual(pd.calibration_img, self.calibration_img)
-        self.assertEqual(pd.db.plants['known'], self.known_plants)
+        self.assertEqual(pd.plant_db.plants['known'], self.known_plants)
         self.assertEqual(pd.params.parameters, self.set_input_params)
         self.assertEqual(pd.params.array, self.array)
         self.assertEqual(pd.debug, self.debug)
@@ -215,7 +215,7 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.grey_out, self.grey_out)
         self.assertEqual(pd.draw_contours, self.draw_contours)
         self.assertEqual(pd.circle_plants, self.circle_plants)
-        self.assertEqual(pd.GUI, self.GUI)
+        self.assertEqual(pd.gui, self.GUI)
         self.assertEqual(pd.app, self.app)
 
     def test_input_defaults(self):
@@ -224,7 +224,7 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.image, None)
         self.assertEqual(pd.coordinates, False)
         self.assertEqual(pd.calibration_img, None)
-        self.assertEqual(pd.db.plants['known'], [])
+        self.assertEqual(pd.plant_db.plants['known'], [])
         self.assertEqual(pd.params.parameters, self.default_input_params)
         self.assertEqual(pd.params.array, None)
         self.assertEqual(pd.debug, False)
@@ -238,7 +238,7 @@ class PDTestArgs(unittest.TestCase):
         self.assertEqual(pd.grey_out, False)
         self.assertEqual(pd.draw_contours, True)
         self.assertEqual(pd.circle_plants, True)
-        self.assertEqual(pd.GUI, False)
+        self.assertEqual(pd.gui, False)
         self.assertEqual(pd.app, False)
 
 
@@ -292,16 +292,16 @@ class PDTestOutput(unittest.TestCase):
     def test_output(self):
         """Check detect plants results"""
         # self.maxDiff = None
-        # self.assertEqual(self.pd.db.plants, self.plants)
+        # self.assertEqual(self.pd.plant_db.plants, self.plants)
         assert_dict_values_almost_equal(self.assertAlmostEqual,
-                                        self.pd.db.plants,
+                                        self.pd.plant_db.plants,
                                         self.plants)
         self.assertEqual(self.pd.params.parameters, self.input_params)
         compare_calibration_results(self)
 
     def test_object_count(self):
         """Check for correct object count"""
-        self.assertEqual(self.pd.db.object_count, self.object_count)
+        self.assertEqual(self.pd.plant_db.object_count, self.object_count)
 
 
 class ENV_VAR(unittest.TestCase):
@@ -356,7 +356,7 @@ class TestFromFile(unittest.TestCase):
             calibration_img="PD/p2c_test_calibration.jpg",
             text_output=False, save=False)
         self.pd.calibrate()
-        self.pd.P2C.save_calibration_parameters()
+        self.pd.p2c.save_calibration_parameters()
         # Expected number of objects detected
         self.object_count = 16
 
@@ -372,7 +372,7 @@ class TestFromFile(unittest.TestCase):
                              from_file=True, coordinates=True,
                              text_output=False, save=False)
         pd.detect_plants()
-        self.assertEqual(pd.db.object_count, self.object_count)
+        self.assertEqual(pd.plant_db.object_count, self.object_count)
 
     def test_calibration(self):
         """Load calibration input from file"""
@@ -385,7 +385,7 @@ class TestFromFile(unittest.TestCase):
                              from_file=True,
                              text_output=False, save=False, debug=True)
         pd.calibrate()
-        self.assertEqual(pd.db.object_count, 2)
+        self.assertEqual(pd.plant_db.object_count, 2)
 
 
 class PDTestArray(unittest.TestCase):
@@ -400,7 +400,7 @@ class PDTestArray(unittest.TestCase):
             text_output=False, save=False)
         pd.detect_plants()
         object_count = 29
-        self.assertEqual(pd.db.object_count, object_count)
+        self.assertEqual(pd.plant_db.object_count, object_count)
 
     def test_array_detect_debug(self):
         """Detect plants using array input and debug"""
@@ -411,7 +411,7 @@ class PDTestArray(unittest.TestCase):
             text_output=False, save=False, debug=True)
         pd.detect_plants()
         object_count = 25
-        self.assertEqual(pd.db.object_count, object_count)
+        self.assertEqual(pd.plant_db.object_count, object_count)
 
 
 class PDTestClumpBuster(unittest.TestCase):
@@ -428,7 +428,7 @@ class PDTestClumpBuster(unittest.TestCase):
 
     def test_clump_buster(self):
         """Test clump buster"""
-        self.assertEqual(self.pd.db.object_count, self.object_count)
+        self.assertEqual(self.pd.plant_db.object_count, self.object_count)
 
 
 class PDTestGreyOut(unittest.TestCase):
