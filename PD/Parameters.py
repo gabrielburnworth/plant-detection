@@ -4,12 +4,9 @@
 For Plant Detection.
 """
 import os
-import cv2
 import json
-try:
-    from .CeleryPy import CeleryPy
-except:
-    from CeleryPy import CeleryPy
+import cv2
+import CeleryPy
 
 
 class Parameters(object):
@@ -27,53 +24,55 @@ class Parameters(object):
         self.output_text = False
         self.output_json = False
         self.tmp_dir = None
-        self.JSON_input_parameters = None
+        self.json_input_parameters = None
         self.calibration_data = None
-        self.ENV_VAR_name = 'PLANT_DETECTION_options'
+        self.env_var_name = 'PLANT_DETECTION_options'
 
         # Create dictionaries of morph types
-        self.kt = {}  # morph kernel type
-        self.kt['ellipse'] = cv2.MORPH_ELLIPSE
-        self.kt['rect'] = cv2.MORPH_RECT
-        self.kt['cross'] = cv2.MORPH_CROSS
-        self.mt = {}  # morph type
-        self.mt['close'] = cv2.MORPH_CLOSE
-        self.mt['open'] = cv2.MORPH_OPEN
-        self.mt['erode'] = 'erode'
-        self.mt['dilate'] = 'dilate'
+        self.cv2_kt = {}  # morph kernel type
+        self.cv2_kt['ellipse'] = cv2.MORPH_ELLIPSE
+        self.cv2_kt['rect'] = cv2.MORPH_RECT
+        self.cv2_kt['cross'] = cv2.MORPH_CROSS
+        self.cv2_mt = {}  # morph type
+        self.cv2_mt['close'] = cv2.MORPH_CLOSE
+        self.cv2_mt['open'] = cv2.MORPH_OPEN
+        self.cv2_mt['erode'] = 'erode'
+        self.cv2_mt['dilate'] = 'dilate'
 
     def save(self):
         """Save input parameters to file."""
-        def save(directory):
-            with open(directory + self.input_parameters_file, 'w') as f:
-                json.dump(self.parameters, f)
+        def _save(directory):
+            input_filename = directory + self.input_parameters_file
+            with open(input_filename, 'w') as input_file:
+                json.dump(self.parameters, input_file)
         try:
-            save(self.dir)
+            _save(self.dir)
         except IOError:
             self.tmp_dir = "/tmp/"
-            save(self.tmp_dir)
+            _save(self.tmp_dir)
 
     def save_to_env_var(self):
         """Save input parameters to environment variable."""
-        self.JSON_input_parameters = CeleryPy().set_user_env(
-            self.ENV_VAR_name,
+        self.json_input_parameters = CeleryPy.set_user_env(
+            self.env_var_name,
             json.dumps(self.parameters))
-        os.environ[self.ENV_VAR_name] = json.dumps(self.parameters)
+        os.environ[self.env_var_name] = json.dumps(self.parameters)
 
     def load(self):
         """Load input parameters from file."""
-        def load(directory):
-            with open(directory + self.input_parameters_file, 'r') as f:
-                self.parameters = json.load(f)
+        def _load(directory):
+            input_filename = directory + self.input_parameters_file
+            with open(input_filename, 'r') as input_file:
+                self.parameters = json.load(input_file)
         try:
-            load(self.dir)
+            _load(self.dir)
         except IOError:
             self.tmp_dir = "/tmp/"
-            load(self.tmp_dir)
+            _load(self.tmp_dir)
 
     def load_env_var(self):
         """Read input parameters from JSON in environment variable."""
-        self.parameters = json.loads(os.environ[self.ENV_VAR_name])
+        self.parameters = json.loads(os.environ[self.env_var_name])
 
     def load_defaults_for_env_var(self):
         """Load default input parameters for environment variable."""

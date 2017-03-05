@@ -8,10 +8,7 @@ import json
 import base64
 import requests
 import numpy as np
-try:
-    from .CeleryPy import CeleryPy
-except:
-    from CeleryPy import CeleryPy
+import CeleryPy
 
 
 class DB(object):
@@ -40,7 +37,7 @@ class DB(object):
         try:
             encoded_payload = api_token.split('.')[1]
             encoded_payload += '=' * (4 - len(encoded_payload) % 4)
-            json_payload = base64.decodestring(encoded_payload)
+            json_payload = base64.b64decode(encoded_payload)
             server = json.loads(json_payload)['iss']
         except:
             server = '//my.farmbot.io'
@@ -75,8 +72,8 @@ class DB(object):
         else:
             json_dir = self.tmp_dir
         try:
-            with open(json_dir + self.plants_file, 'w') as f:
-                json.dump(self.plants, f)
+            with open(json_dir + self.plants_file, 'w') as plant_file:
+                json.dump(self.plants, plant_file)
         except IOError:
             self.tmp_dir = "/tmp/"
             self.save_plants()
@@ -84,8 +81,8 @@ class DB(object):
     def load_plants_from_file(self):
         """Load plants from file."""
         try:
-            with open(self.dir + self.plants_file, 'r') as f:
-                self.plants = json.load(f)
+            with open(self.dir + self.plants_file, 'r') as plant_file:
+                self.plants = json.load(plant_file)
         except IOError:
             pass
 
@@ -109,20 +106,24 @@ class DB(object):
         kplants = np.array(
             [[_['x'], _['y'], _['radius']] for _ in self.plants['known']])
         for plant_coord in self.coordinate_locations:
-            x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
-            x, y, r = round(x, 2), round(y, 2), round(r, 2)
+            plant_x = round(plant_coord[0], 2)
+            plant_y = round(plant_coord[1], 2)
+            plant_r = round(plant_coord[2], 2)
             cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
-            if all((x - cx)**2 + (y - cy)**2 > (cr + self.weeder_destrut_r)**2
+            if all((plant_x - cx)**2 + (plant_y - cy)**2
+                   > (cr + self.weeder_destrut_r)**2
                    for cx, cy, cr in zip(cxs, cys, crs)):
                 # Detected plant is outside of known plant safe zone
-                self.plants['remove'].append({'x': x, 'y': y, 'radius': r})
-            elif all((x - cx)**2 + (y - cy)**2 > cr**2
+                self.plants['remove'].append(
+                    {'x': plant_x, 'y': plant_y, 'radius': plant_r})
+            elif all((plant_x - cx)**2 + (plant_y - cy)**2 > cr**2
                      for cx, cy, cr in zip(cxs, cys, crs)):
                 # Detected plant is inside known plant safe zone
                 self.plants['safe_remove'].append(
-                    {'x': x, 'y': y, 'radius': r})
+                    {'x': plant_x, 'y': plant_y, 'radius': plant_r})
             else:  # Detected plant is within known plant area
-                self.plants['save'].append({'x': x, 'y': y, 'radius': r})
+                self.plants['save'].append(
+                    {'x': plant_x, 'y': plant_y, 'radius': plant_r})
         if self.plants['known'] == [{'x': 0, 'y': 0, 'radius': 0}]:
             self.plants['known'] = []
 
@@ -137,7 +138,7 @@ class DB(object):
 
     def print_identified(self):
         """Output text including data about identified detected plants."""
-        def identified_plant_text_output(title, action, plants):
+        def _identified_plant_text_output(title, action, plants):
             print("\n{} {}.".format(
                 len(self.plants[plants]), title))
             if len(self.plants[plants]) > 0:
@@ -150,22 +151,22 @@ class DB(object):
                     r=plant['radius']))
 
         # Print known
-        identified_plant_text_output(
+        _identified_plant_text_output(
             title='known plants inputted',
             action='are to be saved',
             plants='known')
         # Print removal candidates
-        identified_plant_text_output(
+        _identified_plant_text_output(
             title='plants marked for removal',
             action='are to be removed',
             plants='remove')
         # Print safe_remove plants
-        identified_plant_text_output(
+        _identified_plant_text_output(
             title='plants marked for safe removal',
             action='were too close to the known plant to remove completely',
             plants='safe_remove')
         # Print saved
-        identified_plant_text_output(
+        _identified_plant_text_output(
             title='detected plants are known or have escaped removal',
             action='have been saved',
             plants='save')
@@ -193,11 +194,10 @@ class DB(object):
         """Output JSON with identified plant coordinates and radii."""
         unsent_cs = []
         # Encode to CS
-        farmbot = CeleryPy()
         for mark in self.plants['remove']:
-            x, y = round(mark['x'], 2), round(mark['y'], 2)
-            r = round(mark['radius'], 2)
-            unsent = farmbot.add_point(x, y, 0, r)
+            plant_x, plant_y = round(mark['x'], 2), round(mark['y'], 2)
+            plant_r = round(mark['radius'], 2)
+            unsent = CeleryPy.add_point(plant_x, plant_y, 0, plant_r)
             unsent_cs.append(unsent)
         return unsent_cs
 
@@ -205,10 +205,10 @@ class DB(object):
         """Add plants marked for removal to FarmBot Web App Farm Designer."""
         for mark in self.plants['remove']:
             # payload
-            x, y = round(mark['x'], 2), round(mark['y'], 2)
-            r = round(mark['radius'], 2)
-            plant = {'x': str(x), 'y': str(y),
-                     'radius': str(r)}
+            plant_x, plant_y = round(mark['x'], 2), round(mark['y'], 2)
+            plant_r = round(mark['radius'], 2)
+            plant = {'x': str(plant_x), 'y': str(plant_y),
+                     'radius': str(plant_r)}
             payload = json.dumps(plant)
             # API Request
             response = requests.post(self.api_url + 'points',

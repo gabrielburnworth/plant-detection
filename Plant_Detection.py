@@ -85,10 +85,11 @@ class Plant_Detection(object):
        PD.detect_plants()
 
        PD = Plant_Detection(image='soil_image.jpg', blur=15, grey_out=True,
-          array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
-                 {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
-                 debug=True, clump_buster=False,
-                 HSV_min=[30, 15, 15], HSV_max=[85, 245, 245])
+         array=[
+            {"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+            {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
+         debug=True, clump_buster=False,
+         HSV_min=[30, 15, 15], HSV_max=[85, 245, 245])
        PD.detect_plants()
     """
 
@@ -303,7 +304,8 @@ class Plant_Detection(object):
             try:
                 self.params.load()
             except IOError:
-                print("Warning: Input parameter file load failed. Using defaults.")
+                print("Warning: Input parameter file load failed. "
+                      "Using defaults.")
             self.db.load_plants_from_file()
         if self.app:
             self.db.load_plants_from_web_app()
@@ -363,7 +365,7 @@ class Plant_Detection(object):
         if self.text_output:
             self.db.print_count()  # print number of objects detected
         if self.verbose and self.text_output:
-            self.db.print_identified()  # print organized object data text to stdout
+            self.db.print_identified()  # print organized object data text
         if self.output_celeryscript_points:
             self.db.output_celery_script()  # print point data JSON to stdout
         if self.app:
@@ -457,11 +459,12 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
         soil_image = directory + 'soil_image.jpg'
-        PD = Plant_Detection(image=soil_image,
-                             blur=15, morph=6, iterations=4,
-                             calibration_img=directory + "PD/p2c_test_calibration.jpg",
-                             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
-                                           {'x': 900, 'y': 200, 'radius': 120}])
+        PD = Plant_Detection(
+            image=soil_image,
+            blur=15, morph=6, iterations=4,
+            calibration_img=directory + "PD/p2c_test_calibration.jpg",
+            known_plants=[{'x': 200, 'y': 600, 'radius': 100},
+                          {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants
     else:

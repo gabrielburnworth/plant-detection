@@ -5,28 +5,27 @@ For Plant Detection.
 """
 import unittest
 import json
-from PD.CeleryPy import CeleryPy
+from PD import CeleryPy
 
 
 class CeleryScript(unittest.TestCase):
     """Check celery script"""
 
     def setUp(self):
-        self.cs = CeleryPy()
-        self.add_point = self.cs.add_point(1, 2, 3, 4)
+        self.add_point = CeleryPy.add_point(1, 2, 3, 4)
         self.add_point_static = {
             'kind': 'add_point', 'args': {'radius': 4, 'location': {
                 'kind': 'coordinate', 'args': {'y': 2, 'x': 1, 'z': 3}}},
             'body': [{'kind': 'pair', 'args': {
                 'value': 'plant-detection', 'label': 'created_by'}}]
         }
-        self.set_env_var = self.cs.set_user_env('PLANT_DETECTION_options',
-                                                json.dumps({"in": "puts"}))
+        self.set_env_var = CeleryPy.set_user_env('PLANT_DETECTION_options',
+                                                 json.dumps({"in": "puts"}))
         self.set_env_var_static = {"kind": "set_user_env", "args": {},
                                    "body": [{"kind": "pair", "args": {
                                        "label": "PLANT_DETECTION_options",
                                        "value": "{\"in\": \"puts\"}"}}]}
-        self.move_absolute_coordinate = self.cs.move_absolute(
+        self.move_absolute_coordinate = CeleryPy.move_absolute(
             [10, 20, 30],
             [40, 50, 60],
             800)
@@ -36,7 +35,7 @@ class CeleryScript(unittest.TestCase):
                 'offset': {'kind': 'coordinate',
                            'args': {'y': 50, 'x': 40, 'z': 60}}}
         }
-        self.move_absolute_location = self.cs.move_absolute(
+        self.move_absolute_location = CeleryPy.move_absolute(
             ['tool', 1],
             [40, 50, 60],
             800)

@@ -9,13 +9,12 @@ try:
     from .Capture import Capture
     from .Image import Image
     from .DB import DB
-    from .CeleryPy import CeleryPy
 except:
     from Parameters import Parameters
     from Capture import Capture
     from Image import Image
     from DB import DB
-    from CeleryPy import CeleryPy
+import CeleryPy
 
 
 class Pixel2coord(object):
@@ -138,7 +137,7 @@ class Pixel2coord(object):
 
     def save_calibration_data_to_env_var(self):
         """Save calibration parameters to file."""
-        self.JSON_calibration_data = CeleryPy().set_user_env(
+        self.JSON_calibration_data = CeleryPy.set_user_env(
             self.ENV_VAR_name,
             json.dumps(self.calibration_params))
         os.environ[self.ENV_VAR_name] = json.dumps(self.calibration_params)

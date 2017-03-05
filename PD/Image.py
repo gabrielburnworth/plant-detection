@@ -16,7 +16,7 @@ except:
 class Image(object):
     """Provide image processes to Plant Detection."""
 
-    def __init__(self, parameters, db):
+    def __init__(self, parameters, plant_db):
         """Set initial attributes.
 
         Arguments:
@@ -37,7 +37,7 @@ class Image(object):
         self.reduce_large = True
         self.greyed = None
         self.params = parameters
-        self.db = db
+        self.plant_db = plant_db
         self.object_count = None
         self.debug = False
         self.calibration_debug = False
@@ -117,7 +117,7 @@ class Image(object):
         self.marked = self.image.copy()  # create rotated img copy to mark up
 
         try:
-            self.morphed.shape
+            _ = self.morphed.shape
             self.image = self.morphed  # work on morphed mask
             self.rotate(rotationangle)  # rotate according to angle
             self.morphed = self.image.copy()  # save to morphed mask
@@ -161,7 +161,7 @@ class Image(object):
         self.image = self.masked.copy()
         self.status['mask'] = True
 
-    def mask2(self):
+    def _mask2(self):
         """Show regions of original image selected by mask."""
         self.masked2 = cv2.bitwise_and(self.output,
                                        self.output,
@@ -179,12 +179,12 @@ class Image(object):
             self.params.parameters['iterations'] = 1
         if self.params.array is None:
             # Single morphological transformation
-            kernel_type = self.params.kt[self.params.kernel_type]
+            kernel_type = self.params.cv2_kt[self.params.kernel_type]
             kernel = cv2.getStructuringElement(
                 kernel_type,
                 (self.params.parameters['morph'],
                  self.params.parameters['morph']))
-            morph_type = self.params.mt[self.params.morph_type]
+            morph_type = self.params.cv2_mt[self.params.morph_type]
             self.morphed = cv2.morphologyEx(self.masked,
                                             morph_type, kernel,
                                             iterations=self.params.parameters[
@@ -195,8 +195,8 @@ class Image(object):
             self.morphed = self.masked
             for process in processes:
                 morph_amount = process['size']
-                kernel_type = self.params.kt[process['kernel']]
-                morph_type = self.params.mt[process['type']]
+                kernel_type = self.params.cv2_kt[process['kernel']]
+                morph_type = self.params.cv2_mt[process['type']]
                 iterations = process['iters']
                 kernel = cv2.getStructuringElement(
                     kernel_type,
@@ -214,7 +214,7 @@ class Image(object):
         self.image = self.morphed
         self.status['morph'] = True
 
-    def morph2(self):
+    def _morph2(self):
         """Show regions of original image selected by morph."""
         self.morphed2 = cv2.bitwise_and(self.output,
                                         self.output,
@@ -237,7 +237,7 @@ class Image(object):
         self.mask()
         if self.debug:
             self.save_annotated('masked')
-            self.mask2()
+            self._mask2()
         if self.calibration_debug:
             self.show()
 
@@ -245,7 +245,7 @@ class Image(object):
         self.morph()
         if self.debug:
             self.save_annotated('morphed')
-            self.morph2()
+            self._morph2()
         if self.calibration_debug:
             self.show()
 
@@ -256,27 +256,28 @@ class Image(object):
         """
         clump_img = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(
+            # find contours in openCV 2: return hierarchy is unused
+            contours, _ = cv2.findContours(
                 clump_img,
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(
+            # find contours in openCV 3: return image and hierarchy are unused
+            _, contours, _ = cv2.findContours(
                 clump_img,
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
-        for i in range(len(contours)):
-            cnt = contours[i]
-            rx, ry, rw, rh = cv2.boundingRect(cnt)
+        for cnt in contours:
+            rect_x, rect_y, rect_w, rect_h = cv2.boundingRect(cnt)
             cv2.line(self.morphed,
-                     (int(rx + rw / 2.), ry),
-                     (int(rx + rw / 2.), ry + rh),
-                     (0), int(rw / 7.))
+                     (int(rect_x + rect_w / 2.), rect_y),
+                     (int(rect_x + rect_w / 2.), rect_y + rect_h),
+                     (0), int(rect_w / 7.))
             cv2.line(self.morphed,
-                     (rx, int(ry + rh / 2.)),
-                     (rx + rw, int(ry + rh / 2.)),
-                     (0), int(rh / 7.))
-        kernel = cv2.getStructuringElement(self.params.kt['ellipse'],
+                     (rect_x, int(rect_y + rect_h / 2.)),
+                     (rect_x + rect_w, int(rect_y + rect_h / 2.)),
+                     (0), int(rect_h / 7.))
+        kernel = cv2.getStructuringElement(self.params.cv2_kt['ellipse'],
                                            (self.params.parameters['morph'],
                                             self.params.parameters['morph']))
         self.morphed = cv2.dilate(self.morphed, kernel, iterations=1)
@@ -300,12 +301,14 @@ class Image(object):
         # Find contours (hopefully of outside edges of plants)
         contoured = self.morphed.copy()
         try:
-            contours, hierarchy = cv2.findContours(
+            # find contours in openCV 2: return hierarchy is unused
+            contours, _ = cv2.findContours(
                 contoured,
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
         except ValueError:
-            _img, contours, hierarchy = cv2.findContours(
+            # find contours in openCV 3: return image and hierarchy are unused
+            _, contours, _ = cv2.findContours(
                 contoured,
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
@@ -324,16 +327,16 @@ class Image(object):
 
     def _save_calibration_contour(self, i, only_one_object, location=None):
         if i == 0:
-            self.db.calibration_pixel_locations = location
+            self.plant_db.calibration_pixel_locations = location
             only_one_object = True
         else:
             try:
-                self.db.calibration_pixel_locations = np.vstack(
-                    (self.db.calibration_pixel_locations,
+                self.plant_db.calibration_pixel_locations = np.vstack(
+                    (self.plant_db.calibration_pixel_locations,
                      location))
                 only_one_object = False
             except ValueError:
-                self.db.calibration_pixel_locations = location
+                self.plant_db.calibration_pixel_locations = location
                 only_one_object = True
         return only_one_object
 
@@ -346,36 +349,38 @@ class Image(object):
         # Loop through contours
         contours = self._find_contours()
         if not safe_remove:
-            self.db.object_count = len(contours)
-        self.db.pixel_locations = []
+            self.plant_db.object_count = len(contours)
+        self.plant_db.pixel_locations = []
         only_one_object = False
         for i, cnt in enumerate(contours):
             # Calculate plant location by using centroid of contour
-            m = cv2.moments(cnt)
+            moment = cv2.moments(cnt)
             try:
-                cx = int(m['m10'] / m['m00'])
-                cy = int(m['m01'] / m['m00'])
-                (mcx, mcy), radius = cv2.minEnclosingCircle(cnt)
+                cnt_center_x = int(moment['m10'] / moment['m00'])
+                cnt_center_y = int(moment['m01'] / moment['m00'])
+                (cir_center_x,
+                 cir_center_y), radius = cv2.minEnclosingCircle(cnt)
             except ZeroDivisionError:
                 continue
 
             if calibration:
                 # Mark calibration object with blue circle
-                center = (int(mcx), int(mcy))
+                center = (int(cir_center_x), int(cir_center_y))
                 cv2.circle(self.marked, center, int(radius), (255, 0, 0), 4)
 
             self._draw_contour(cnt, calibration, draw_contours)
 
-            self.db.pixel_locations.append([cx, cy, radius])
+            self.plant_db.pixel_locations.append(
+                [cnt_center_x, cnt_center_y, radius])
             if calibration:
                 only_one_object = self._save_calibration_contour(
                     i, only_one_object,
-                    location=[mcx, mcy, radius])
+                    location=[cir_center_x, cir_center_y, radius])
 
         if calibration and only_one_object:
-            self.db.calibration_pixel_locations = [
-                self.db.calibration_pixel_locations]
-            self.db.object_count = 1
+            self.plant_db.calibration_pixel_locations = [
+                self.plant_db.calibration_pixel_locations]
+            self.plant_db.object_count = 1
         if not safe_remove:
             self.image = self.contoured
             self.status['mark'] = True
@@ -387,31 +392,37 @@ class Image(object):
         outside of the known plant safe zone.
         """
         safe_remove_img = np.zeros_like(self.morphed, np.uint8)
-        for plant in self.db.plants['safe_remove']:
-            self.db.coordinate_locations = [plant['x'], plant['y'],
-                                            plant['radius']]
-            p2c.c2p(self.db)
-            point = np.array(self.db.pixel_locations)[0]
+        for plant in self.plant_db.plants['safe_remove']:
+            self.plant_db.coordinate_locations = [
+                plant['x'],
+                plant['y'],
+                plant['radius']]
+            p2c.c2p(self.plant_db)
+            point = np.array(self.plant_db.pixel_locations)[0]
             cv2.circle(safe_remove_img, (int(point[0]), int(point[1])),
                        int(point[2]), (255, 255, 255), -1)
         self.morphed = cv2.bitwise_and(self.morphed, self.morphed,
                                        mask=safe_remove_img)
-        for plant in self.db.plants['known']:
-            self.db.coordinate_locations = [plant['x'], plant['y'],
-                                            plant['radius']
-                                            + self.db.weeder_destrut_r]
-            p2c.c2p(self.db)
-            point = np.array(self.db.pixel_locations)[0]
+        for plant in self.plant_db.plants['known']:
+            self.plant_db.coordinate_locations = [
+                plant['x'],
+                plant['y'],
+                plant['radius']
+                + self.plant_db.weeder_destrut_r]
+            p2c.c2p(self.plant_db)
+            point = np.array(self.plant_db.pixel_locations)[0]
             cv2.circle(self.morphed, (int(point[0]), int(point[1])),
                        int(point[2]), (0, 0, 0), -1)
         self.find(safe_remove=True)
-        p2c.p2c(self.db)
-        if not self.db.plants['remove']:
-            self.db.plants['remove'] = []
-        for plant_coord in self.db.coordinate_locations:
-            x, y, r = plant_coord[0], plant_coord[1], plant_coord[2]
-            x, y, r = round(x, 2), round(y, 2), round(r, 2)
-            self.db.plants['remove'].append({'x': x, 'y': y, 'radius': r})
+        p2c.p2c(self.plant_db)
+        if not self.plant_db.plants['remove']:
+            self.plant_db.plants['remove'] = []
+        for plant_coord in self.plant_db.coordinate_locations:
+            plant_x = round(plant_coord[0], 2)
+            plant_y = round(plant_coord[1], 2)
+            plant_r = round(plant_coord[2], 2)
+            self.plant_db.plants['remove'].append(
+                {'x': plant_x, 'y': plant_y, 'radius': plant_r})
 
     def coordinates(self, p2c, draw_contours=True):
         """Detect coordinates of objects in image.
@@ -426,130 +437,164 @@ class Image(object):
         # detect pixel locations of objects
         self.find(draw_contours=draw_contours)
         # convert pixel locations to coordinates
-        p2c.p2c(self.db)
+        p2c.p2c(self.plant_db)
 
     def label(self, p2c=None, weeder_remove=False, weeder_safe_remove=False):
         """Draw circles on image indicating detected plants."""
-        def circle(color):
-            c = {'red': (0, 0, 255), 'green': (0, 255, 0), 'blue': (255, 0, 0),
-                 'cyan': (255, 255, 0), 'grey': (200, 200, 200)}
-            for obj in self.db.pixel_locations:
+        def _circle(color):
+            bgr = {'red': (0, 0, 255),
+                   'green': (0, 255, 0),
+                   'blue': (255, 0, 0),
+                   'cyan': (255, 255, 0),
+                   'grey': (200, 200, 200)}
+            for obj in self.plant_db.pixel_locations:
                 cv2.circle(self.marked, (int(obj[0]), int(obj[1])),
-                           int(obj[2]), c[color], 4)
+                           int(obj[2]), bgr[color], 4)
 
         if p2c is None:
-            circle('red')
+            _circle('red')
         else:
             # Mark known plants
             known = [[_['x'], _['y'], _['radius']] for _
-                     in self.db.plants['known']]
-            self.db.coordinate_locations = known
-            p2c.c2p(self.db)
-            circle('green')
+                     in self.plant_db.plants['known']]
+            self.plant_db.coordinate_locations = known
+            p2c.c2p(self.plant_db)
+            _circle('green')
 
             # Mark weeds
             remove = [[_['x'], _['y'], _['radius']] for _
-                      in self.db.plants['remove']]
-            self.db.coordinate_locations = remove
-            p2c.c2p(self.db)
-            circle('red')
+                      in self.plant_db.plants['remove']]
+            self.plant_db.coordinate_locations = remove
+            p2c.c2p(self.plant_db)
+            _circle('red')
 
             # Mark weeder size for weeds
             if weeder_remove:
-                weeder_size = self.db.weeder_destrut_r
+                weeder_size = self.plant_db.weeder_destrut_r
                 remove_circle = [[_['x'], _['y'], weeder_size] for _
-                                 in self.db.plants['remove']]
-                self.db.coordinate_locations = remove_circle
-                p2c.c2p(self.db)
-                circle('grey')
+                                 in self.plant_db.plants['remove']]
+                self.plant_db.coordinate_locations = remove_circle
+                p2c.c2p(self.plant_db)
+                _circle('grey')
 
             # Mark saved plants
             save = [[_['x'], _['y'], _['radius']] for _
-                    in self.db.plants['save']]
-            self.db.coordinate_locations = save
-            p2c.c2p(self.db)
-            circle('blue')
+                    in self.plant_db.plants['save']]
+            self.plant_db.coordinate_locations = save
+            p2c.c2p(self.plant_db)
+            _circle('blue')
 
             # Mark safe-remove weeds
             safe_remove = [[_['x'], _['y'], _['radius']] for _
-                           in self.db.plants['safe_remove']]
-            self.db.coordinate_locations = safe_remove
-            p2c.c2p(self.db)
-            circle('cyan')
+                           in self.plant_db.plants['safe_remove']]
+            self.plant_db.coordinate_locations = safe_remove
+            p2c.c2p(self.plant_db)
+            _circle('cyan')
 
             # Mark weeder size for safe-remove weeds
             if weeder_safe_remove:
-                weeder_size = self.db.weeder_destrut_r
+                weeder_size = self.plant_db.weeder_destrut_r
                 safe_remove_circle = [[_['x'], _['y'], weeder_size] for _
-                                      in self.db.plants['safe_remove']]
-                self.db.coordinate_locations = safe_remove_circle
-                p2c.c2p(self.db)
-                circle('grey')
+                                      in self.plant_db.plants['safe_remove']]
+                self.plant_db.coordinate_locations = safe_remove_circle
+                p2c.c2p(self.plant_db)
+                _circle('grey')
 
     def grid(self, p2c):
         """Draw grid on image indicating coordinate system."""
-        w = self.marked.shape[1]
-        textsize = w / 2000.
+        width = self.marked.shape[1]
+        textsize = width / 2000.
         textweight = int(3.5 * textsize)
 
-        def grid_point(point, pointtype):
+        def _grid_point(point, pointtype):
             if pointtype == 'coordinates':
                 if len(point) < 3:
                     point = list(point) + [0]
-                self.db.coordinate_locations = point
-                p2c.c2p(self.db)
-                point_pixel_location = np.array(self.db.pixel_locations)[0]
-                x = point_pixel_location[0]
-                y = point_pixel_location[1]
+                self.plant_db.coordinate_locations = point
+                p2c.c2p(self.plant_db)
+                point_pixel_location = np.array(
+                    self.plant_db.pixel_locations)[0]
+                pt_x = point_pixel_location[0]
+                pt_y = point_pixel_location[1]
             else:  # pixels
-                x = point[0]
-                y = point[1]
-            tps = w / 300.
+                pt_x = point[0]
+                pt_y = point[1]
+            tps = width / 300.
             # crosshair center
-            self.marked[int(y - tps):int(y + tps + 1),
-                        int(x - tps):int(x + tps + 1)] = (255, 255, 255)
+            self.marked[
+                int(pt_y - tps):int(pt_y + tps + 1),
+                int(pt_x - tps):int(pt_x + tps + 1)
+            ] = (255, 255, 255)
             # crosshair lines
-            self.marked[int(y - tps * 4):int(y + tps * 4 + 1),
-                        int(x - tps / 4):int(x + tps / 4 + 1)] = (255,
-                                                                  255,
-                                                                  255)
-            self.marked[int(y - tps / 4):int(y + tps / 4 + 1),
-                        int(x - tps * 4):int(x + tps * 4 + 1)] = (255,
-                                                                  255,
-                                                                  255)
-        # grid_point([1650, 2050, 0], 'coordinates')  # test point
-        grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
-        grid_point(p2c.calibration_params['center_pixel_location'],
-                   'pixels')  # image center
+            self.marked[
+                int(pt_y - tps * 4):int(pt_y + tps * 4 + 1),
+                int(pt_x - tps / 4):int(pt_x + tps / 4 + 1)
+            ] = (255, 255, 255)
+            self.marked[
+                int(pt_y - tps / 4):int(pt_y + tps / 4 + 1),
+                int(pt_x - tps * 4):int(pt_x + tps * 4 + 1)
+            ] = (255, 255, 255)
+        # _grid_point([1650, 2050, 0], 'coordinates')  # test point
+        _grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
+        _grid_point(
+            p2c.calibration_params['center_pixel_location'],
+            'pixels')  # image center
 
         grid_range = np.array([[x] for x in range(0, 20000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
-        self.db.coordinate_locations = large_grid
-        p2c.c2p(self.db)
-        large_grid_pl = np.array(self.db.pixel_locations)
-        for x, xc in zip(large_grid_pl[:, 0], large_grid[:, 0]):
-            if x > self.marked.shape[1] or x < 0:
+        self.plant_db.coordinate_locations = large_grid
+        p2c.c2p(self.plant_db)
+        large_grid_pixel = np.array(self.plant_db.pixel_locations)
+        for pixel_x, coord_x in zip(large_grid_pixel[:, 0], large_grid[:, 0]):
+            if pixel_x > self.marked.shape[1] or pixel_x < 0:
                 continue
-            self.marked[:, int(x):int(x + 1)] = (255, 255, 255)
-            cv2.putText(self.marked, str(xc), (int(x), 100),
+            self.marked[:, int(pixel_x):int(pixel_x + 1)] = (255, 255, 255)
+            cv2.putText(self.marked, str(coord_x), (int(pixel_x), 100),
                         cv2.FONT_HERSHEY_SIMPLEX, textsize,
                         (255, 255, 255), textweight)
-        for y, yc in zip(large_grid_pl[:, 1], large_grid[:, 1]):
-            if y > self.marked.shape[0] or y < 0:
+        for pixel_y, coord_y in zip(large_grid_pixel[:, 1], large_grid[:, 1]):
+            if pixel_y > self.marked.shape[0] or pixel_y < 0:
                 continue
-            self.marked[int(y):int(y + 1), :] = (255, 255, 255)
-            cv2.putText(self.marked, str(yc), (100, int(y)),
+            self.marked[int(pixel_y):int(pixel_y + 1), :] = (255, 255, 255)
+            cv2.putText(self.marked, str(coord_y), (100, int(pixel_y)),
                         cv2.FONT_HERSHEY_SIMPLEX, textsize,
                         (255, 255, 255), textweight)
         self.image = self.marked
 
+    def _add_annotation_text(self, lines):
+        color_bgr = {'white': (255, 255, 255), 'black': (0, 0, 0)}
+        color_value = {'white': 255, 'black': 0}
+        textsize = self.image.shape[1] / 1200.
+        lineheight = int(40 * textsize)
+        textweight = int(3.5 * textsize)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        add = lineheight + lineheight * len(lines)
+        if self.status['morph'] and self.params.array:  # multiple morphs
+            add_1 = add
+            add += lineheight + lineheight * len(self.params.array)
+        try:  # color image?
+            color_array = self.image.shape[2]
+            new_shape = (self.image.shape[0] + add,
+                         self.image.shape[1],
+                         color_array)
+        except IndexError:
+            new_shape = (self.image.shape[0] + add,
+                         self.image.shape[1])
+        annotated_image = np.full(new_shape, color_value['black'], np.uint8)
+        annotated_image[add:, :] = self.image
+        for line_num, line in enumerate(lines):
+            cv2.putText(annotated_image, line,
+                        (10, lineheight + line_num * lineheight),
+                        font, textsize, color_bgr['white'], textweight)
+        if self.status['morph'] and self.params.array:  # multiple morphs
+            for line_num, line in enumerate(self.params.array):
+                cv2.putText(annotated_image, str(line),
+                            (10, add_1 + line_num * lineheight),
+                            font, textsize, color_bgr['white'], textweight)
+        return annotated_image
+
     def annotate(self):
         """Annotate image with processing parameters."""
-        tc = {'white': (255, 255, 255), 'black': (0, 0, 0)}
-        bc = {'white': 255, 'black': 0}
-        text_color = tc['white']
-        bg_color = bc['black']
-        font = cv2.FONT_HERSHEY_SIMPLEX
         if self.status['blur']:
             lines = ["blur kernel size = {}".format(
                 self.params.parameters['blur'])]
@@ -573,30 +618,6 @@ class Image(object):
                         self.params.morph_type),
                     "number of iterations = {}".format(
                         self.params.parameters['iterations'])]
-        h = self.image.shape[0]
-        w = self.image.shape[1]
-        textsize = w / 1200.
-        lineheight = int(40 * textsize)
-        textweight = int(3.5 * textsize)
-        add = lineheight + lineheight * len(lines)
-        if self.status['morph'] and self.params.array:  # multiple morphs
-            add_1 = add
-            add += lineheight + lineheight * len(self.params.array)
-        try:  # color image?
-            c = self.image.shape[2]
-            new_shape = (h + add, w, c)
-        except IndexError:
-            new_shape = (h + add, w)
-        annotated_image = np.full(new_shape, bg_color, np.uint8)
-        annotated_image[add:, :] = self.image
-        for o, line in enumerate(lines):
-            cv2.putText(annotated_image, line,
-                        (10, lineheight + o * lineheight),
-                        font, textsize, text_color, textweight)
-        if self.status['morph'] and self.params.array:  # multiple morphs
-            for o, line in enumerate(self.params.array):
-                cv2.putText(annotated_image, str(line),
-                            (10, add_1 + o * lineheight),
-                            font, textsize, text_color, textweight)
+        annotated_image = self._add_annotation_text(lines)
         self.status['annotate'] = True
         return annotated_image
