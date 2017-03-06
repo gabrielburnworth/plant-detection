@@ -11,20 +11,26 @@ import numpy as np
 from Plant_Detection import Plant_Detection
 
 
-def assert_dict_values_almost_equal(assertAE, object1, object2):
+def assert_dict_values_almost_equal(assertE, assertAE, object1, object2):
     def shape(objects):
         if isinstance(objects, dict):
             formatted_objects = objects
         else:
             formatted_objects = {}
-            formatted_objects['this'] = objects
+            formatted_objects['remove'] = objects
         return formatted_objects
     f_object1 = shape(object1)
     f_object2 = shape(object2)
-    for (_, dicts1), (_, dicts2) in zip(f_object1.items(), f_object2.items()):
+    keys1 = f_object1.keys()
+    keys2 = f_object2.keys()
+    assertE(keys1, keys2)
+    for key in keys1:
+        dicts1 = f_object1[key]
+        dicts2 = f_object2[key]
         for dict1, dict2 in zip(dicts1, dicts2):
-            for (_, value1), (_, value2) in zip(dict1.items(), dict2.items()):
-                assertAE(value1, value2, delta=5)
+            assertAE(dict1['x'], dict2['x'], delta=5)
+            assertAE(dict1['y'], dict2['y'], delta=5)
+            assertAE(dict1['radius'], dict2['radius'], delta=5)
 
 
 def subset(dictionary, keylist):
@@ -139,9 +145,11 @@ class PDTestCalibration(unittest.TestCase):
     def test_object_coordinate_detection(self):
         """Determine coordinates of test objects"""
         self.pd.detect_plants()
-        assert_dict_values_almost_equal(self.assertAlmostEqual,
-                                        self.pd.plant_db.plants['remove'],
-                                        self.objects)
+        assert_dict_values_almost_equal(
+            self.assertEqual,
+            self.assertAlmostEqual,
+            self.pd.plant_db.plants['remove'],
+            self.objects)
 
 
 class PDTestArgs(unittest.TestCase):
@@ -294,9 +302,11 @@ class PDTestOutput(unittest.TestCase):
         """Check detect plants results"""
         # self.maxDiff = None
         # self.assertEqual(self.pd.plant_db.plants, self.plants)
-        assert_dict_values_almost_equal(self.assertAlmostEqual,
-                                        self.pd.plant_db.plants,
-                                        self.plants)
+        assert_dict_values_almost_equal(
+            self.assertEqual,
+            self.assertAlmostEqual,
+            self.pd.plant_db.plants,
+            self.plants)
         self.assertEqual(self.pd.params.parameters, self.input_params)
         compare_calibration_results(self)
 
