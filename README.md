@@ -44,11 +44,11 @@ PD.detect_plants()
 
 #### Or, run the GUI and move the sliders:
 ```python
-python Plant_Detection_GUI.py
+python Plant_Detection.py --GUI
 ```
 Default image to process is `soil_image.jpg`. To process other images, use:
 ```python
-python Plant_Detection_GUI.py other_image_name.png
+python Plant_Detection.py --GUI other_image_name.png
 ```
 <img src="https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png" width="350">
 <!--![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)-->
@@ -60,7 +60,7 @@ For example: `test_image.jpg`
 
 #### 2. Run the GUI and move the sliders:
 ```python
-python Plant_Detection_GUI.py test_image.jpg
+python Plant_Detection.py --GUI test_image.jpg
 ```
 This will create a plant detection parameters input file from the slider values.
 
@@ -85,7 +85,7 @@ Annotated image: `test_image_marked.png`
 `python -c 'from Plant_Detection import Plant_Detection; help(Plant_Detection)'`
 
 #### Hue range aid
-`python Plant_Detection_GUI.py PD/p2c_test_color.jpg`
+`python Plant_Detection.py --GUI PD/p2c_test_color.jpg`
 
 ## Project Directory
 
@@ -99,6 +99,7 @@ plant-detection
 │   ├── DB.py  - handle plant data
 │   ├── P2C.py  - pixel to coordinate conversion
 │   ├── CeleryPy.py  - convert plant data to CeleryScript
+│   ├── GUI.py  - interactively change input parameters
 │   ├── p2c_test_calibration.jpg  - coordinate conversion calibration test image
 │   ├── p2c_test_objects.jpg  - coordinate conversion detection test image
 │   └── p2c_test_color.jpg  - color range test image
@@ -106,6 +107,5 @@ plant-detection
 ├── quickscripts  - scripts to run specific tasks
 ├── soil_image.jpg  - plant detection test image
 ├── Plant_Detection.py  - calibrate and detect plants
-├── Plant_Detection_GUI.py  - interactively change input parameters
 └── README.md
 ```

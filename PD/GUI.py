@@ -13,19 +13,22 @@ class PlantDetectionGUI(object):
     for Plant_Detection.detect_plants()
     """
 
-    def __init__(self):
+    def __init__(self, image_filename=None):
         """Set initial attributes, get image path, and load inputs."""
         self.window = 'Plant Detection'
         self.hsv_window = 'HSV Selection'
         self.override_hsv_defaults = 0
         self.hsv_window_loaded = 0
-        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
 
         # Image
-        if len(sys.argv) == 1:
-            self.filename = directory + 'soil_image.jpg'
+        if image_filename:
+            self.filename = image_filename
         else:
-            self.filename = sys.argv[1]
+            if len(sys.argv) == 1:  # use test image
+                self.filename = directory + 'soil_image.jpg'
+            else:  # image filename provided in command line argument
+                self.filename = sys.argv[1]
 
         # Load input parameters
         try:  # from file
@@ -141,6 +144,7 @@ class PlantDetectionGUI(object):
                 break
 
         cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     GUI = PlantDetectionGUI()

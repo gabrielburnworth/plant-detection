@@ -457,9 +457,9 @@ class Plant_Detection(object):
             self.plant_db.save_plants()
 
 if __name__ == "__main__":
+    DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
+    IMG = DIR + 'soil_image.jpg'
     if len(sys.argv) == 1:
-        DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        IMG = DIR + 'soil_image.jpg'
         PD = Plant_Detection(
             image=IMG,
             blur=15, morph=6, iterations=4,
@@ -468,8 +468,17 @@ if __name__ == "__main__":
                           {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants
-    else:
-        IMG = sys.argv[1]
-        PD = Plant_Detection(
-            image=IMG, from_file=True, debug=True)
-        PD.detect_plants()
+    else:  # command line argument(s)
+        if sys.argv[1] == '--GUI':
+            from PD.GUI import PlantDetectionGUI
+            if len(sys.argv) == 3:  # image filename provided
+                GUI = PlantDetectionGUI(image_filename=sys.argv[2])
+                GUI.run()
+            else:  # Use `soil_image.jpg`
+                GUI = PlantDetectionGUI(image_filename=IMG)
+                GUI.run()
+        else:  # image filename provided
+            IMG = sys.argv[1]
+            PD = Plant_Detection(
+                image=IMG, from_file=True, debug=True)
+            PD.detect_plants()
