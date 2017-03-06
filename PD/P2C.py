@@ -9,7 +9,7 @@ try:
     from .Capture import Capture
     from .Image import Image
     from .DB import DB
-except Exception:
+except:  # noqa pylint:disable=W0702
     from Parameters import Parameters
     from Capture import Capture
     from Image import Image
@@ -325,7 +325,7 @@ class Pixel2coord(object):
         self.calibration_params['total_rotation_angle'] = round(
             total_rotation_angle, 3)
         try:
-            self.calibration_params['coord_scale']
+            self.calibration_params['coord_scale']  # pylint:disable=W0104
             failure_flag = False
         except KeyError:
             print("ERROR: Calibration failed.")

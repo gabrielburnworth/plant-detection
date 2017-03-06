@@ -47,8 +47,8 @@ class Capture(object):
             bot_y = int(_redis.lindex('BOT_STATUS.location', 1))
             bot_z = int(_redis.lindex('BOT_STATUS.location', 2))
             return [bot_x, bot_y, bot_z]
-        except Exception:  # return testing coordintes
-            return self.test_coordinates
+        except:  # noqa pylint:disable=W0702
+            return self.test_coordinates  # return testing coordintes
 
     def camera_check(self):
         """Check for camera at ports 0 and 1."""

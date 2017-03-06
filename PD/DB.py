@@ -39,7 +39,7 @@ class DB(object):
             encoded_payload += '=' * (4 - len(encoded_payload) % 4)
             json_payload = base64.b64decode(encoded_payload).decode('utf-8')
             server = json.loads(json_payload)['iss']
-        except Exception:
+        except:  # noqa pylint:disable=W0702
             server = '//my.farmbot.io'
         self.api_url = 'https:' + server + '/api/'
         self.headers = {'Authorization': 'Bearer {}'.format(api_token),
@@ -96,11 +96,36 @@ class DB(object):
         if response.status_code == 200:
             self.plants['known'] = plants
 
-    def identify(self):
+    def identify_plant(self, plant_x, plant_y, known):
+        """Identify a provided plant based on its location.
+
+        Args:
+            known: [x, y, r] array of known plants
+            plant_x, plant_y: x and y coordinates of plant to identify
+        Coordinate is:
+            within a known plant area: a plant to 'save' (it's the known plant)
+            within a known plant safe zone: a 'safe_remove' weed
+            outside a known plant area or safe zone: a 'remove' weed
+        """
+        cxs, cys, crs = known[:, 0], known[:, 1], known[:, 2]
+        if all((plant_x - cx)**2 + (plant_y - cy)**2
+               > (cr + self.weeder_destrut_r)**2
+               for cx, cy, cr in zip(cxs, cys, crs)):
+            # Plant is outside of known plant safe zone
+            return 'remove'
+        elif all((plant_x - cx)**2 + (plant_y - cy)**2 > cr**2
+                 for cx, cy, cr in zip(cxs, cys, crs)):
+            # Plant is inside known plant safe zone
+            return 'safe_remove'
+        else:  # Plant is within known plant area
+            return 'save'
+
+    def identify(self, second_pass=False):
         """Compare detected plants to known to separate plants from weeds."""
-        self.plants['remove'] = []
-        self.plants['save'] = []
-        self.plants['safe_remove'] = []
+        if not second_pass:
+            self.plants['remove'] = []
+            self.plants['save'] = []
+            self.plants['safe_remove'] = []
         if self.plants['known'] is None or self.plants['known'] == []:
             self.plants['known'] = [{'x': 0, 'y': 0, 'radius': 0}]
         kplants = np.array(
@@ -109,21 +134,17 @@ class DB(object):
             plant_x = round(plant_coord[0], 2)
             plant_y = round(plant_coord[1], 2)
             plant_r = round(plant_coord[2], 2)
-            cxs, cys, crs = kplants[:, 0], kplants[:, 1], kplants[:, 2]
-            if all((plant_x - cx)**2 + (plant_y - cy)**2
-                   > (cr + self.weeder_destrut_r)**2
-                   for cx, cy, cr in zip(cxs, cys, crs)):
-                # Detected plant is outside of known plant safe zone
+            plant_is = self.identify_plant(plant_x, plant_y, kplants)
+            if plant_is == 'remove':
                 self.plants['remove'].append(
                     {'x': plant_x, 'y': plant_y, 'radius': plant_r})
-            elif all((plant_x - cx)**2 + (plant_y - cy)**2 > cr**2
-                     for cx, cy, cr in zip(cxs, cys, crs)):
-                # Detected plant is inside known plant safe zone
+            elif plant_is == 'safe_remove' and not second_pass:
                 self.plants['safe_remove'].append(
                     {'x': plant_x, 'y': plant_y, 'radius': plant_r})
-            else:  # Detected plant is within known plant area
-                self.plants['save'].append(
-                    {'x': plant_x, 'y': plant_y, 'radius': plant_r})
+            else:
+                if not second_pass:
+                    self.plants['save'].append(
+                        {'x': plant_x, 'y': plant_y, 'radius': plant_r})
         if self.plants['known'] == [{'x': 0, 'y': 0, 'radius': 0}]:
             self.plants['known'] = []
 

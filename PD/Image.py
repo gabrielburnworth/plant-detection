@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 try:
     from .Capture import Capture
-except Exception:
+except:  # noqa pylint:disable=W0702
     from Capture import Capture
 
 
@@ -117,7 +117,7 @@ class Image(object):
         self.marked = self.image.copy()  # create rotated img copy to mark up
 
         try:
-            self.morphed.shape
+            self.morphed.shape  # pylint:disable=W0104
             self.image = self.morphed  # work on morphed mask
             self.rotate(rotationangle)  # rotate according to angle
             self.morphed = self.image.copy()  # save to morphed mask
@@ -391,7 +391,9 @@ class Image(object):
         Reprocess image to detect only the part of the plant
         outside of the known plant safe zone.
         """
+        # Start with blank mask (black)
         safe_remove_img = np.zeros_like(self.morphed, np.uint8)
+        # Add safe-remove plants as (white) filled circles
         for plant in self.plant_db.plants['safe_remove']:
             self.plant_db.coordinate_locations = [
                 plant['x'],
@@ -401,8 +403,11 @@ class Image(object):
             point = np.array(self.plant_db.pixel_locations)[0]
             cv2.circle(safe_remove_img, (int(point[0]), int(point[1])),
                        int(point[2]), (255, 255, 255), -1)
+        # Show only safe-remove plant shapes in original morphed mask
+        # by applying safe-remove plant selection mask
         self.morphed = cv2.bitwise_and(self.morphed, self.morphed,
                                        mask=safe_remove_img)
+        # Remove known plants and their safe zones from the mask
         for plant in self.plant_db.plants['known']:
             self.plant_db.coordinate_locations = [
                 plant['x'],
@@ -413,16 +418,14 @@ class Image(object):
             point = np.array(self.plant_db.pixel_locations)[0]
             cv2.circle(self.morphed, (int(point[0]), int(point[1])),
                        int(point[2]), (0, 0, 0), -1)
+        # Detect the locations of the remaining plants in the mask
         self.find(safe_remove=True)
         p2c.p2c(self.plant_db)
         if not self.plant_db.plants['remove']:
             self.plant_db.plants['remove'] = []
-        for plant_coord in self.plant_db.coordinate_locations:
-            plant_x = round(plant_coord[0], 2)
-            plant_y = round(plant_coord[1], 2)
-            plant_r = round(plant_coord[2], 2)
-            self.plant_db.plants['remove'].append(
-                {'x': plant_x, 'y': plant_y, 'radius': plant_r})
+        # The remaining plants (if any) should be weeds that can be
+        # safely removed, but check again against known plants
+        self.plant_db.identify(second_pass=True)
 
     def coordinates(self, p2c, draw_contours=True):
         """Detect coordinates of objects in image.

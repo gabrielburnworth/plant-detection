@@ -151,12 +151,13 @@ class PDTestArgs(unittest.TestCase):
         self.image = 'soil_image.jpg'
         self.coordinates = True
         self.calibration_img = "PD/p2c_test_calibration.jpg"
-        self.known_plants = [[200, 600, 100], [900, 200, 120]]
+        self.known_plants = [{'x': 200, 'y': 600, 'radius': 100},
+                             {'x': 900, 'y': 200, 'radius': 120}]
         self.blur = 9
         self.morph = 7
         self.iterations = 3
-        self.array = [[5, 'ellipse', 'erode',  2],
-                      [3, 'ellipse', 'dilate', 8]]
+        self.array = [{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+                      {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
         self.debug = True
         self.save = False
         self.clump_buster = True
@@ -559,3 +560,69 @@ class PDTestDebugMode(unittest.TestCase):
         pd.detect_plants()
         self.assertTrue(os.path.exists('soil_image_coordinates_found.jpg'))
         os.remove('soil_image_masked2.jpg')
+
+
+class PDTestSafeRemove(unittest.TestCase):
+    """Check output using safe remove feature"""
+
+    def setUp(self):
+        self.pd = Plant_Detection(
+            image="soil_image.jpg",
+            calibration_img="PD/p2c_test_calibration.jpg",
+            text_output=False)
+        self.pd.calibrate()
+        self.input_params = {"blur": 15, "morph": 6, "iterations": 4,
+                             "H": [30, 90], "S": [20, 255], "V": [20, 255]}
+
+    def test_no_plants(self):
+        """Check no plants in output"""
+        self.input_params['H'] = [0, 0]  # None
+        self.pd.params.parameters = self.input_params
+        self.pd.detect_plants()
+        self.assertEqual(len(self.pd.plant_db.plants['known']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['save']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['remove']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['safe_remove']), 0)
+
+    def test_one_remove_plants(self):
+        """Check one remove plants in output"""
+        self.input_params['H'] = [1, 0]  # One Large
+        self.pd.params.parameters = self.input_params
+        self.pd.detect_plants()
+        self.assertEqual(len(self.pd.plant_db.plants['known']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['save']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['remove']), 1)
+        self.assertEqual(len(self.pd.plant_db.plants['safe_remove']), 0)
+
+    def test_one_saved_plant(self):
+        """Check none removed but one known/saved plant in output"""
+        self.input_params['H'] = [1, 0]  # One Large
+        self.pd.plant_db.plants['known'] = [
+            {'y': 500, 'x': 800, 'radius': 100}]
+        self.pd.params.parameters = self.input_params
+        self.pd.detect_plants()
+        self.assertEqual(len(self.pd.plant_db.plants['known']), 1)
+        self.assertEqual(len(self.pd.plant_db.plants['save']), 1)
+        self.assertEqual(len(self.pd.plant_db.plants['remove']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['safe_remove']), 0)
+
+    def test_one_large_safe_remove_plant(self):
+        """Check one safe remove plant not removed: center still in safe zone"""
+        self.input_params['H'] = [1, 0]  # One Large
+        self.pd.plant_db.plants['known'] = [{'y': 500, 'x': 800, 'radius': 1}]
+        self.pd.params.parameters = self.input_params
+        self.pd.detect_plants()
+        self.assertEqual(len(self.pd.plant_db.plants['known']), 1)
+        self.assertEqual(len(self.pd.plant_db.plants['save']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['remove']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['safe_remove']), 1)
+
+    def test_one_small_safe_remove_plant(self):
+        """Check one safe remove plant not removed: too close to known"""
+        self.pd.plant_db.plants['known'] = [{'y': 300, 'x': 1400, 'radius': 1}]
+        self.pd.params.parameters = self.input_params
+        self.pd.detect_plants()
+        self.assertEqual(len(self.pd.plant_db.plants['known']), 1)
+        self.assertEqual(len(self.pd.plant_db.plants['save']), 0)
+        self.assertEqual(len(self.pd.plant_db.plants['remove']), 15)
+        self.assertEqual(len(self.pd.plant_db.plants['safe_remove']), 1)

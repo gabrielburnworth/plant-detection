@@ -5,8 +5,11 @@ strictness: veryhigh
 pep8:
   full: true
 pep257:
-    disable:
-        - D203
+  disable:
+    - D203
+pylint:
+  disable:
+    - too-many-instance-attributes
 
 python-targets:
   - 2
