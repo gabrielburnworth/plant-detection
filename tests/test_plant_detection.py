@@ -27,6 +27,9 @@ def assert_dict_values_almost_equal(assertE, assertAE, object1, object2):
     for key in keys1:
         dicts1 = f_object1[key]
         dicts2 = f_object2[key]
+        assertE(len(dicts1), len(dicts2),
+                msg='\n{}\nlength not equal to\n{}'.format(
+                    json.dumps(dicts1), json.dumps(dicts2)))
         for dict1, dict2 in zip(dicts1, dicts2):
             assertAE(dict1['x'], dict2['x'], delta=5)
             assertAE(dict1['y'], dict2['y'], delta=5)
