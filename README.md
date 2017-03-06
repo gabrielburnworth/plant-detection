@@ -43,15 +43,13 @@ PD.detect_plants()
 ```
 
 #### Or, run the GUI and move the sliders:
-```python
-python Plant_Detection.py --GUI
-```
+`python Plant_Detection.py --GUI`
+
 Default image to process is `soil_image.jpg`. To process other images, use:
-```python
-python Plant_Detection.py --GUI other_image_name.png
-```
+
+`python Plant_Detection.py --GUI other_image_name.png`
+
 <img src="https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png" width="350">
-<!--![plant detection gui screenshot](https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png)-->
 
 ## Image file processing suggested workflow
 
@@ -59,15 +57,13 @@ python Plant_Detection.py --GUI other_image_name.png
 For example: `test_image.jpg`
 
 #### 2. Run the GUI and move the sliders:
-```python
-python Plant_Detection.py --GUI test_image.jpg
-```
+`python Plant_Detection.py --GUI test_image.jpg`
+
 This will create a plant detection parameters input file from the slider values.
 
 #### 3. Run detection:
-```python
-python Plant_Detection.py test_image.jpg
-```
+`python Plant_Detection.py test_image.jpg`
+
 >Or, for more options, enter a python command line: `python`
 ```python
 from Plant_Detection import Plant_Detection
