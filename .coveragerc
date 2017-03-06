@@ -1,0 +1,14 @@
+[run]
+branch = True
+omit =
+    test*
+    *__init__.py
+    *GUI*
+source = .
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
+
+[html]
+directory = coverage_html_report

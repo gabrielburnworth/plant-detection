@@ -47,7 +47,7 @@ class Capture(object):
             bot_y = int(_redis.lindex('BOT_STATUS.location', 1))
             bot_z = int(_redis.lindex('BOT_STATUS.location', 2))
             return [bot_x, bot_y, bot_z]
-        except:  # return testing coordintes
+        except Exception:  # return testing coordintes
             return self.test_coordinates
 
     def camera_check(self):
@@ -98,6 +98,7 @@ class Capture(object):
             sys.exit(0)
         self.image_captured = True
         return self.image
+
 
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep

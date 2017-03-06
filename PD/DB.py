@@ -39,7 +39,7 @@ class DB(object):
             encoded_payload += '=' * (4 - len(encoded_payload) % 4)
             json_payload = base64.b64decode(encoded_payload).decode('utf-8')
             server = json.loads(json_payload)['iss']
-        except:
+        except Exception:
             server = '//my.farmbot.io'
         self.api_url = 'https:' + server + '/api/'
         self.headers = {'Authorization': 'Bearer {}'.format(api_token),

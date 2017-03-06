@@ -9,7 +9,7 @@ try:
     from .Capture import Capture
     from .Image import Image
     from .DB import DB
-except:
+except Exception:
     from Parameters import Parameters
     from Capture import Capture
     from Image import Image
@@ -346,6 +346,7 @@ class Pixel2coord(object):
         if self.viewoutputimage:
             self.image.image = self.image.marked
             self.image.show()
+
 
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep

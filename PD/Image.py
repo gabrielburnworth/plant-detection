@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 try:
     from .Capture import Capture
-except:
+except Exception:
     from Capture import Capture
 
 
