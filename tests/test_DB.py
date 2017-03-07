@@ -39,19 +39,6 @@ class DBTest(unittest.TestCase):
                 'value': 'plant-detection', 'label': 'created_by'}}],
              'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
                  'kind': 'coordinate', 'args': {'y': 1000.0, 'x': 800.0, 'z': 0}}}}]
-        self.data_update = {
-            "kind": "data_update",
-            "args": {
-                # "value": "updated"
-            },
-            "body": [
-                {
-                    "kind": "pair",
-                    "args": {
-                        "label": "points",
-                        "value": "*"
-                    }}
-            ]}
 
     def test_plant_id_remove(self):
         """Check plants to be removed"""
@@ -86,11 +73,6 @@ class DBTest(unittest.TestCase):
         """Output Celery Script add_point"""
         add_point = self.db.output_celery_script()
         self.assertEqual(add_point, self.add_point)
-
-    def test_cs_data_update(self):
-        """Output Celery Script data_update"""
-        data_update = self.db.upload_weeds()
-        self.assertEqual(data_update, self.data_update)
 
     def test_save_to_tmp(self):
         """Save plants to file in tmp directory"""

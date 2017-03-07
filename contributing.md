@@ -39,7 +39,7 @@ _Can also be run via `python tests/tests.py`_
 `python -m unittest discover -v`
 #### Manual Tests
 ```
-python Plant_Detection_GUI.py
+python Plant_Detection.py --GUI
 python -m PD.Capture
 python -m PD.P2C
 ```

@@ -45,6 +45,22 @@ class CeleryScript(unittest.TestCase):
                 'offset': {'kind': 'coordinate',
                            'args': {'y': 50, 'x': 40, 'z': 60}}}
         }
+        self.data_update = CeleryPy.data_update('points', '*')
+        self.data_update_static = {
+            "kind": "data_update",
+            "args": {"value": "updated"},
+            "body": [{"kind": "pair", "args": {"label": "points", "value": "*"}}]
+        }
+        self.data_update_list = CeleryPy.data_update('points', [123, 456, 789])
+        self.data_update_list_static = {
+            "kind": "data_update",
+            "args": {"value": "updated"},
+            "body": [
+                {"kind": "pair", "args": {"label": "points", "value": "123"}},
+                {"kind": "pair", "args": {"label": "points", "value": "456"}},
+                {"kind": "pair", "args": {"label": "points", "value": "789"}}
+            ]
+        }
 
     def test_add_point(self):
         """Check add_point celery script"""
@@ -63,3 +79,11 @@ class CeleryScript(unittest.TestCase):
         """Check move_absolute celery script with a location"""
         self.assertEqual(self.move_absolute_location_static,
                          self.move_absolute_location)
+
+    def test_data_update(self):
+        """Check data_update Celery Script"""
+        self.assertEqual(self.data_update_static, self.data_update)
+
+    def test_data_update_list(self):
+        """Check data_update Celery Script for a list of IDs"""
+        self.assertEqual(self.data_update_list_static, self.data_update_list)

@@ -92,8 +92,14 @@ class DB(object):
                                 headers=self.headers)
         self.api_response_error_collector(response)
         self.api_response_error_printer()
-        plants = response.json()
+        app_plants = response.json()
         if response.status_code == 200:
+            plants = []
+            for plant in app_plants:
+                plants.append({
+                    'x': plant['x'],
+                    'y': plant['y'],
+                    'radius': plant['radius']})
             self.plants['known'] = plants
 
     def identify_plant(self, plant_x, plant_y, known):
@@ -224,17 +230,23 @@ class DB(object):
 
     def upload_weeds(self):
         """Add plants marked for removal to FarmBot Web App Farm Designer."""
+        point_ids = []
         for mark in self.plants['remove']:
             # payload
             plant_x, plant_y = round(mark['x'], 2), round(mark['y'], 2)
             plant_r = round(mark['radius'], 2)
-            plant = {'x': str(plant_x), 'y': str(plant_y),
-                     'radius': str(plant_r)}
+            plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
+                     'radius': str(plant_r),
+                     'meta': {'created_by': 'plant-detection'}}
             payload = json.dumps(plant)
             # API Request
             response = requests.post(self.api_url + 'points',
                                      data=payload, headers=self.headers)
+            if response.status_code == 200:
+                point_ids.append(response.json()['id'])
             self.api_response_error_collector(response)
         self.api_response_error_printer()
-        unsent_cs = CeleryPy.data_update('points', '*')
-        return unsent_cs
+        if point_ids:
+            # Points have been added to the web app
+            # Indicate that a sync is required for the points
+            CeleryPy.data_update('points', point_ids)

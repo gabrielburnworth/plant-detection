@@ -17,11 +17,12 @@ def _print_json(function):
         environment variable.
         """
         try:
-            print('{} {}'.format(os.environ['BEGIN_CS'],
-                                 json.dumps(function(*args, **kwargs))))
-            return
+            begin_cs = os.environ['BEGIN_CS']
         except KeyError:
             return function(*args, **kwargs)
+        else:
+            print(begin_cs + json.dumps(function(*args, **kwargs)))
+            return
     return wrapper
 
 
@@ -130,11 +131,13 @@ def move_absolute(location, offset, speed):
 
 
 @_print_json
-def data_update(endpoint, id_):
+def data_update(endpoint, ids_):
     """Celery Script to signal that a sync is required.
 
     Kind:
         data_update
+    Args:
+        value: updated
     Body:
         Kind: pair
         Args:
@@ -142,8 +145,15 @@ def data_update(endpoint, id_):
             value: id
     """
     args = {}
-    # args['value'] = 'updated'
+    args['value'] = 'updated'
     _data_update = _create_node('data_update', args)
-    _endpoint = _create_pair(endpoint, id_)
-    _data_update['body'] = [_create_node('pair', _endpoint)]
+    if isinstance(ids_, list):
+        body = []
+        for id_ in ids_:
+            _endpoint = _create_pair(endpoint, str(id_))
+            body.append(_create_node('pair', _endpoint))
+    else:
+        _endpoint = _create_pair(endpoint, ids_)
+        body = [_create_node('pair', _endpoint)]
+    _data_update['body'] = body
     return _data_update
