@@ -356,7 +356,7 @@ class ENV_VAR(unittest.TestCase):
 
         os.environ["PLANT_DETECTION_options"] = json.dumps(self.input_params)
         pd = Plant_Detection(image="soil_image.jpg",
-                             from_env_var=True,
+                             from_env_var=True, coordinates=True,
                              text_output=False, save=False)
         pd.detect_plants()
 

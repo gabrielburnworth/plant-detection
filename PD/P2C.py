@@ -15,6 +15,12 @@ except:  # noqa pylint:disable=W0702
     from Image import Image
     from DB import DB
 from PD import CeleryPy
+try:
+    import redis
+except ImportError:
+    redis_available = False
+else:
+    redis_available = True
 
 
 class Pixel2coord(object):
@@ -86,8 +92,7 @@ class Pixel2coord(object):
                 self.calibration_params = self.defaults
         elif calibration_data == 'env_var':
             try:
-                self.calibration_params = json.loads(
-                    os.environ[self.env_var_name])
+                self.load_calibration_data_from_env()
             except (KeyError, ValueError):
                 print("Warning: Calibration data env var load failed. "
                       "Using defaults.")
@@ -141,6 +146,19 @@ class Pixel2coord(object):
             self.env_var_name,
             json.dumps(self.calibration_params))
         os.environ[self.env_var_name] = json.dumps(self.calibration_params)
+
+    def load_calibration_data_from_env(self):
+        """Load calibration parameters from environment variable."""
+        try:
+            self.calibration_params = json.loads(
+                os.environ[self.env_var_name])
+        except (KeyError, ValueError):
+            if redis_available:
+                _redis = redis.StrictRedis()
+                self.calibration_params = json.loads(_redis.get(
+                    'BOT_STATUS.user_env.PLANT_DETECTION_calibration'))
+            else:
+                raise ValueError("ENV load failed.")
 
     def initialize_data_keys(self):
         """If using JSON with inputs only, create calibration data keys."""
