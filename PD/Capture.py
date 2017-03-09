@@ -5,8 +5,8 @@ For Plant Detection.
 """
 import sys
 import os
-import platform
 from time import sleep
+from subprocess import call
 import cv2
 try:
     import redis
@@ -14,13 +14,15 @@ except ImportError:
     pass
 
 
-USE_RPI_CAMERA = False
-USING_RPI = False
-
-if platform.uname()[4].startswith("arm") and USE_RPI_CAMERA:
-    from picamera.array import PiRGBArray
-    from picamera import PiCamera
-    USING_RPI = True
+try:
+    CAMERA = os.environ['camera']
+except (KeyError, ValueError):
+    CAMERA = 'USB'  # default camera
+else:
+    if 'RPI' in CAMERA:
+        CAMERA = 'RPI'  # Raspberry Pi Camera
+    else:
+        CAMERA = 'USB'
 
 
 class Capture(object):
@@ -63,7 +65,7 @@ class Capture(object):
                     print("No camera detected at video{}.".format(
                         self.camera_port))
 
-    def save(self):
+    def save(self, filename_only=False):
         """Save captured image."""
         directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         try:
@@ -74,25 +76,34 @@ class Capture(object):
         except IOError:
             directory = '/tmp/images/'
             image_filename = directory + 'capture.jpg'
-            cv2.imwrite(image_filename, self.image)
+            if not filename_only:
+                cv2.imwrite(image_filename, self.image)
         else:
             image_filename = directory + 'capture.jpg'
-            cv2.imwrite(image_filename, self.image)
+            if not filename_only:
+                cv2.imwrite(image_filename, self.image)
         return image_filename
 
     def capture(self):
         """Take a photo."""
-        if USING_RPI and USE_RPI_CAMERA:
+        if CAMERA == 'RPI':
             # With Raspberry Pi Camera:
-            with PiCamera() as camera:
-                camera.resolution = (1920, 1088)
-                raw_capture = PiRGBArray(camera)
-                sleep(0.1)
-                camera.capture(raw_capture, format="bgr")
-                self.image = raw_capture.array
-        else:
+            try:
+                retcode = call(["raspistill", "-w", "640", "-h", "480",
+                                "-o", self.save(filename_only=True)])
+            except OSError:
+                print("Raspberry Pi Camera not detected.")
+                sys.exit(0)
+            else:
+                if retcode == 0:
+                    print("Image saved: {}".format(
+                        self.save(filename_only=True)))
+                    return self.save(filename_only=True)
+                else:
+                    print("Problem getting image.")
+                    sys.exit(0)
+        else:  # With USB camera:
             self.camera_port = 0
-            # With USB cameras:
             # image_width = 1600
             # image_height = 1200
             discard_frames = 20
@@ -109,11 +120,11 @@ class Capture(object):
                 camera.grab()
             self.ret, self.image = camera.read()
             camera.release()
-        if not self.ret:
-            print("Problem getting image.")
-            sys.exit(0)
-        self.image_captured = True
-        return self.save()
+            if not self.ret:
+                print("Problem getting image.")
+                sys.exit(0)
+            self.image_captured = True
+            return self.save()
 
 
 if __name__ == "__main__":

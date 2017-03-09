@@ -266,24 +266,37 @@ class DB(object):
             unsent_cs.append(unsent)
         return unsent_cs
 
-    def upload_weeds(self):
-        """Add plants marked for removal to FarmBot Web App Farm Designer."""
+    def upload_point(self, point, color, id_list):
+        """Upload a point to the FarmBot Web App."""
+        # payload
+        plant_x, plant_y = round(point['x'], 2), round(point['y'], 2)
+        plant_r = round(point['radius'], 2)
+        plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
+                 'radius': str(plant_r),
+                 'meta': {'created_by': 'plant-detection',
+                          'color': color}}
+        payload = json.dumps(plant)
+        # API Request
+        response = requests.post(self.api_url + 'points',
+                                 data=payload, headers=self.headers)
+        point_id = None
+        if response.status_code == 200:
+            point_id = response.json()['id']
+            id_list.append(point_id)
+        self.api_response_error_collector(response)
+        return id_list
+
+    def upload_plants(self):
+        """Add plants to FarmBot Web App Farm Designer."""
         point_ids = []
-        for mark in self.plants['remove']:
-            # payload
-            plant_x, plant_y = round(mark['x'], 2), round(mark['y'], 2)
-            plant_r = round(mark['radius'], 2)
-            plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
-                     'radius': str(plant_r),
-                     'meta': {'created_by': 'plant-detection',
-                              'color': 'red'}}
-            payload = json.dumps(plant)
-            # API Request
-            response = requests.post(self.api_url + 'points',
-                                     data=payload, headers=self.headers)
-            if response.status_code == 200:
-                point_ids.append(response.json()['id'])
-            self.api_response_error_collector(response)
+        for plant in self.plants['remove']:
+            point_ids = self.upload_point(plant, 'red', point_ids)
+        for plant in self.plants['save']:
+            point_ids = self.upload_point(plant, 'blue', point_ids)
+        for plant in self.plants['known']:
+            point_ids = self.upload_point(plant, 'green', point_ids)
+        for plant in self.plants['safe_remove']:
+            point_ids = self.upload_point(plant, 'cyan', point_ids)
         self.api_response_error_printer()
         if point_ids:
             # Points have been added to the web app

@@ -60,7 +60,7 @@ class DBTest(unittest.TestCase):
 
     def test_api_upload(self):
         """Run (failing) plant upload assuming no API_TOKEN ENV"""
-        self.db.upload_weeds()
+        self.db.upload_plants()
         self.assertEqual(self.db.errors, {'401': 1})
 
     def test_print_coordinates(self):
