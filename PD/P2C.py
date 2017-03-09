@@ -93,12 +93,23 @@ class Pixel2coord(object):
         elif calibration_data == 'env_var':
             try:
                 self.load_calibration_data_from_env()
-            except (KeyError, ValueError):
+            except ValueError:
                 print("Warning: Calibration data env var load failed. "
                       "Using defaults.")
                 self.calibration_params = self.defaults
         else:  # load the data provided
             self.calibration_params = calibration_data
+            temp_inputs = self.calibration_params
+            self.calibration_params = {}
+            try:
+                self.load_calibration_data_from_env()
+            except ValueError:  # no additional calibration inputs to add
+                self.calibration_params = temp_inputs
+            else:  # add additional calibration inputs
+                for key, value in self.calibration_params.items():
+                    if key not in temp_inputs:
+                        temp_inputs[key] = value
+                self.calibration_params = temp_inputs
             self.initialize_data_keys()
 
         self.cparams = Parameters()

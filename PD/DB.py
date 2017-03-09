@@ -237,7 +237,8 @@ class DB(object):
             plant_r = round(mark['radius'], 2)
             plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
                      'radius': str(plant_r),
-                     'meta': {'created_by': 'plant-detection'}}
+                     'meta': {'created_by': 'plant-detection',
+                              'color': 'red'}}
             payload = json.dumps(plant)
             # API Request
             response = requests.post(self.api_url + 'points',

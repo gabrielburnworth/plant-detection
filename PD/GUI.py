@@ -14,7 +14,7 @@ class PlantDetectionGUI(object):
 
     def __init__(self, image_filename=None, plant_detection=None):
         """Set initial attributes, get image path, and load inputs."""
-        self.PlantDetection = plant_detection
+        self.plant_detection = plant_detection
         self.window = 'Plant Detection'
         self.hsv_window = 'HSV Selection'
         self.override_hsv_defaults = 0
@@ -85,7 +85,7 @@ class PlantDetectionGUI(object):
 
             # Process image with parameters
             if self.override_hsv_defaults or self.from_file:
-                plantdetection = self.PlantDetection(
+                plantdetection = self.plant_detection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,
@@ -95,7 +95,7 @@ class PlantDetectionGUI(object):
                 plantdetection.detect_plants()
                 img = plantdetection.final_marked_image
             else:
-                plantdetection = self.PlantDetection(
+                plantdetection = self.plant_detection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,
