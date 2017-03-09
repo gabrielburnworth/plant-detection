@@ -27,27 +27,27 @@ For an overview of the image processing performed, see [the wiki](../../wiki/Pla
 
 Using the sample soil image, `soil_image.jpg`.
 
-Run the script: `python Plant_Detection.py`
+Run the script: `python PlantDetection.py`
 
 View `soil_image_marked.jpg`
 
 #### Alternatively, process images using a python command line:
 ```python
-from Plant_Detection import Plant_Detection
-help(Plant_Detection)
-PD = Plant_Detection(image='soil_image.jpg')
+from PlantDetection import PlantDetection
+help(PlantDetection)
+PD = PlantDetection(image='soil_image.jpg')
 PD.calibrate()
 PD.detect_plants()
-PD = Plant_Detection(image='soil_image.jpg', morph=15, iterations=2, debug=True)
+PD = PlantDetection(image='soil_image.jpg', morph=15, iterations=2, debug=True)
 PD.detect_plants()
 ```
 
 #### Or, run the GUI and move the sliders:
-`python Plant_Detection.py --GUI`
+`python PlantDetection.py --GUI`
 
 Default image to process is `soil_image.jpg`. To process other images, use:
 
-`python Plant_Detection.py --GUI other_image_name.png`
+`python PlantDetection.py --GUI other_image_name.png`
 
 <img src="https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png" width="350">
 
@@ -57,17 +57,17 @@ Default image to process is `soil_image.jpg`. To process other images, use:
 For example: `test_image.jpg`
 
 #### 2. Run the GUI and move the sliders:
-`python Plant_Detection.py --GUI test_image.jpg`
+`python PlantDetection.py --GUI test_image.jpg`
 
 This will create a plant detection parameters input file from the slider values.
 
 #### 3. Run detection:
-`python Plant_Detection.py test_image.jpg`
+`python PlantDetection.py test_image.jpg`
 
 >Or, for more options, enter a python command line: `python`
 ```python
-from Plant_Detection import Plant_Detection
-PD = Plant_Detection(image='test_image.jpg', from_file=True)
+from PlantDetection import PlantDetection
+PD = PlantDetection(image='test_image.jpg', from_file=True)
 PD.detect_plants()
 ```
 >(_For examples of output for graphic-related keyword arguments, see [the wiki](../../wiki/IO#graphics))_
@@ -78,10 +78,10 @@ Annotated image: `test_image_marked.png`
 ## Tips
 
 #### View help
-`python -c 'from Plant_Detection import Plant_Detection; help(Plant_Detection)'`
+`python -c 'from PlantDetection import PlantDetection; help(PlantDetection)'`
 
 #### Hue range aid
-`python Plant_Detection.py --GUI PD/p2c_test_color.jpg`
+`python PlantDetection.py --GUI PD/p2c_test_color.jpg`
 
 ## Project Directory
 
@@ -102,6 +102,6 @@ plant-detection
 ├── tests  - project test suite
 ├── quickscripts  - scripts to run specific tasks
 ├── soil_image.jpg  - plant detection test image
-├── Plant_Detection.py  - calibrate and detect plants
+├── PlantDetection.py  - calibrate and detect plants
 └── README.md
 ```

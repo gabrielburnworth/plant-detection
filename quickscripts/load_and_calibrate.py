@@ -9,7 +9,7 @@ import glob
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from Plant_Detection import Plant_Detection
+from PlantDetection import PlantDetection
 
 if __name__ == "__main__":
     try:
@@ -19,5 +19,5 @@ if __name__ == "__main__":
         print("No images in /tmp/images")
         sys.exit(0)
 
-    PD = Plant_Detection(calibration_img=RECENT_IMAGE, app=True)
+    PD = PlantDetection(calibration_img=RECENT_IMAGE, app=True)
     PD.calibrate()

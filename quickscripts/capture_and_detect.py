@@ -7,8 +7,8 @@ import sys
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from Plant_Detection import Plant_Detection
+from PlantDetection import PlantDetection
 
 if __name__ == "__main__":
-    PD = Plant_Detection(app=True)
+    PD = PlantDetection(app=True)
     PD.detect_plants()

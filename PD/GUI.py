@@ -4,13 +4,13 @@ import sys
 import os
 import json
 import cv2
-from Plant_Detection import Plant_Detection
+from PlantDetection import PlantDetection
 
 
 class PlantDetectionGUI(object):
     """Interactively change input parameters.
 
-    for Plant_Detection.detect_plants()
+    for PlantDetection.detect_plants()
     """
 
     def __init__(self, image_filename=None):
@@ -85,7 +85,7 @@ class PlantDetectionGUI(object):
 
             # Process image with parameters
             if self.override_hsv_defaults or self.from_file:
-                plantdetection = Plant_Detection(
+                plantdetection = PlantDetection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,
@@ -95,7 +95,7 @@ class PlantDetectionGUI(object):
                 plantdetection.detect_plants()
                 img = plantdetection.final_marked_image
             else:
-                plantdetection = Plant_Detection(
+                plantdetection = PlantDetection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,

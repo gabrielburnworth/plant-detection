@@ -43,10 +43,9 @@ class Capture(object):
                 _redis = self.redis
             else:
                 _redis = redis.StrictRedis()
-            bot_x = int(_redis.lindex('BOT_STATUS.location', 0))
-            bot_y = int(_redis.lindex('BOT_STATUS.location', 1))
-            bot_z = int(_redis.lindex('BOT_STATUS.location', 2))
-            return [bot_x, bot_y, bot_z]
+            bot_location_str = _redis.lrange('BOT_STATUS.location', 0, -1)
+            bot_location = [int(coordinate) for coordinate in bot_location_str]
+            return bot_location
         except:  # noqa pylint:disable=W0702
             return self.test_coordinates  # return testing coordintes
 
@@ -74,9 +73,12 @@ class Capture(object):
             os.remove(testfilename)
         except IOError:
             directory = '/tmp/images/'
-            cv2.imwrite(directory + 'capture.jpg', self.image)
+            image_filename = directory + 'capture.jpg'
+            cv2.imwrite(image_filename, self.image)
         else:
-            cv2.imwrite(directory + 'capture.jpg', self.image)
+            image_filename = directory + 'capture.jpg'
+            cv2.imwrite(image_filename, self.image)
+        return image_filename
 
     def capture(self):
         """Take a photo."""

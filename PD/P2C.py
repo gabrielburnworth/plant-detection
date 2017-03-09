@@ -18,9 +18,9 @@ from PD import CeleryPy
 try:
     import redis
 except ImportError:
-    redis_available = False
+    REDIS = False
 else:
-    redis_available = True
+    REDIS = True
 
 
 class Pixel2coord(object):
@@ -137,7 +137,7 @@ class Pixel2coord(object):
             self.calibration_params = json.loads(
                 os.environ[self.env_var_name])
         except (KeyError, ValueError):
-            if redis_available:
+            if REDIS:
                 _redis = redis.StrictRedis()
                 self.calibration_params = json.loads(_redis.get(
                     'BOT_STATUS.user_env.PLANT_DETECTION_calibration'))

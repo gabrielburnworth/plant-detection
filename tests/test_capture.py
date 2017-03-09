@@ -57,4 +57,7 @@ class CheckImageSaveTest(unittest.TestCase):
         capture = Capture()
         shape = [100, 100, 3]
         capture.image = np.full(shape, 200, np.uint8)
-        capture.save()
+        img_filename = capture.save()
+        directory = os.path.dirname(os.path.realpath(__file__))[:-6] + os.sep
+        expected_filename = directory + 'capture.jpg'
+        self.assertEqual(img_filename, expected_filename)

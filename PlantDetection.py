@@ -13,7 +13,7 @@ from PD.DB import DB
 from PD.Capture import Capture
 
 
-class Plant_Detection(object):
+class PlantDetection(object):
     """Detect plants in image and output an image with plants marked.
 
     Kwargs:
@@ -72,19 +72,19 @@ class Plant_Detection(object):
        app (boolean): connect to the FarmBot web app (default = False)
 
     Examples:
-       PD = Plant_Detection()
+       PD = PlantDetection()
        PD.detect_plants()
 
-       PD = Plant_Detection(image='soil_image.jpg', morph=3, iterations=10,
+       PD = PlantDetection(image='soil_image.jpg', morph=3, iterations=10,
           debug=True)
        PD.detect_plants()
 
-       PD = Plant_Detection(image='soil_image.jpg', blur=9, morph=7,
+       PD = PlantDetection(image='soil_image.jpg', blur=9, morph=7,
           iterations=4, calibration_img="PD/p2c_test_calibration.jpg")
        PD.calibrate()
        PD.detect_plants()
 
-       PD = Plant_Detection(image='soil_image.jpg', blur=15, grey_out=True,
+       PD = PlantDetection(image='soil_image.jpg', blur=15, grey_out=True,
          array=[
             {"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
             {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
     IMG = DIR + 'soil_image.jpg'
     if len(sys.argv) == 1:
-        PD = Plant_Detection(
+        PD = PlantDetection(
             image=IMG,
             blur=15, morph=6, iterations=4,
             calibration_img=DIR + "PD/p2c_test_calibration.jpg",
@@ -445,6 +445,6 @@ if __name__ == "__main__":
                 GUI.run()
         else:  # image filename provided
             IMG = sys.argv[1]
-            PD = Plant_Detection(
+            PD = PlantDetection(
                 image=IMG, from_file=True, debug=True)
             PD.detect_plants()
