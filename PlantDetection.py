@@ -279,18 +279,21 @@ class PlantDetection(object):
     def _detection_image(self):  # get image to process
         self.image = Image(self.params, self.plant_db)
         # Get image to process
-        if self.args['image'] is None:
-            # No image provided. Capture one.
+        try:  # check for API image ID
+            image_id = self.params.parameters['image_id']
+        except KeyError:
+            image_id = None
+        if image_id is not None:  # download image
+            try:
+                self.image.download(image_id)
+            except IOError:
+                print("Image download failed for image ID {}.".format(
+                      str(image_id)))
+                sys.exit(0)
+        elif self.args['image'] is None:  # No image provided. Capture one.
             self.image.capture()
             if self.args['debug']:
                 self.image.save('photo')
-        elif isinstance(self.args['image'], int):  # image ID
-            try:
-                self.image.download(self.args['image'])
-            except IOError:
-                print("Image download failed for image ID {}.".format(
-                      str(self.args['image'])))
-                sys.exit(0)
         else:  # Image provided. Load it.
             filename = self.args['image']
             self.image.load(filename)
