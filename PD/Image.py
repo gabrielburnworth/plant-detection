@@ -75,7 +75,6 @@ class Image(object):
         """Capture image from camera."""
         image_filename = Capture().capture()
         self.original = self.load(image_filename)
-        self._prepare()
 
     def save(self, title, image=None):
         """Save image to file."""

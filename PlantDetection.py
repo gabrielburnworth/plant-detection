@@ -439,11 +439,11 @@ if __name__ == "__main__":
             from PD.GUI import PlantDetectionGUI
             if len(sys.argv) == 3:  # image filename provided
                 GUI = PlantDetectionGUI(image_filename=sys.argv[2],
-                                        PlantDetection=PlantDetection)
+                                        plant_detection=PlantDetection)
                 GUI.run()
             else:  # Use `soil_image.jpg`
                 GUI = PlantDetectionGUI(image_filename=IMG,
-                                        PlantDetection=PlantDetection)
+                                        plant_detection=PlantDetection)
                 GUI.run()
         else:  # image filename provided
             IMG = sys.argv[1]

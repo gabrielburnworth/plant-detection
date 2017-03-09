@@ -138,9 +138,12 @@ class Pixel2coord(object):
                 os.environ[self.env_var_name])
         except (KeyError, ValueError):
             if REDIS:
-                _redis = redis.StrictRedis()
-                self.calibration_params = json.loads(_redis.get(
-                    'BOT_STATUS.user_env.PLANT_DETECTION_calibration'))
+                try:
+                    _redis = redis.StrictRedis()
+                    self.calibration_params = json.loads(_redis.get(
+                        'BOT_STATUS.user_env.PLANT_DETECTION_calibration'))
+                except redis.exceptions.ConnectionError:
+                    raise ValueError("ENV load failed.")
             else:
                 raise ValueError("ENV load failed.")
 

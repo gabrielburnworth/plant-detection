@@ -12,9 +12,9 @@ class PlantDetectionGUI(object):
     for PlantDetection.detect_plants()
     """
 
-    def __init__(self, image_filename=None, PlantDetection=None):
+    def __init__(self, image_filename=None, plant_detection=None):
         """Set initial attributes, get image path, and load inputs."""
-        self.PlantDetection = PlantDetection
+        self.PlantDetection = plant_detection
         self.window = 'Plant Detection'
         self.hsv_window = 'HSV Selection'
         self.override_hsv_defaults = 0
