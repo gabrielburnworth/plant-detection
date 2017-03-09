@@ -4,7 +4,6 @@ import sys
 import os
 import json
 import cv2
-from PlantDetection import PlantDetection
 
 
 class PlantDetectionGUI(object):
@@ -13,8 +12,9 @@ class PlantDetectionGUI(object):
     for PlantDetection.detect_plants()
     """
 
-    def __init__(self, image_filename=None):
+    def __init__(self, image_filename=None, PlantDetection=None):
         """Set initial attributes, get image path, and load inputs."""
+        self.PlantDetection = PlantDetection
         self.window = 'Plant Detection'
         self.hsv_window = 'HSV Selection'
         self.override_hsv_defaults = 0
@@ -85,7 +85,7 @@ class PlantDetectionGUI(object):
 
             # Process image with parameters
             if self.override_hsv_defaults or self.from_file:
-                plantdetection = PlantDetection(
+                plantdetection = self.PlantDetection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,
@@ -95,7 +95,7 @@ class PlantDetectionGUI(object):
                 plantdetection.detect_plants()
                 img = plantdetection.final_marked_image
             else:
-                plantdetection = PlantDetection(
+                plantdetection = self.PlantDetection(
                     image=self.filename,
                     blur=blur, morph=morph,
                     iterations=iterations,
@@ -144,8 +144,3 @@ class PlantDetectionGUI(object):
                 break
 
         cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    GUI = PlantDetectionGUI()
-    GUI.run()

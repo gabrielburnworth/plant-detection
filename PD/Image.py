@@ -73,7 +73,8 @@ class Image(object):
 
     def capture(self):
         """Capture image from camera."""
-        self.original = Capture().capture()
+        image_filename = Capture().capture()
+        self.original = self.load(image_filename)
         self._prepare()
 
     def save(self, title, image=None):
