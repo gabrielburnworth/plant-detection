@@ -59,6 +59,7 @@ class Image(object):
     def load(self, filename):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
+        self.plant_db.coordinates = Capture().getcoordinates()
         if self.images['original'] is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)
@@ -68,6 +69,14 @@ class Image(object):
     def capture(self):
         """Capture image from camera."""
         image_filename = Capture().capture()
+        self.plant_db.coordinates = Capture().getcoordinates()
+        self.images['original'] = self.load(image_filename)
+
+    def download(self, image_id):
+        """Download an image from the FarmBot Web App API."""
+        image_filename = self.plant_db.get_image(image_id)
+        if image_filename is None:
+            raise IOError("Image download failed.")
         self.images['original'] = self.load(image_filename)
 
     def save(self, title, image=None):
@@ -542,7 +551,7 @@ class Image(object):
                 int(pt_x - tps * 4):int(pt_x + tps * 4 + 1)
             ] = (255, 255, 255)
         # _grid_point([1650, 2050, 0], 'coordinates')  # test point
-        _grid_point(Capture().getcoordinates(), 'coordinates')  # UTM location
+        _grid_point(self.plant_db.coordinates, 'coordinates')  # UTM location
         _grid_point(p2c.calibration_params['center_pixel_location'],
                     'pixels')  # image center
 

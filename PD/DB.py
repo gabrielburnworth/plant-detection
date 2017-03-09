@@ -28,6 +28,7 @@ class DB(object):
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
         self.weeder_destrut_r = 50
+        self.coordinates = [0, 0, 0]
 
         # API requests setup
         try:
@@ -46,6 +47,13 @@ class DB(object):
                         'content-type': "application/json"}
         self.errors = {}
 
+    def api_get(self, endpoint):
+        """GET from an API endpoint."""
+        response = requests.get(self.api_url + endpoint, headers=self.headers)
+        self.api_response_error_collector(response)
+        self.api_response_error_printer()
+        return response
+
     def api_response_error_collector(self, response):
         """Catch and log errors from API requests."""
         self.errors = {}  # reset
@@ -61,6 +69,30 @@ class DB(object):
         for key, value in self.errors.items():
             error_string += '{} {} errors '.format(value, key)
         print(error_string)
+
+    def _download_image_from_url(self, img_filename, url):
+        response = requests.get(url, stream=True)
+        self.api_response_error_collector(response)
+        self.api_response_error_printer()
+        if response.status_code == 200:
+            with open(img_filename, 'wb') as img_file:
+                for chunk in response:
+                    img_file.write(chunk)
+
+    def get_image(self, image_id):
+        """Download an image from the FarmBot Web App API."""
+        response = self.api_get('images/' + str(image_id))
+        if response.status_code == 200:
+            image_json = response.json()
+            image_url = image_json['attachment_url']
+            image_filename = self.dir + str(image_id) + '.jpg'
+            self._download_image_from_url(image_filename, image_url)
+            self.coordinates = list([int(image_json['meta']['x']),
+                                     int(image_json['meta']['y']),
+                                     int(image_json['meta']['z'])])
+            return image_filename
+        else:
+            return None
 
     def save_plants(self):
         """Save plant detection plants to file.
@@ -88,10 +120,7 @@ class DB(object):
 
     def load_plants_from_web_app(self):
         """Download known plants from the FarmBot Web App API."""
-        response = requests.get(self.api_url + 'plants',
-                                headers=self.headers)
-        self.api_response_error_collector(response)
-        self.api_response_error_printer()
+        response = self.api_get('plants')
         app_plants = response.json()
         if response.status_code == 200:
             plants = []

@@ -6,12 +6,10 @@ import json
 import numpy as np
 try:
     from .Parameters import Parameters
-    from .Capture import Capture
     from .Image import Image
     from .DB import DB
 except:  # noqa pylint:disable=W0702
     from Parameters import Parameters
-    from Capture import Capture
     from Image import Image
     from DB import DB
 from PD import CeleryPy
@@ -78,7 +76,7 @@ class Pixel2coord(object):
         self.test_coordinates = [600, 400]  # calib image coord. location
         self.viewoutputimage = False  # overridden as True if running script
         self.output_text = True
-        self.get_bot_coordinates = Capture().getcoordinates
+        self.bot_coordinates = plant_db.coordinates
         self.json_calibration_data = None
 
     def _calibration_data_preparation(self, calibration_data=None,
@@ -266,7 +264,7 @@ class Pixel2coord(object):
         except IndexError:
             plant_db.pixel_locations = np.vstack(
                 [plant_db.pixel_locations])
-        coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
+        coord = np.array(self.bot_coordinates[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
@@ -295,7 +293,7 @@ class Pixel2coord(object):
         except IndexError:
             plant_db.coordinate_locations = np.vstack(
                 [plant_db.coordinate_locations])
-        coord = np.array(self.get_bot_coordinates()[:2], dtype=float)
+        coord = np.array(self.bot_coordinates[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
