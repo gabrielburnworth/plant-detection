@@ -340,6 +340,8 @@ class TestFromFile(unittest.TestCase):
     """Test file use"""
 
     def setUp(self):
+        self.outfile = open('text_output_test.txt', 'w')
+        sys.stdout = self.outfile
         # Generate and save calibration data
         self.pd = PlantDetection(
             calibration_img="PD/p2c_test_calibration.jpg",
@@ -375,6 +377,11 @@ class TestFromFile(unittest.TestCase):
                             text_output=False, save=False, debug=True)
         pd.calibrate()
         self.assertEqual(pd.plant_db.object_count, 2)
+
+    def tearDown(self):
+        self.outfile.close()
+        sys.stdout = sys.__stdout__
+        os.remove('text_output_test.txt')
 
 
 class PDTestArray(unittest.TestCase):
@@ -428,7 +435,7 @@ class PDTestGreyOut(unittest.TestCase):
                             text_output=False, save=False,
                             grey_out=True)
         pd.detect_plants()
-        self.pixel_mean = get_average_pixel_value(pd.image.image)
+        self.pixel_mean = get_average_pixel_value(pd.image.images['current'])
         self.expected_pixel_mean = 138.7
 
     def test_grey_out(self):
@@ -447,7 +454,7 @@ class PDTestCirclePlants(unittest.TestCase):
                             draw_contours=False,
                             circle_plants=True)
         pd.detect_plants()
-        self.pixel_mean = get_average_pixel_value(pd.image.image)
+        self.pixel_mean = get_average_pixel_value(pd.image.images['current'])
         self.expected_pixel_mean = 69.9
 
     def test_circle_plants(self):
@@ -466,7 +473,7 @@ class PDTestDrawContours(unittest.TestCase):
                             draw_contours=True,
                             circle_plants=False)
         pd.detect_plants()
-        self.pixel_mean = get_average_pixel_value(pd.image.image)
+        self.pixel_mean = get_average_pixel_value(pd.image.images['current'])
         self.expected_pixel_mean = 72.9
 
     def test_draw_contours(self):
@@ -524,10 +531,15 @@ class PDTestTextOutput(unittest.TestCase):
     def tearDown(self):
         self.outfile.close()
         sys.stdout = sys.__stdout__
+        os.remove('text_output_test.txt')
 
 
 class PDTestDebugMode(unittest.TestCase):
     """Test debug option"""
+
+    def setUp(self):
+        self.outfile = open('text_output_test.txt', 'w')
+        sys.stdout = self.outfile
 
     def test_debug_no_coordinates(self):
         """Test debug mode without coordinate conversion"""
@@ -548,6 +560,11 @@ class PDTestDebugMode(unittest.TestCase):
         pd.detect_plants()
         self.assertTrue(os.path.exists('soil_image_coordinates_found.jpg'))
         os.remove('soil_image_masked2.jpg')
+
+    def tearDown(self):
+        self.outfile.close()
+        sys.stdout = sys.__stdout__
+        os.remove('text_output_test.txt')
 
 
 class PDTestSafeRemove(unittest.TestCase):

@@ -16,6 +16,8 @@ class Parameters(object):
         """Set initial attributes and defaults."""
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+        self.defaults = {'blur': 15, 'morph': 6, 'iterations': 4,
+                         'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
         self.array = None  # default
         self.kernel_type = 'ellipse'
         self.morph_type = 'close'
@@ -69,15 +71,21 @@ class Parameters(object):
         except IOError:
             self.tmp_dir = "/tmp/"
             _load(self.tmp_dir)
+        self._add_missing()
 
     def load_env_var(self):
         """Read input parameters from JSON in environment variable."""
         self.parameters = json.loads(os.environ[self.env_var_name])
+        self._add_missing()
+
+    def _add_missing(self):
+        for key, value in self.defaults.items():
+            if key not in self.parameters:
+                self.parameters[key] = value
 
     def load_defaults_for_env_var(self):
         """Load default input parameters for environment variable."""
-        self.parameters = {'blur': 15, 'morph': 6, 'iterations': 4,
-                           'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
+        self.parameters = self.defaults
 
     def print_input(self):
         """Print input parameters."""

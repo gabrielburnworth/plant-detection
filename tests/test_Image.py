@@ -3,6 +3,7 @@
 
 For Plant Detection.
 """
+import os
 import unittest
 import numpy as np
 from PD.Image import Image
@@ -35,5 +36,11 @@ class ImageTest(unittest.TestCase):
         self.image.image_name = None
         self.image.save('large', image=large_image)
         self.image.load('large.jpg')
-        new_height = self.image.image.shape[0]
+        new_height = self.image.images['current'].shape[0]
         self.assertEqual(new_height, 600)
+
+    def tearDown(self):
+        try:
+            os.remove('large.jpg')
+        except OSError:
+            pass

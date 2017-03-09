@@ -52,12 +52,17 @@ class CheckCameraTest(unittest.TestCase):
 class CheckImageSaveTest(unittest.TestCase):
     """Save captured image"""
 
+    def setUp(self):
+        self.capture = Capture()
+        shape = [100, 100, 3]
+        self.capture.image = np.full(shape, 200, np.uint8)
+        directory = os.path.dirname(os.path.realpath(__file__))[:-6] + os.sep
+        self.expected_filename = directory + 'capture.jpg'
+
     def test_image_save(self):
         """Test image save"""
-        capture = Capture()
-        shape = [100, 100, 3]
-        capture.image = np.full(shape, 200, np.uint8)
-        img_filename = capture.save()
-        directory = os.path.dirname(os.path.realpath(__file__))[:-6] + os.sep
-        expected_filename = directory + 'capture.jpg'
-        self.assertEqual(img_filename, expected_filename)
+        img_filename = self.capture.save()
+        self.assertEqual(img_filename, self.expected_filename)
+
+    def tearDown(self):
+        os.remove(self.expected_filename)

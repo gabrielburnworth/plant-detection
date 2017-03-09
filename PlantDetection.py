@@ -193,28 +193,17 @@ class PlantDetection(object):
 
         # Set calibration input parameters
         if self.args['from_env_var']:
-            try:
-                self.params.load_env_var()
-                calibration_input = self.params.parameters.copy()
-            except (KeyError, ValueError):
-                print("Warning: Environment variable calibration "
-                      "parameters load failed.")
-                calibration_input = None
+            calibration_input = 'env_var'
         elif self.args['from_file']:  # try to load from file
-            try:
-                self.params.load()
-                calibration_input = self.params.parameters.copy()
-            except IOError:
-                print("Warning: Calibration data file load failed. "
-                      "Using defaults.")
-                calibration_input = None
+            calibration_input = 'file'
         else:  # Use default calibration inputs
             calibration_input = None
 
         # Call coordinate conversion module
         self.p2c = Pixel2coord(self.plant_db,
                                calibration_image=self.args['calibration_img'],
-                               calibration_data=calibration_input)
+                               load_data_from=calibration_input)
+        self.p2c.debug = self.args['debug']
 
     def calibrate(self):
         """Calibrate the camera for plant detection.
@@ -230,7 +219,7 @@ class PlantDetection(object):
 
     def _calibration_output(self):  # save calibration data
         if self.args['save']:
-            self.p2c.image.image = self.p2c.image.marked
+            self.p2c.image.images['current'] = self.p2c.image.images['marked']
             self.p2c.image.save('calibration_result')
 
         # Print verbose results
@@ -303,15 +292,19 @@ class PlantDetection(object):
 
     def _coordinate_conversion(self):  # determine detected object coordinates
         # Load calibration data
+        load_data_from = None
+        calibration_data = None
         if self.args['from_env_var']:
-            calibration_data = 'env_var'
+            load_data_from = 'env_var'
         elif self.args['from_file']:
-            calibration_data = 'file'
+            load_data_from = 'file'
         else:  # use data saved in self.params
             calibration_data = self.params.calibration_data
         # Initialize coordinate conversion module
         self.p2c = Pixel2coord(
-            self.plant_db, calibration_data=calibration_data)
+            self.plant_db,
+            load_data_from=load_data_from, calibration_data=calibration_data)
+        self.p2c.debug = self.args['debug']
         # Check for coordinate conversion calibration results
         try:
             self.p2c.calibration_params['coord_scale']
@@ -339,7 +332,7 @@ class PlantDetection(object):
             self.plant_db.upload_weeds()  # add weeds to FarmBot Farm Designer
         if self.args['debug']:
             self.image.save_annotated('contours')
-            self.image.image = self.image.marked
+            self.image.images['current'] = self.image.images['marked']
             self.image.save_annotated('coordinates_found')
         if self.args['circle_plants']:
             self.image.label(self.p2c)  # mark objects with colored circles
@@ -377,7 +370,7 @@ class PlantDetection(object):
                 self.plant_db.print_count()  # print number of objects detected
             if self.args['verbose'] and self.args['text_output']:
                 self.plant_db.print_pixel()  # print object pixel location text
-            self.image.image = self.image.marked
+            self.image.images['current'] = self.image.images['marked']
 
         self._show_detection_output()  # show output data
         self._save_detection_output()  # save output data
@@ -405,7 +398,7 @@ class PlantDetection(object):
         if self.args['save'] or self.args['debug']:
             self.image.save('marked')
         elif self.args['GUI']:
-            self.final_marked_image = self.image.marked
+            self.final_marked_image = self.image.images['marked']
 
         # Save input parameters
         if self.args['from_env_var']:

@@ -31,7 +31,8 @@ class Pixel2coord(object):
     """
 
     def __init__(self, plant_db,
-                 calibration_image=None, calibration_data=None):
+                 calibration_image=None,
+                 calibration_data=None, load_data_from=None):
         """Set initial attributes.
 
         Arguments:
@@ -63,8 +64,8 @@ class Pixel2coord(object):
                          'calibration_iters': 3}
 
         # Data and parameter preparation
-        self.cparams = None
-        self._calibration_data_preparation(calibration_data)
+        self.cparams = Parameters()
+        self._calibration_data_preparation(calibration_data, load_data_from)
         # Image preparation
         self.image = None
         self.camera_rotation = 0
@@ -80,51 +81,76 @@ class Pixel2coord(object):
         self.get_bot_coordinates = Capture().getcoordinates
         self.json_calibration_data = None
 
-    def _calibration_data_preparation(self, calibration_data):
-        if calibration_data is None:  # load defaults
-            self.calibration_params = self.defaults
-        elif calibration_data == 'file':
-            try:
-                self.load_calibration_parameters()
-            except IOError:
-                print("Warning: Calibration data file load failed. "
-                      "Using defaults.")
-                self.calibration_params = self.defaults
-        elif calibration_data == 'env_var':
-            try:
-                self.load_calibration_data_from_env()
-            except ValueError:
-                print("Warning: Calibration data env var load failed. "
-                      "Using defaults.")
-                self.calibration_params = self.defaults
-        else:  # load the data provided
+    def _calibration_data_preparation(self, calibration_data=None,
+                                      load_data_from=None):
+        if calibration_data is not None:
             self.calibration_params = calibration_data
-            temp_inputs = self.calibration_params
-            self.calibration_params = {}
-            try:
-                self.load_calibration_data_from_env()
-            except ValueError:  # no additional calibration inputs to add
-                self.calibration_params = temp_inputs
-            else:  # add additional calibration inputs
-                for key, value in self.calibration_params.items():
-                    if key not in temp_inputs:
-                        temp_inputs[key] = value
-                self.calibration_params = temp_inputs
+        elif load_data_from == 'file':
+            # self._load_parameters(self.load_calibration_parameters,
+            #                       IOError)
+            self._load_inputs(self.cparams.load, IOError)
+            self._additional_calibration_inputs(
+                self.load_calibration_parameters, IOError)
             self.initialize_data_keys()
+        elif load_data_from == 'env_var':
+            # self._load_parameters(self.load_calibration_data_from_env,
+            #                       ValueError)
+            self._load_inputs(
+                self.cparams.load_env_var, (KeyError, ValueError))
+            self._additional_calibration_inputs(
+                self.load_calibration_data_from_env, ValueError)
+            self.initialize_data_keys()
+        else:  # load defaults
+            self.calibration_params = self.defaults
 
-        self.cparams = Parameters()
         self.set_calibration_input_params()
+
+    def _load_inputs(self, get_inputs, error):
+        # load only image processing input parameters
+        try:
+            get_inputs()  # Parameters object
+        except error:
+            print("Warning: Input parameter load failed. "
+                  "Using Defaults.")
+            self.calibration_params = self.cparams.defaults.copy()
+        else:
+            self.calibration_params = self.cparams.parameters.copy()
+
+    def _load_parameters(self, get_parameters, error):
+        # load all parameters necessary for calibration / coordinate conversion
+        try:
+            get_parameters()
+        except error:
+            print("Warning: Calibration data load failed. "
+                  "Using defaults.")
+            self.calibration_params = self.defaults
+
+    def _additional_calibration_inputs(self, get_additional, error):
+        # load extra inputs needed (when using _load_inputs only)
+        temp_inputs = self.calibration_params
+        self.calibration_params = {}
+        try:
+            get_additional()
+        except error:  # no additional calibration inputs to add
+            self.calibration_params = temp_inputs
+        else:  # add additional calibration inputs
+            for key, value in self.calibration_params.items():
+                if key not in temp_inputs:
+                    temp_inputs[key] = value
+            self.calibration_params = temp_inputs
 
     def _calibration_image_preparation(self, calibration_image):
         if calibration_image is not None:
             self.image = Image(self.cparams, self.plant_db)
             self.image.load(calibration_image)
             self.calibration_params['center_pixel_location'] = [
-                int(a / 2) for a in self.image.image.shape[:2][::-1]]
+                int(a / 2) for a in
+                self.image.images['current'].shape[:2][::-1]]
             self.image.calibration_debug = self.debug
 
         if self.camera_rotation > 0:
-            self.image.image = np.rot90(self.image)
+            self.image.images['current'] = np.rot90(
+                self.image.images['current'])
 
     def save_calibration_parameters(self):
         """Save calibration parameters to file."""
@@ -331,7 +357,7 @@ class Pixel2coord(object):
 
     def _calibration_output(self, total_rotation_angle):
         if self.viewoutputimage:
-            self.image.image = self.image.marked
+            self.image.images['current'] = self.image.images['marked']
             self.image.show()
         while abs(total_rotation_angle) > 360:
             if total_rotation_angle < 0:
@@ -360,7 +386,7 @@ class Pixel2coord(object):
         self.p2c(self.plant_db)
         self.plant_db.print_coordinates()
         if self.viewoutputimage:
-            self.image.image = self.image.marked
+            self.image.images['current'] = self.image.images['marked']
             self.image.show()
 
 
@@ -392,5 +418,5 @@ if __name__ == "__main__":
     P2C.image.initial_processing()
     P2C.image.find()
     if P2C.viewoutputimage:
-        P2C.image.image = P2C.image.marked
+        P2C.image.images['current'] = P2C.image.images['marked']
         P2C.image.show()

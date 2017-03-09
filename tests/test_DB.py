@@ -3,6 +3,7 @@
 
 For Plant Detection.
 """
+import os
 import sys
 import unittest
 from PD.DB import DB
@@ -82,3 +83,4 @@ class DBTest(unittest.TestCase):
     def tearDown(self):
         self.outfile.close()
         sys.stdout = sys.__stdout__
+        os.remove('db_text_output_test.txt')

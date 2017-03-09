@@ -3,6 +3,7 @@
 
 For Plant Detection.
 """
+import os
 import sys
 import cv2
 import unittest
@@ -75,3 +76,11 @@ class P2CTest(unittest.TestCase):
     def tearDown(self):
         self.outfile.close()
         sys.stdout = sys.__stdout__
+        os.remove('p2c_text_output_test.txt')
+        try:
+            os.remove('zero.jpg')
+            os.remove('one.jpg')
+            os.remove('two.jpg')
+            os.remove('three.jpg')
+        except OSError:
+            pass
