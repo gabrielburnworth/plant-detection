@@ -34,14 +34,16 @@ def _encode_coordinates(x_coord, y_coord, z_coord):
     return coords
 
 
-def _create_node(kind, args):
+def create_node(kind=None, args=None):
+    """Create a kind, args Celery Script node."""
     node = {}
     node['kind'] = kind
     node['args'] = args
     return node
 
 
-def _create_pair(label, value):
+def create_pair(label=None, value=None):
+    """Create a label, value Celery Script node."""
     pair = {}
     pair['label'] = label
     pair['value'] = value
@@ -51,13 +53,13 @@ def _create_pair(label, value):
 def _saved_location_node(name, _id):
     args = {}
     args[name + '_id'] = _id
-    saved_location = _create_node(name, args)
+    saved_location = create_node(kind=name, args=args)
     return saved_location
 
 
 def _coordinate_node(x_coord, y_coord, z_coord):
     coordinates = _encode_coordinates(x_coord, y_coord, z_coord)
-    coordinate = _create_node('coordinate', coordinates)
+    coordinate = create_node(kind='coordinate', args=coordinates)
     return coordinate
 
 
@@ -80,9 +82,9 @@ def add_point(point_x, point_y, point_z, point_r):
     args = {}
     args['location'] = _coordinate_node(point_x, point_y, point_z)
     args['radius'] = point_r
-    point = _create_node('add_point', args)
-    created_by = _create_pair('created_by', 'plant-detection')
-    point['body'] = [_create_node('pair', created_by)]
+    point = create_node(kind='add_point', args=args)
+    created_by = create_pair(label='created_by', value='plant-detection')
+    point['body'] = [create_node(kind='pair', args=created_by)]
     return point
 
 
@@ -98,9 +100,9 @@ def set_user_env(label, value):
             label: <ENV VAR name>
             value: <ENV VAR value>
     """
-    _set_user_env = _create_node('set_user_env', {})
-    env_var = _create_pair(label, value)
-    _set_user_env['body'] = [_create_node('pair', env_var)]
+    _set_user_env = create_node(kind='set_user_env', args={})
+    env_var = create_pair(label=label, value=value)
+    _set_user_env['body'] = [create_node(kind='pair', args=env_var)]
     return _set_user_env
 
 
@@ -126,7 +128,7 @@ def move_absolute(location, offset, speed):
         args['location'] = _coordinate_node(*location)
     args['offset'] = _coordinate_node(*offset)
     args['speed'] = speed
-    _move_absolute = _create_node('move_absolute', args)
+    _move_absolute = create_node(kind='move_absolute', args=args)
     return _move_absolute
 
 
@@ -146,14 +148,14 @@ def data_update(endpoint, ids_):
     """
     args = {}
     args['value'] = 'updated'
-    _data_update = _create_node('data_update', args)
+    _data_update = create_node(kind='data_update', args=args)
     if isinstance(ids_, list):
         body = []
         for id_ in ids_:
-            _endpoint = _create_pair(endpoint, str(id_))
-            body.append(_create_node('pair', _endpoint))
+            _endpoint = create_pair(label=endpoint, value=str(id_))
+            body.append(create_node(kind='pair', args=_endpoint))
     else:
-        _endpoint = _create_pair(endpoint, ids_)
-        body = [_create_node('pair', _endpoint)]
+        _endpoint = create_pair(label=endpoint, value=ids_)
+        body = [create_node(kind='pair', args=_endpoint)]
     _data_update['body'] = body
     return _data_update

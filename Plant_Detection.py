@@ -97,64 +97,69 @@ class Plant_Detection(object):
         """Read arguments (and change settings) and initialize modules."""
         # Default Data Inputs
         self.image = None
-        self.calibration_img = None
         self.plant_db = DB()
 
         # Default Parameter Inputs
         self.params = Parameters()
 
-        # Default Program Options
-        self.coordinates = False
-        self.from_file = False
-        self.from_env_var = False
-        self.clump_buster = False
-        self.gui = False
-        self.app = False
-
-        # Default Output Options
-        self.debug = False
-        self.save = True
-        self.text_output = True
-        self.verbose = True
-        self.print_all_json = False
-
-        # Default Graphic Options
-        self.grey_out = False
-        self.draw_contours = True
-        self.circle_plants = True
-
         # Load keyword argument inputs
         self._data_inputs(kwargs)
         self._parameter_inputs(kwargs)
-        self._program_options(kwargs)
-        self._output_options(kwargs)
-        self._graphic_options(kwargs)
+        self.args = kwargs
+
+        # Set remaining arguments to defaults
+        self._set_defaults()
 
         # Changes based on inputs
-        if self.calibration_img is not None:
-            self.coordinates = True
-        self.plant_db.output_text = self.verbose
-        if self.gui:
-            self.save = False
-            self.text_output = False
-        if self.app:
-            self.verbose = False
-            self.from_env_var = True
+        if self.args['calibration_img'] is not None:
+            # self.coordinates = True
+            self.args['coordinates'] = True
+        self.plant_db.output_text = self.args['verbose']
+        if self.args['GUI']:
+            self.args['save'] = False
+            self.args['text_output'] = False
+        if self.args['app']:
+            self.args['verbose'] = False
+            self.args['from_env_var'] = True
 
         # Remaining initialization
         self.p2c = None
         self.capture = Capture().capture
         self.final_marked_image = None
-        self.output_celeryscript_points = False
         self.plant_db.tmp_dir = None
+
+    def _set_defaults(self):
+        default_args = {
+            # Default Data Inputs
+            'image': None, 'calibration_img': None, 'known_plants': None,
+            # Default Program Options
+            'coordinates': False, 'from_file': False, 'from_env_var': False,
+            'clump_buster': False, 'GUI': False, 'app': False,
+            # Default Output Options
+            'debug': False, 'save': True,
+            'text_output': True, 'verbose': True, 'print_all_json': False,
+            'output_celeryscript_points': False,
+            # Default Graphic Options
+            'grey_out': False, 'draw_contours': True, 'circle_plants': True,
+            # Default processing options
+            'array': None,
+            'blur': self.params.parameters['blur'],
+            'morph': self.params.parameters['morph'],
+            'iterations': self.params.parameters['iterations'],
+            'HSV_min': [self.params.parameters['H'][0],
+                        self.params.parameters['S'][0],
+                        self.params.parameters['V'][0]],
+            'HSV_max': [self.params.parameters['H'][1],
+                        self.params.parameters['S'][1],
+                        self.params.parameters['V'][1]],
+        }
+        for key, value in default_args.items():
+            if key not in self.args:
+                self.args[key] = value
 
     def _data_inputs(self, kwargs):
         """Load data inputs from keyword arguments."""
         for key in kwargs:
-            if key == 'image':
-                self.image = kwargs[key]
-            if key == 'calibration_img':
-                self.calibration_img = kwargs[key]
             if key == 'known_plants':
                 self.plant_db.plants['known'] = kwargs[key]
 
@@ -180,54 +185,14 @@ class Plant_Detection(object):
                 self.params.parameters['S'][1] = hsv_max[1]
                 self.params.parameters['V'][1] = hsv_max[2]
 
-    def _program_options(self, kwargs):
-        """Load program options from keyword arguments."""
-        for key in kwargs:
-            if key == 'coordinates':
-                self.coordinates = kwargs[key]
-            if key == 'from_file':
-                self.from_file = kwargs[key]
-            if key == 'from_env_var':
-                self.from_env_var = kwargs[key]
-            if key == 'clump_buster':
-                self.clump_buster = kwargs[key]
-            if key == 'GUI':
-                self.gui = kwargs[key]
-            if key == 'app':
-                self.app = kwargs[key]
-
-    def _output_options(self, kwargs):
-        """Load output options from keyword arguments."""
-        for key in kwargs:
-            if key == 'debug':
-                self.debug = kwargs[key]
-            if key == 'save':
-                self.save = kwargs[key]
-            if key == 'text_output':
-                self.text_output = kwargs[key]
-            if key == 'verbose':
-                self.verbose = kwargs[key]
-            if key == 'print_all_json':
-                self.print_all_json = kwargs[key]
-
-    def _graphic_options(self, kwargs):
-        """Load graphic options from keyword arguments."""
-        for key in kwargs:
-            if key == 'grey_out':
-                self.grey_out = kwargs[key]
-            if key == 'draw_contours':
-                self.draw_contours = kwargs[key]
-            if key == 'circle_plants':
-                self.circle_plants = kwargs[key]
-
     def _calibration_input(self):  # provide inputs to calibration
-        if self.calibration_img is None and self.coordinates:
+        if self.args['calibration_img'] is None and self.args['coordinates']:
             # Calibration requested, but no image provided.
             # Take a calibration image.
-            self.calibration_img = self.capture()
+            self.args['calibration_img'] = self.capture()
 
         # Set calibration input parameters
-        if self.from_env_var:
+        if self.args['from_env_var']:
             try:
                 self.params.load_env_var()
                 calibration_input = self.params.parameters.copy()
@@ -235,7 +200,7 @@ class Plant_Detection(object):
                 print("Warning: Environment variable calibration "
                       "parameters load failed.")
                 calibration_input = None
-        elif self.from_file:  # try to load from file
+        elif self.args['from_file']:  # try to load from file
             try:
                 self.params.load()
                 calibration_input = self.params.parameters.copy()
@@ -248,7 +213,7 @@ class Plant_Detection(object):
 
         # Call coordinate conversion module
         self.p2c = Pixel2coord(self.plant_db,
-                               calibration_image=self.calibration_img,
+                               calibration_image=self.args['calibration_img'],
                                calibration_data=calibration_input)
 
     def calibrate(self):
@@ -264,17 +229,17 @@ class Plant_Detection(object):
         self._calibration_output()  # save calibration data
 
     def _calibration_output(self):  # save calibration data
-        if self.save:
+        if self.args['save']:
             self.p2c.image.image = self.p2c.image.marked
             self.p2c.image.save('calibration_result')
 
         # Print verbose results
-        if self.verbose and self.text_output:
+        if self.args['verbose'] and self.args['text_output']:
             if self.p2c.calibration_params['total_rotation_angle'] != 0:
                 print(" Note: required rotation of "
                       "{:.2f} degrees executed.".format(
                           self.p2c.calibration_params['total_rotation_angle']))
-            if self.debug:
+            if self.args['debug']:
                 # print number of objects detected
                 self.plant_db.print_count(calibration=True)
                 # print coordinate locations of calibration objects
@@ -283,23 +248,23 @@ class Plant_Detection(object):
                 print('')
 
         # Print condensed output if verbose output is not chosen
-        if self.text_output and not self.verbose:
+        if self.args['text_output'] and not self.args['verbose']:
             print("Calibration complete. (rotation:{}, scale:{})".format(
                 self.p2c.calibration_params['total_rotation_angle'],
                 self.p2c.calibration_params['coord_scale']))
 
         # Save calibration data
-        if self.from_env_var:
+        if self.args['from_env_var']:
             # to environment variable
             self.p2c.save_calibration_data_to_env()
-        elif self.from_file:  # to file
+        elif self.args['from_file']:  # to file
             self.p2c.save_calibration_parameters()
         else:  # to Parameters() instance
             self.params.calibration_data = self.p2c.calibration_params
 
     def _detection_input(self):  # provide input to detect_plants
         # Load input parameters
-        if self.from_file:
+        if self.args['from_file']:
             # Requested to load detection parameters from file
             try:
                 self.params.load()
@@ -307,9 +272,9 @@ class Plant_Detection(object):
                 print("Warning: Input parameter file load failed. "
                       "Using defaults.")
             self.plant_db.load_plants_from_file()
-        if self.app:
+        if self.args['app']:
             self.plant_db.load_plants_from_web_app()
-        if self.from_env_var:
+        if self.args['from_env_var']:
             # Requested to load detection parameters from json ENV variable
             try:
                 self.params.load_env_var()
@@ -318,29 +283,29 @@ class Plant_Detection(object):
                 self.params.load_defaults_for_env_var()
 
         # Print input parameters and filename of image to process
-        if self.verbose and self.text_output:
+        if self.args['verbose'] and self.args['text_output']:
             self.params.print_input()
-            print("\nProcessing image: {}".format(self.image))
+            print("\nProcessing image: {}".format(self.args['image']))
 
     def _detection_image(self):  # get image to process
         # Get image to process
-        if self.image is None:
+        if self.args['image'] is None:
             # No image provided. Capture one.
             self.image = Image(self.params, self.plant_db)
             self.image.capture()
-            if self.debug:
+            if self.args['debug']:
                 self.image.save('photo')
         else:  # Image provided. Load it.
-            filename = self.image
+            filename = self.args['image']
             self.image = Image(self.params, self.plant_db)
             self.image.load(filename)
-        self.image.debug = self.debug
+        self.image.debug = self.args['debug']
 
     def _coordinate_conversion(self):  # determine detected object coordinates
         # Load calibration data
-        if self.from_env_var:
+        if self.args['from_env_var']:
             calibration_data = 'env_var'
-        elif self.from_file:
+        elif self.args['from_file']:
             calibration_data = 'file'
         else:  # use data saved in self.params
             calibration_data = self.params.calibration_data
@@ -355,7 +320,8 @@ class Plant_Detection(object):
                   "not found. Run calibration first.")
             sys.exit(0)
         # Determine object coordinates
-        self.image.coordinates(self.p2c, draw_contours=self.draw_contours)
+        self.image.coordinates(self.p2c,
+                               draw_contours=self.args['draw_contours'])
         # Organize objects into plants and weeds
         self.plant_db.identify()
         if self.plant_db.plants['safe_remove']:
@@ -363,19 +329,19 @@ class Plant_Detection(object):
 
     def _coordinate_conversion_output(self):  # output detected object data
         # Print and output results
-        if self.text_output:
+        if self.args['text_output']:
             self.plant_db.print_count()  # print number of objects detected
-        if self.verbose and self.text_output:
+        if self.args['verbose'] and self.args['text_output']:
             self.plant_db.print_identified()  # print organized plant data
-        if self.output_celeryscript_points:
+        if self.args['output_celeryscript_points']:
             self.plant_db.output_celery_script()  # print points JSON to stdout
-        if self.app:
+        if self.args['app']:
             self.plant_db.upload_weeds()  # add weeds to FarmBot Farm Designer
-        if self.debug:
+        if self.args['debug']:
             self.image.save_annotated('contours')
             self.image.image = self.image.marked
             self.image.save_annotated('coordinates_found')
-        if self.circle_plants:
+        if self.args['circle_plants']:
             self.image.label(self.p2c)  # mark objects with colored circles
         self.image.grid(self.p2c)  # add coordinate grid and features
 
@@ -389,27 +355,27 @@ class Plant_Detection(object):
         self.image.initial_processing()
 
         # Optionally break up masses by splitting them into quarters
-        if self.clump_buster:
+        if self.args['clump_buster']:
             self.image.clump_buster()
 
         # Optionally grey out regions not detected as objects
-        if self.grey_out:
+        if self.args['grey_out']:
             self.image.grey()
 
         # Return coordinates if requested
-        if self.coordinates:  # Convert pixel locations to coordinates
+        if self.args['coordinates']:  # Convert pixel locations to coordinates
             self._coordinate_conversion()
             self._coordinate_conversion_output()
         else:  # No coordinate conversion
             # get pixel locations of objects
-            self.image.find(draw_contours=self.draw_contours)
-            if self.circle_plants:
+            self.image.find(draw_contours=self.args['draw_contours'])
+            if self.args['circle_plants']:
                 self.image.label()  # Mark plants with red circle
-            if self.debug:
+            if self.args['debug']:
                 self.image.save_annotated('contours')
-            if self.text_output:
+            if self.args['text_output']:
                 self.plant_db.print_count()  # print number of objects detected
-            if self.verbose and self.text_output:
+            if self.args['verbose'] and self.args['text_output']:
                 self.plant_db.print_pixel()  # print object pixel location text
             self.image.image = self.image.marked
 
@@ -418,7 +384,7 @@ class Plant_Detection(object):
 
     def _show_detection_output(self):  # show detect_plants output
         # Print raw JSON to STDOUT
-        if self.print_all_json:
+        if self.args['print_all_json']:
             print("\nJSON:")
             print(self.params.parameters)
             print(self.plant_db.plants)
@@ -426,7 +392,7 @@ class Plant_Detection(object):
                 print(self.p2c.calibration_params)
 
         # Print condensed inputs if verbose output is not chosen
-        if self.text_output and not self.verbose:
+        if self.args['text_output'] and not self.args['verbose']:
             print('{}: {}'.format('known plants input',
                                   self.plant_db.plants['known']))
             print('{}: {}'.format('parameters input',
@@ -436,24 +402,24 @@ class Plant_Detection(object):
 
     def _save_detection_output(self):  # save detect_plants output
         # Final marked image
-        if self.save or self.debug:
+        if self.args['save'] or self.args['debug']:
             self.image.save('marked')
-        elif self.gui:
+        elif self.args['GUI']:
             self.final_marked_image = self.image.marked
 
         # Save input parameters
-        if self.from_env_var:
+        if self.args['from_env_var']:
             # to environment variable
             self.params.save_to_env_var()
-        elif self.save:
+        elif self.args['save']:
             # to file
             self.params.save()
-        elif self.gui:
+        elif self.args['GUI']:
             # to file for GUI
             self.params.save()
 
         # Save plants
-        if self.save:
+        if self.args['save']:
             self.plant_db.save_plants()
 
 if __name__ == "__main__":

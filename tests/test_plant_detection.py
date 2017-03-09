@@ -159,99 +159,74 @@ class PDTestArgs(unittest.TestCase):
     """Test plant detection input arguments"""
 
     def setUp(self):
-        self.image = 'soil_image.jpg'
-        self.coordinates = True
-        self.calibration_img = "PD/p2c_test_calibration.jpg"
-        self.known_plants = [{'x': 200, 'y': 600, 'radius': 100},
-                             {'x': 900, 'y': 200, 'radius': 120}]
-        self.blur = 9
-        self.morph = 7
-        self.iterations = 3
-        self.array = [{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
-                      {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
-        self.debug = True
-        self.save = False
-        self.clump_buster = True
-        self.HSV_min = [15, 15, 15]
-        self.HSV_max = [85, 245, 245]
-        self.from_file = True
-        self.from_env_var = True
         self.default_input_params = {'blur': 5, 'morph': 5, 'iterations': 1,
                                      'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.set_input_params = {'blur': 9, 'morph': 7, 'iterations': 3,
                                  'H': [15, 85], 'S': [15, 245], 'V': [15, 245]}
-        self.text_output = False
-        self.verbose = False
-        self.print_all_json = True
-        self.grey_out = True
-        self.draw_contours = False
-        self.circle_plants = False
-        self.GUI = True
-        self.app = True
+        self.default_func_args = {
+            'image': None,
+            'coordinates': False,
+            'calibration_img': None,
+            'known_plants': None,
+            'blur': self.default_input_params['blur'],
+            'morph': self.default_input_params['morph'],
+            'iterations': self.default_input_params['iterations'],
+            'array': None,
+            'debug': False, 'save': True, 'clump_buster': False,
+            'HSV_min': [self.default_input_params['H'][0],
+                        self.default_input_params['S'][0],
+                        self.default_input_params['V'][0]],
+            'HSV_max': [self.default_input_params['H'][1],
+                        self.default_input_params['S'][1],
+                        self.default_input_params['V'][1]],
+            'from_file': False, 'from_env_var': False,
+            'text_output': True, 'verbose': True,
+            'print_all_json': False,
+            'output_celeryscript_points': False,
+            'grey_out': False,
+            'draw_contours': True, 'circle_plants': True,
+            'GUI': False, 'app': False,
+        }
+        self.func_args = {}
+        for key, value in self.default_func_args.items():
+            if isinstance(value, bool):
+                self.func_args[key] = not value
+            if any(key == _key for _key in ['blur', 'morph', 'iterations']):
+                self.func_args[key] = self.set_input_params[key]
+        self.func_args['image'] = 'soil_image.jpg'
+        self.func_args['calibration_img'] = 'PD/p2c_test_calibration.jpg'
+        self.func_args['known_plants'] = [
+            {'x': 200, 'y': 600, 'radius': 100},
+            {'x': 900, 'y': 200, 'radius': 120}]
+        self.func_args['array'] = [
+            {"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+            {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
+        self.func_args['HSV_min'] = [
+            self.set_input_params['H'][0],
+            self.set_input_params['S'][0],
+            self.set_input_params['V'][0]]
+        self.func_args['HSV_max'] = [
+            self.set_input_params['H'][1],
+            self.set_input_params['S'][1],
+            self.set_input_params['V'][1]]
 
     def test_input_args(self):
         """Set all arguments"""
-        pd = Plant_Detection(
-            image=self.image,
-            coordinates=self.coordinates,
-            calibration_img=self.calibration_img,
-            known_plants=self.known_plants,
-            blur=self.blur, morph=self.morph, iterations=self.iterations,
-            array=self.array,
-            debug=self.debug, save=self.save, clump_buster=self.clump_buster,
-            HSV_min=self.HSV_min, HSV_max=self.HSV_max,
-            from_file=self.from_file,
-            from_env_var=self.from_env_var,
-            text_output=self.text_output,
-            verbose=self.verbose,
-            print_all_json=self.print_all_json,
-            grey_out=self.grey_out,
-            draw_contours=self.draw_contours,
-            circle_plants=self.circle_plants,
-            GUI=self.GUI, app=self.app
-        )
-        self.assertEqual(pd.image, self.image)
-        self.assertEqual(pd.coordinates, self.coordinates)
-        self.assertEqual(pd.calibration_img, self.calibration_img)
-        self.assertEqual(pd.plant_db.plants['known'], self.known_plants)
+        self.maxDiff = None
+        pd = Plant_Detection(**self.func_args)
+        self.assertEqual(pd.args, self.func_args)
+        self.assertEqual(pd.plant_db.plants['known'],
+                         self.func_args['known_plants'])
         self.assertEqual(pd.params.parameters, self.set_input_params)
-        self.assertEqual(pd.params.array, self.array)
-        self.assertEqual(pd.debug, self.debug)
-        self.assertEqual(pd.save, self.save)
-        self.assertEqual(pd.clump_buster, self.clump_buster)
-        self.assertEqual(pd.from_file, self.from_file)
-        self.assertEqual(pd.from_env_var, self.from_env_var)
-        self.assertEqual(pd.text_output, self.text_output)
-        self.assertEqual(pd.verbose, self.verbose)
-        self.assertEqual(pd.print_all_json, self.print_all_json)
-        self.assertEqual(pd.grey_out, self.grey_out)
-        self.assertEqual(pd.draw_contours, self.draw_contours)
-        self.assertEqual(pd.circle_plants, self.circle_plants)
-        self.assertEqual(pd.gui, self.GUI)
-        self.assertEqual(pd.app, self.app)
+        self.assertEqual(pd.params.array, self.func_args['array'])
 
     def test_input_defaults(self):
         """Use defaults"""
         pd = Plant_Detection()
-        self.assertEqual(pd.image, None)
-        self.assertEqual(pd.coordinates, False)
-        self.assertEqual(pd.calibration_img, None)
+        self.assertEqual(pd.args, self.default_func_args)
         self.assertEqual(pd.plant_db.plants['known'], [])
         self.assertEqual(pd.params.parameters, self.default_input_params)
         self.assertEqual(pd.params.array, None)
-        self.assertEqual(pd.debug, False)
-        self.assertEqual(pd.save, True)
-        self.assertEqual(pd.clump_buster, False)
-        self.assertEqual(pd.from_file, False)
-        self.assertEqual(pd.from_env_var, False)
-        self.assertEqual(pd.text_output, True)
-        self.assertEqual(pd.verbose, True)
-        self.assertEqual(pd.print_all_json, False)
-        self.assertEqual(pd.grey_out, False)
-        self.assertEqual(pd.draw_contours, True)
-        self.assertEqual(pd.circle_plants, True)
-        self.assertEqual(pd.gui, False)
-        self.assertEqual(pd.app, False)
 
 
 class PDTestOutput(unittest.TestCase):

@@ -38,7 +38,7 @@ class Pixel2coord(object):
             Database() instance
 
         Optional Keyword Arguments:
-            calibration_image: filename (str) or image object (default: None)
+            calibration_image (str): filename (default: None)
             calibration_data: P2C().calibration_params JSON,
                               or 'file' or 'env_var' string
                               (default: None)
@@ -107,23 +107,7 @@ class Pixel2coord(object):
     def _calibration_image_preparation(self, calibration_image):
         if calibration_image is not None:
             self.image = Image(self.cparams, self.plant_db)
-            if isinstance(calibration_image, str):
-                self.image.load(calibration_image)
-            else:
-                self.image.image = calibration_image
-                try:
-                    testfile = 'test_write.try_to_write'
-                    tryfile = open(testfile, "w")
-                    tryfile.close()
-                    os.remove(testfile)
-                except IOError:
-                    self.image.dir = '/tmp/images/'
-                    self.image.save('capture')
-                    self.image.load(self.image.dir + 'capture.jpg')
-                    self.image.dir = self.dir[:-3]
-                else:
-                    self.image.save('capture')
-                    self.image.load(self.dir[:-3] + 'capture.jpg')
+            self.image.load(calibration_image)
             self.calibration_params['center_pixel_location'] = [
                 int(a / 2) for a in self.image.image.shape[:2][::-1]]
             self.image.calibration_debug = self.debug

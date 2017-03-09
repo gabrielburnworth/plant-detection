@@ -64,6 +64,20 @@ class Capture(object):
                     print("No camera detected at video{}.".format(
                         self.camera_port))
 
+    def save(self):
+        """Save captured image."""
+        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        try:
+            testfilename = directory + 'test_write.try_to_write'
+            testfile = open(testfilename, "w")
+            testfile.close()
+            os.remove(testfilename)
+        except IOError:
+            directory = '/tmp/images/'
+            cv2.imwrite(directory + 'capture.jpg', self.image)
+        else:
+            cv2.imwrite(directory + 'capture.jpg', self.image)
+
     def capture(self):
         """Take a photo."""
         if USING_RPI and USE_RPI_CAMERA:
@@ -97,10 +111,8 @@ class Capture(object):
             print("Problem getting image.")
             sys.exit(0)
         self.image_captured = True
-        return self.image
+        return self.save()
 
 
 if __name__ == "__main__":
-    DIR = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-    IMG = Capture().capture()
-    cv2.imwrite(DIR + 'capture.jpg', IMG)
+    Capture().capture()

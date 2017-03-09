@@ -11,6 +11,7 @@ try:
     test_redis = True
 except ImportError:
     test_redis = False
+import numpy as np
 from PD.Capture import Capture
 
 
@@ -46,3 +47,14 @@ class CheckCameraTest(unittest.TestCase):
     def tearDown(self):
         self.nullfile.close()
         sys.stdout = sys.__stdout__
+
+
+class CheckImageSaveTest(unittest.TestCase):
+    """Save captured image"""
+
+    def test_image_save(self):
+        """Test image save"""
+        capture = Capture()
+        shape = [100, 100, 3]
+        capture.image = np.full(shape, 200, np.uint8)
+        capture.save()
