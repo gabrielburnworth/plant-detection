@@ -542,12 +542,11 @@ class Image(object):
                 int(pt_x - tps * 4):int(pt_x + tps * 4 + 1)
             ] = (255, 255, 255)
         # _grid_point([1650, 2050, 0], 'coordinates')  # test point
-        _grid_point(p2c.test_coordinates, 'coordinates')  # UTM location
-        _grid_point(
-            p2c.calibration_params['center_pixel_location'],
-            'pixels')  # image center
+        _grid_point(Capture().getcoordinates(), 'coordinates')  # UTM location
+        _grid_point(p2c.calibration_params['center_pixel_location'],
+                    'pixels')  # image center
 
-        grid_range = np.array([[x] for x in range(0, 20000, 100)])
+        grid_range = np.array([[x] for x in range(-10000, 10000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
         self.plant_db.coordinate_locations = large_grid
         p2c.c2p(self.plant_db)
