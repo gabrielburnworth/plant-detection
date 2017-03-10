@@ -8,11 +8,7 @@ import os
 from time import sleep
 from subprocess import call
 import cv2
-try:
-    import redis
-except ImportError:
-    pass
-
+from PD import ENV
 
 try:
     CAMERA = os.environ['camera']
@@ -28,7 +24,7 @@ else:
 class Capture(object):
     """Capture image for Plant Detection."""
 
-    def __init__(self, r=None):
+    def __init__(self):
         """Set initial attributes."""
         self.image = None
         self.ret = None
@@ -36,19 +32,11 @@ class Capture(object):
         self.test_coordinates = [600, 400, 0]
         self.image_captured = False
         self.silent = False
-        self.redis = r
 
     def getcoordinates(self):
         """Get machine coordinates from bot."""
-        try:  # return bot coordintes
-            if self.redis is not None:
-                _redis = self.redis
-            else:
-                _redis = redis.StrictRedis()
-            bot_location_str = _redis.lrange('BOT_STATUS.location', 0, -1)
-            bot_location = [int(coordinate) for coordinate in bot_location_str]
-            return bot_location
-        except:  # noqa pylint:disable=W0702
+        location = ENV.redis_load('location')
+        if location is None:
             return self.test_coordinates  # return testing coordintes
 
     def camera_check(self):
