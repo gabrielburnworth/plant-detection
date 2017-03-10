@@ -14,17 +14,23 @@ else:
 from PD import CeleryPy
 
 
+def _load_json(string):
+    try:
+        value = json.loads(string)
+    except (TypeError, ValueError):
+        value = None
+    return value
+
+
 def load_env(name, get_json=True):
     """Load an environment variable from OS."""
     try:
         env = os.environ[name]
     except KeyError:
         return
+
     if get_json and env is not None:
-        try:
-            value = json.loads(env)
-        except (TypeError, ValueError):
-            value = None
+        value = _load_json(env)
     else:
         value = env
     return value
@@ -42,21 +48,21 @@ def redis_load(key, name=None, get_json=True, other_redis=None):
             _redis.ping()
         except redis.exceptions.ConnectionError:
             return
+
         if key == 'location':
             temp = _redis.lrange('BOT_STATUS.location', 0, -1)
             if temp and isinstance(temp, list):
                 value = [int(coordinate) for coordinate in temp]
-            else:
-                value = None
         else:
             temp = _redis.get('BOT_STATUS.{}.{}'.format(key, name))
-            if get_json and temp is not None:
-                try:
-                    value = json.loads(temp.decode('utf-8'))
-                except (TypeError, ValueError):
-                    value = None
+            if temp is None:
+                return
+
+            decoded = temp.decode('utf-8')
+            if get_json:
+                value = _load_json(decoded)
             else:
-                value = temp
+                value = decoded
     return value
 
 
