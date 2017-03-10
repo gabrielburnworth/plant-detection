@@ -10,9 +10,8 @@ from subprocess import call
 import cv2
 from PD import ENV
 
-try:
-    CAMERA = os.environ['camera']
-except (KeyError, ValueError):
+CAMERA = ENV.load('camera', get_json=False)
+if CAMERA is None:
     CAMERA = 'USB'  # default camera
 else:
     if 'RPI' in CAMERA:

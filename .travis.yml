@@ -18,7 +18,7 @@ script:
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python$TRAVIS_PYTHON_VERSION/dist-packages/
   - python -c 'import cv2; print("OpenCV " + cv2.__version__)'
   - python -c 'import numpy; print("NumPy " + numpy.__version__)'
-  - python -m coverage run --source . --omit=test*,*__init__.py,*GUI* -m unittest discover -v
+  - python -m coverage run --source . --omit=test*,*__init__.py,*GUI* -m unittest discover
 matrix:
   fast_finish: true
   exclude:

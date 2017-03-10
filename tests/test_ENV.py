@@ -21,8 +21,8 @@ class LoadENVTest(unittest.TestCase):
     def setUp(self):
         self.coordinates = [300, 500, -100]
         self.r = fakeredis.FakeStrictRedis()
-        self.testvalue = u'some test data'
-        self.testjson = {u"label": u"testdata", u"value": 5}
+        self.testvalue = 'some test data'
+        self.testjson = {"label": "testdata", "value": 5}
         self.badjson_string = '{"label": "whoop'
 
     def test_get_coordinates(self):

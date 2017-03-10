@@ -52,7 +52,7 @@ def redis_load(key, name=None, get_json=True, other_redis=None):
             temp = _redis.get('BOT_STATUS.{}.{}'.format(key, name))
             if get_json and temp is not None:
                 try:
-                    value = json.loads(temp)
+                    value = json.loads(temp.decode('utf-8'))
                 except (TypeError, ValueError):
                     value = None
             else:
