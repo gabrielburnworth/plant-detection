@@ -265,11 +265,8 @@ class PlantDetection(object):
             self.plant_db.load_plants_from_web_app()
         if self.args['from_env_var']:
             # Requested to load detection parameters from json ENV variable
-            try:
-                self.params.load_env_var()
-            except (KeyError, ValueError):
-                print("Warning: Environment variable parameters load failed.")
-                self.params.load_defaults_for_env_var()
+            message = self.params.load_env_var()
+            print(message)
 
         # Print input parameters and filename of image to process
         if self.args['verbose'] and self.args['text_output']:

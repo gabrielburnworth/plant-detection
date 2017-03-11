@@ -70,11 +70,18 @@ class Parameters(object):
             self.tmp_dir = "/tmp/"
             _load(self.tmp_dir)
         self._add_missing()
+        return ""
 
     def load_env_var(self):
         """Read input parameters from JSON in environment variable."""
         self.parameters = ENV.load(self.env_var_name)
-        self._add_missing()
+        if not isinstance(self.parameters, dict):
+            self.load_defaults_for_env_var()
+            message = "Warning: Environment variable parameters load failed."
+        else:
+            self._add_missing()
+            message = ""
+        return message
 
     def _add_missing(self):
         for key, value in self.defaults.items():

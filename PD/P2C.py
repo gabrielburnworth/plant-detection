@@ -88,7 +88,7 @@ class Pixel2coord(object):
             # self._load_parameters(self.load_calibration_data_from_env,
             #                       ValueError)
             self._load_inputs(
-                self.cparams.load_env_var, (KeyError, ValueError))
+                self.cparams.load_env_var, ValueError)
             self._additional_calibration_inputs(
                 self.load_calibration_data_from_env, ValueError)
             self.initialize_data_keys()
@@ -100,7 +100,9 @@ class Pixel2coord(object):
     def _load_inputs(self, get_inputs, error):
         # load only image processing input parameters
         try:
-            get_inputs()  # Parameters object
+            message = get_inputs()  # Parameters object
+            if message != "":
+                raise error("Load Failed.")
         except error:
             print("Warning: Input parameter load failed. "
                   "Using Defaults.")
