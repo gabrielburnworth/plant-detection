@@ -43,7 +43,6 @@ class Pixel2coord(object):
         self.coord_scale = None
         self.total_rotation_angle = 0
         self.center_pixel_location = None
-        self.test_coordinates = None
         self.debug = False
         self.env_var_name = 'PLANT_DETECTION_calibration'
         self.plant_db = plant_db
@@ -67,10 +66,8 @@ class Pixel2coord(object):
         self.circled = None
         self.rotationangle = 0
         self.test_rotation = 5  # for testing, add some image rotation
-        self.test_coordinates = [600, 400]  # calib image coord. location
         self.viewoutputimage = False  # overridden as True if running script
         self.output_text = True
-        self.bot_coordinates = plant_db.coordinates
         self.json_calibration_data = None
 
     def _calibration_data_preparation(self, calibration_data=None,
@@ -248,7 +245,7 @@ class Pixel2coord(object):
         except IndexError:
             plant_db.pixel_locations = np.vstack(
                 [plant_db.pixel_locations])
-        coord = np.array(self.bot_coordinates[:2], dtype=float)
+        coord = np.array(self.plant_db.coordinates[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates
@@ -277,7 +274,7 @@ class Pixel2coord(object):
         except IndexError:
             plant_db.coordinate_locations = np.vstack(
                 [plant_db.coordinate_locations])
-        coord = np.array(self.bot_coordinates[:2], dtype=float)
+        coord = np.array(self.plant_db.coordinates[:2], dtype=float)
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = coord + camera_offset  # image center coordinates

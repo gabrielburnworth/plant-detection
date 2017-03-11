@@ -59,7 +59,7 @@ class Image(object):
     def load(self, filename):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
-        self.plant_db.coordinates = Capture().getcoordinates()
+        self.plant_db.getcoordinates()
         if self.images['original'] is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)
@@ -69,7 +69,7 @@ class Image(object):
     def capture(self):
         """Capture image from camera."""
         image_filename = Capture().capture()
-        self.plant_db.coordinates = Capture().getcoordinates()
+        self.plant_db.getcoordinates()
         self.images['original'] = self.load(image_filename)
 
     def download(self, image_id):

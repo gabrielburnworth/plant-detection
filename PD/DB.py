@@ -9,6 +9,7 @@ import base64
 import requests
 import numpy as np
 from PD import CeleryPy
+from PD import ENV
 
 
 class DB(object):
@@ -28,7 +29,8 @@ class DB(object):
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
         self.weeder_destrut_r = 50
-        self.coordinates = [0, 0, 0]
+        self.test_coordinates = [600, 400, 0]
+        self.coordinates = None
 
         # API requests setup
         try:
@@ -102,6 +104,14 @@ class DB(object):
             return image_filename
         else:
             return None
+
+    def getcoordinates(self):
+        """Get machine coordinates from bot."""
+        location = ENV.redis_load('location')
+        if location is None:
+            self.coordinates = self.test_coordinates  # testing coordintes
+        else:
+            self.coordinates = location  # current bot coordinates
 
     def save_plants(self):
         """Save plant detection plants to file.

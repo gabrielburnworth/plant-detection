@@ -28,15 +28,8 @@ class Capture(object):
         self.image = None
         self.ret = None
         self.camera_port = None
-        self.test_coordinates = [600, 400, 0]
         self.image_captured = False
         self.silent = False
-
-    def getcoordinates(self):
-        """Get machine coordinates from bot."""
-        location = ENV.redis_load('location')
-        if location is None:
-            return self.test_coordinates  # return testing coordintes
 
     def camera_check(self):
         """Check for camera at ports 0 and 1."""
