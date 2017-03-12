@@ -23,23 +23,23 @@ class Parameters(object):
         self.morph_type = 'close'
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
         self.input_parameters_file = "plant-detection_inputs.json"
-        self.output_text = False
-        self.output_json = False
         self.tmp_dir = None
-        self.json_input_parameters = None
         self.calibration_data = None
         self.env_var_name = 'PLANT_DETECTION_options'
 
         # Create dictionaries of morph types
-        self.cv2_kt = {}  # morph kernel type
-        self.cv2_kt['ellipse'] = cv2.MORPH_ELLIPSE
-        self.cv2_kt['rect'] = cv2.MORPH_RECT
-        self.cv2_kt['cross'] = cv2.MORPH_CROSS
-        self.cv2_mt = {}  # morph type
-        self.cv2_mt['close'] = cv2.MORPH_CLOSE
-        self.cv2_mt['open'] = cv2.MORPH_OPEN
-        self.cv2_mt['erode'] = 'erode'
-        self.cv2_mt['dilate'] = 'dilate'
+        # morph kernel type
+        self.cv2_kt = {
+            'ellipse': cv2.MORPH_ELLIPSE,
+            'rect': cv2.MORPH_RECT,
+            'cross': cv2.MORPH_CROSS
+        }
+        # morph type
+        self.cv2_mt = {
+            'close': cv2.MORPH_CLOSE,
+            'open': cv2.MORPH_OPEN,
+            'erode': 'erode',
+            'dilate': 'dilate'}
 
     def save(self):
         """Save input parameters to file."""
@@ -55,8 +55,7 @@ class Parameters(object):
 
     def save_to_env_var(self):
         """Save input parameters to environment variable."""
-        self.json_input_parameters = ENV.save(self.env_var_name,
-                                              self.parameters)
+        ENV.save(self.env_var_name, self.parameters)
 
     def load(self):
         """Load input parameters from file."""

@@ -124,7 +124,9 @@ class Pixel2coord(object):
                     temp_inputs[key] = value
             self.calibration_params = temp_inputs
 
-    def _image_center(self, image):
+    @staticmethod
+    def get_image_center(image):
+        """Return the pixel location of the image center."""
         return [int(a / 2) for a in image.shape[:2][::-1]]
 
     def _calibration_image_preparation(self, calibration_image):
@@ -132,8 +134,8 @@ class Pixel2coord(object):
             self.image = Image(self.cparams, self.plant_db)
             self.image.load(calibration_image)
             self.calibration_params[
-                'center_pixel_location'] = self._image_center(
-                self.image.images['current'])
+                'center_pixel_location'] = self.get_image_center(
+                    self.image.images['current'])
             self.image.calibration_debug = self.debug
 
         if self.camera_rotation > 0:
@@ -220,7 +222,7 @@ class Pixel2coord(object):
     def validate_calibration_data(self, image):
         """Check that calibration parameters can be applied to the image."""
         # Prepare data
-        image_center = self._image_center(image)
+        image_center = self.get_image_center(image)
         image_location = self.plant_db.coordinates
         camera_dz = abs(
             self.calibration_params['camera_z'] - image_location[2])
@@ -253,25 +255,25 @@ class Pixel2coord(object):
     def c2p(self, plant_db):
         """Convert coordinates to pixel locations using image center."""
         plant_db.pixel_locations = self.convert(
-            plant_db.coordinate_locations, to='pixels')
+            plant_db.coordinate_locations, to_='pixels')
 
     def p2c(self, plant_db):
         """Convert pixel locations to machine coordinates from image center."""
         plant_db.coordinate_locations = self.convert(
-            plant_db.pixel_locations, to='coordinates')
+            plant_db.pixel_locations, to_='coordinates')
 
     def plant_dict_to_pixel_array(self, plant_dict, extend_radius=0):
         """Convert a plant coordinate dictionary to a pixel array."""
         pixel_array = np.array(self.convert(
             [plant_dict['x'], plant_dict['y'],
              plant_dict['radius'] + extend_radius],
-            to='pixels'))[0]
+            to_='pixels'))[0]
         return pixel_array
 
-    def convert(self, input_, to=None):
+    def convert(self, input_, to_=None):
         """Convert between image pixels and bot coordinates."""
         # Check and manage input
-        if to is None:
+        if to_ is None:
             raise TypeError("Conversion direction not provided.")
         input_ = np.array(input_)
         if len(input_) == 0:
@@ -294,19 +296,18 @@ class Pixel2coord(object):
         # Convert
         output_ = []
         for obj_num, obj_loc in enumerate(input_[:, :2]):
-            if to == 'pixels':
+            if to_ == 'pixels':
                 radius = input_[obj_num][2]
-                opl = (center_pixel_location -
-                       ((obj_loc - camera_coordinates)
-                        / (sign * coord_scale)))
-                output_.append([opl[0], opl[1], radius / coord_scale[0]])
-            if to == 'coordinates':
+                result = (
+                    center_pixel_location -
+                    ((obj_loc - camera_coordinates) / (sign * coord_scale)))
+                output_.append([result[0], result[1], radius / coord_scale[0]])
+            if to_ == 'coordinates':
                 radius = input_[:][obj_num][2]
-                moc = (camera_coordinates +
-                       sign * coord_scale *
-                       (center_pixel_location - obj_loc))
-                output_.append(
-                    [moc[0], moc[1], coord_scale[0] * radius])
+                result = (
+                    camera_coordinates +
+                    sign * coord_scale * (center_pixel_location - obj_loc))
+                output_.append([result[0], result[1], coord_scale[0] * radius])
         return output_
 
     def calibration(self):

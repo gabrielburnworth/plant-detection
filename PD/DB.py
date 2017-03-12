@@ -19,8 +19,6 @@ class DB(object):
         """Set initial attributes."""
         self.plants = {'known': [], 'save': [],
                        'remove': [], 'safe_remove': []}
-        self.output_text = True
-        self.output_json = False
         self.object_count = None
         self.pixel_locations = []
         self.coordinate_locations = []

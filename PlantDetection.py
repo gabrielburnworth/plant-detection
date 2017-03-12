@@ -114,7 +114,6 @@ class PlantDetection(object):
         if self.args['calibration_img'] is not None:
             # self.coordinates = True
             self.args['coordinates'] = True
-        self.plant_db.output_text = self.args['verbose']
         if self.args['GUI']:
             self.args['save'] = False
             self.args['text_output'] = False
@@ -285,7 +284,7 @@ class PlantDetection(object):
                 self.image.download(image_id)
             except IOError:
                 print("Image download failed for image ID {}.".format(
-                      str(image_id)))
+                    str(image_id)))
                 sys.exit(0)
         elif self.args['image'] is None:  # No image provided. Capture one.
             self.image.capture()

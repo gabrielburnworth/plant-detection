@@ -28,11 +28,8 @@ class Image(object):
             'blurred': None, 'contoured': None, 'greyed': None,
             'morphed': None, 'morphed2': None, 'masked': None, 'masked2': None,
             'busted': None, 'annotated': None}
-        self.output_text = True
-        self.reduce_large = True
         self.params = parameters
         self.plant_db = plant_db
-        self.object_count = None
         self.debug = False
         self.calibration_debug = False
         self.image_name = None
@@ -42,10 +39,7 @@ class Image(object):
         """Get state of images."""
         status = {}
         for name, image in self.images.items():
-            if image is not None:
-                status[name] = True
-            else:
-                status[name] = False
+            status[name] = bool(image is not None)
         return status
 
     def _reduce(self):
@@ -66,7 +60,7 @@ class Image(object):
     def load(self, filename):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
-        self.plant_db.getcoordinates(test_coordinates=True)
+        self.plant_db.getcoordinates(test_coordinates=False)
         if self.images['original'] is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)
@@ -102,7 +96,7 @@ class Image(object):
 
     def save_annotated(self, title):
         """Save annotated image to file."""
-        self.save(title, image=self.annotate())
+        self.save(title, image=self._annotate())
 
     def show(self):
         """Show image."""
@@ -110,7 +104,7 @@ class Image(object):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def rotate(self, rotationangle):
+    def _rotate(self, rotationangle):
         """Rotate image number of degrees."""
         try:
             rows, cols, _ = self.images['current'].shape
@@ -124,7 +118,7 @@ class Image(object):
     def rotate_main_images(self, rotationangle):
         """Rotate relevant working images."""
         self.images['current'] = self.images['output']  # work on output image
-        self.rotate(rotationangle)  # rotate according to angle
+        self._rotate(rotationangle)  # rotate according to angle
         # create rotated image copies
         self.images['output'] = self.images['current'].copy()
         self.images['marked'] = self.images['current'].copy()
@@ -132,13 +126,13 @@ class Image(object):
         try:
             self.images['morphed'].shape  # pylint:disable=W0104
             self.images['current'] = self.images['morphed']  # workon morphed
-            self.rotate(rotationangle)  # rotate according to angle
+            self._rotate(rotationangle)  # rotate according to angle
             self.images['morphed'] = self.images['current'].copy()  # morphed
         except AttributeError:
             pass
         self.images['current'] = self.images['output']
 
-    def blur(self):
+    def _blur(self):
         """Blur image."""
         if self.params.parameters['blur'] % 2 == 0:
             self.params.parameters['blur'] += 1
@@ -146,7 +140,7 @@ class Image(object):
             self.images['current'], self.params.parameters['blur'])
         self.images['current'] = self.images['blurred'].copy()
 
-    def mask(self):
+    def _mask(self):
         """Create mask using HSV range from blurred image."""
         # Create HSV image
         hsv = cv2.cvtColor(self.images['blurred'], cv2.COLOR_BGR2HSV)
@@ -172,7 +166,7 @@ class Image(object):
                 hsv, np.array(hsv_min), np.array(hsv_max))
         self.images['current'] = self.images['masked'].copy()
 
-    def morph(self):
+    def _morph(self):
         """Process mask to try to make plants more coherent."""
         if self.params.parameters['morph'] == 0:
             self.params.parameters['morph'] = 1
@@ -213,7 +207,7 @@ class Image(object):
                         morph_type, kernel, iterations=iterations)
         self.images['current'] = self.images['morphed']
 
-    def mask_original_image(self, mask_name):
+    def _mask_original_image(self, mask_name):
         """Apply a mask to the original image, showing the regions selected."""
         result_name = mask_name + '_original'
         self.images[result_name] = cv2.bitwise_and(
@@ -227,25 +221,25 @@ class Image(object):
     def initial_processing(self):
         """Process image in preparation for detecting plants."""
         # Blur image to simplify and reduce noise.
-        self.blur()
+        self._blur()
         if self.debug:
             self.save_annotated('blurred')
         if self.calibration_debug:
             self.show()
 
         # Create a mask using the color range parameters
-        self.mask()
+        self._mask()
         if self.debug:
             self.save_annotated('masked')
-            self.mask_original_image('masked')
+            self._mask_original_image('masked')
         if self.calibration_debug:
             self.show()
 
         # Transform mask to try to make objects more coherent
-        self.morph()
+        self._morph()
         if self.debug:
             self.save_annotated('morphed')
-            self.mask_original_image('morphed')
+            self._mask_original_image('morphed')
         if self.calibration_debug:
             self.show()
 
@@ -448,7 +442,7 @@ class Image(object):
                    'cyan': (255, 255, 0),
                    'grey': (200, 200, 200)}
             if not already_pixels:
-                pixel_objects = p2c.convert(objects, to='pixels')
+                pixel_objects = p2c.convert(objects, to_='pixels')
             else:
                 pixel_objects = objects
             for obj in pixel_objects:
@@ -504,7 +498,7 @@ class Image(object):
                 if len(point) < 3:
                     point = list(point) + [0]
                 point_pixel_location = np.array(
-                    p2c.convert(point, to='pixels'))[0]
+                    p2c.convert(point, to_='pixels'))[0]
                 pt_x = point_pixel_location[0]
                 pt_y = point_pixel_location[1]
             else:  # pixels
@@ -532,7 +526,7 @@ class Image(object):
 
         grid_range = np.array([[x] for x in range(-10000, 10000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
-        large_grid_pixel = np.array(p2c.convert(large_grid, to='pixels'))
+        large_grid_pixel = np.array(p2c.convert(large_grid, to_='pixels'))
         for pixel_x, coord_x in zip(large_grid_pixel[:, 0], large_grid[:, 0]):
             if pixel_x > self.images['marked'].shape[1] or pixel_x < 0:
                 continue
@@ -586,7 +580,7 @@ class Image(object):
                             font, textsize, color_bgr['white'], textweight)
         return annotated_image
 
-    def annotate(self):
+    def _annotate(self):
         """Annotate image with processing parameters."""
         if self.status()['blurred']:
             lines = ["blur kernel size = {}".format(
