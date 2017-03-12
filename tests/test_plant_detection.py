@@ -547,7 +547,7 @@ class PDTestDebugMode(unittest.TestCase):
                             text_output=False, save=False,
                             debug=True)
         pd.detect_plants()
-        self.assertTrue(os.path.exists('soil_image_masked2.jpg'))
+        self.assertTrue(os.path.exists('soil_image_masked_original.jpg'))
 
     def test_debug_with_coordinates(self):
         """Test debug mode with coordinate conversion"""
@@ -559,7 +559,7 @@ class PDTestDebugMode(unittest.TestCase):
         pd.calibrate()
         pd.detect_plants()
         self.assertTrue(os.path.exists('soil_image_coordinates_found.jpg'))
-        os.remove('soil_image_masked2.jpg')
+        os.remove('soil_image_masked_original.jpg')
 
     def tearDown(self):
         self.outfile.close()

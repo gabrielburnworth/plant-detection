@@ -105,10 +105,10 @@ class DB(object):
         else:
             return None
 
-    def getcoordinates(self):
+    def getcoordinates(self, test_coordinates=False):
         """Get machine coordinates from bot."""
         location = ENV.redis_load('location')
-        if location is None:
+        if location is None or test_coordinates:
             self.coordinates = self.test_coordinates  # testing coordintes
         else:
             self.coordinates = location  # current bot coordinates

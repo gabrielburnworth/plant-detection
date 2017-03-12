@@ -96,9 +96,18 @@ class Parameters(object):
         """Print input parameters."""
         print('Processing Parameters:')
         print('-' * 25)
-        print('Blur kernel size: {}'.format(self.parameters['blur']))
-        print('Morph kernel size: {}'.format(self.parameters['morph']))
-        print('Iterations: {}'.format(self.parameters['iterations']))
+        if self.array is None:
+            print('Blur kernel size: {}'.format(self.parameters['blur']))
+            print('Morph kernel size: {}'.format(self.parameters['morph']))
+            print('Iterations: {}'.format(self.parameters['iterations']))
+        else:
+            print('List of morph operations performed:')
+            for number, morph in enumerate(self.array):
+                print('{indent}Morph operation {number}'.format(
+                    indent=' ' * 2, number=number + 1))
+                for key, value in morph.items():
+                    print('{indent}{morph_property}: {morph_value}'.format(
+                        indent=' ' * 4, morph_property=key, morph_value=value))
         print('Hue:\n\tMIN: {}\n\tMAX: {}'.format(*self.parameters['H']))
         print('Saturation:\n\tMIN: {}\n\tMAX: {}'.format(
             *self.parameters['S']))

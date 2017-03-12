@@ -312,11 +312,23 @@ class PlantDetection(object):
             load_data_from=load_data_from, calibration_data=calibration_data)
         self.p2c.debug = self.args['debug']
         # Check for coordinate conversion calibration results
+        present = {'coord_scale': False,
+                   'camera_z': False,
+                   'center_pixel_location': False,
+                   'total_rotation_angle': False}
         try:
-            self.p2c.calibration_params['coord_scale']
+            for key in present:
+                present[key] = self.p2c.calibration_params[key]
         except KeyError:
             print("ERROR: Coordinate conversion calibration values "
                   "not found. Run calibration first.")
+            sys.exit(0)
+        # Validate coordinate conversion calibration data for image
+        calibration_data_valid = self.p2c.validate_calibration_data(
+            self.image.images['current'])
+        if not calibration_data_valid:
+            print("ERROR: Coordinate conversion calibration values "
+                  "invalid for provided image.")
             sys.exit(0)
         # Determine object coordinates
         self.image.coordinates(self.p2c,

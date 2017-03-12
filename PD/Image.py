@@ -26,7 +26,8 @@ class Image(object):
         self.images = {
             'current': None, 'original': None, 'output': None, 'marked': None,
             'blurred': None, 'contoured': None, 'greyed': None,
-            'morphed': None, 'morphed2': None, 'masked': None, 'masked2': None}
+            'morphed': None, 'morphed2': None, 'masked': None, 'masked2': None,
+            'busted': None, 'annotated': None}
         self.output_text = True
         self.reduce_large = True
         self.params = parameters
@@ -36,9 +37,16 @@ class Image(object):
         self.calibration_debug = False
         self.image_name = None
         self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
-        self.status = {'image': False, 'blur': False, 'mask': False,
-                       'morph': False, 'bust': False, 'grey': False,
-                       'mark': False, 'annotate': False}
+
+    def status(self):
+        """Get state of images."""
+        status = {}
+        for name, image in self.images.items():
+            if image is not None:
+                status[name] = True
+            else:
+                status[name] = False
+        return status
 
     def _reduce(self):
         height, width = self.images['original'].shape[:2]
@@ -54,12 +62,11 @@ class Image(object):
         self._reduce()
         self.images['current'] = self.images['output'].copy()
         self.images['marked'] = self.images['output'].copy()
-        self.status['image'] = True
 
     def load(self, filename):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
-        self.plant_db.getcoordinates()
+        self.plant_db.getcoordinates(test_coordinates=True)
         if self.images['original'] is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)
@@ -78,6 +85,7 @@ class Image(object):
         if image_filename is None:
             raise IOError("Image download failed.")
         self.images['original'] = self.load(image_filename)
+        os.remove(image_filename)
 
     def save(self, title, image=None):
         """Save image to file."""
@@ -137,7 +145,6 @@ class Image(object):
         self.images['blurred'] = cv2.medianBlur(
             self.images['current'], self.params.parameters['blur'])
         self.images['current'] = self.images['blurred'].copy()
-        self.status['blur'] = True
 
     def mask(self):
         """Create mask using HSV range from blurred image."""
@@ -164,17 +171,6 @@ class Image(object):
             self.images['masked'] = cv2.inRange(
                 hsv, np.array(hsv_min), np.array(hsv_max))
         self.images['current'] = self.images['masked'].copy()
-        self.status['mask'] = True
-
-    def _mask2(self):
-        """Show regions of original image selected by mask."""
-        self.images['masked2'] = cv2.bitwise_and(
-            self.images['output'], self.images['output'],
-            mask=self.images['masked'])
-        temp = self.images['current']
-        self.images['current'] = self.images['masked2']
-        self.save_annotated('masked2')
-        self.images['current'] = temp
 
     def morph(self):
         """Process mask to try to make plants more coherent."""
@@ -216,16 +212,16 @@ class Image(object):
                         self.images['morphed'],
                         morph_type, kernel, iterations=iterations)
         self.images['current'] = self.images['morphed']
-        self.status['morph'] = True
 
-    def _morph2(self):
-        """Show regions of original image selected by morph."""
-        self.images['morphed2'] = cv2.bitwise_and(
+    def mask_original_image(self, mask_name):
+        """Apply a mask to the original image, showing the regions selected."""
+        result_name = mask_name + '_original'
+        self.images[result_name] = cv2.bitwise_and(
             self.images['output'], self.images['output'],
-            mask=self.images['morphed'])
+            mask=self.images[mask_name])
         temp = self.images['current']
-        self.images['current'] = self.images['morphed2']
-        self.save_annotated('morphed2')
+        self.images['current'] = self.images[result_name]
+        self.save_annotated(result_name)
         self.images['current'] = temp
 
     def initial_processing(self):
@@ -241,7 +237,7 @@ class Image(object):
         self.mask()
         if self.debug:
             self.save_annotated('masked')
-            self._mask2()
+            self.mask_original_image('masked')
         if self.calibration_debug:
             self.show()
 
@@ -249,7 +245,7 @@ class Image(object):
         self.morph()
         if self.debug:
             self.save_annotated('morphed')
-            self._morph2()
+            self.mask_original_image('morphed')
         if self.calibration_debug:
             self.show()
 
@@ -287,7 +283,7 @@ class Image(object):
         self.images['morphed'] = cv2.dilate(
             self.images['morphed'], kernel, iterations=1)
         self.images['current'] = self.images['morphed']
-        self.status['bust'] = True
+        self.images['busted'] = self.images['morphed']
 
     def grey(self):
         """Grey out region in output image not selected by morphed mask."""
@@ -302,7 +298,6 @@ class Image(object):
         self.images['greyed'] = plant_fg_grey_bg.copy()
         self.images['output'] = self.images['greyed']
         self.images['marked'] = self.images['greyed']
-        self.status['grey'] = True
 
     def _find_contours(self):
         # Find contours (hopefully of outside edges of plants)
@@ -395,7 +390,6 @@ class Image(object):
             self.plant_db.object_count = 1
         if not safe_remove:
             self.images['current'] = self.images['contoured']
-            self.status['mark'] = True
 
     def safe_remove(self, p2c):
         """Process plants marked as 'safe_remove'.
@@ -407,12 +401,7 @@ class Image(object):
         safe_remove_img = np.zeros_like(self.images['morphed'], np.uint8)
         # Add safe-remove plants as (white) filled circles
         for plant in self.plant_db.plants['safe_remove']:
-            self.plant_db.coordinate_locations = [
-                plant['x'],
-                plant['y'],
-                plant['radius']]
-            p2c.c2p(self.plant_db)
-            point = np.array(self.plant_db.pixel_locations)[0]
+            point = p2c.plant_dict_to_pixel_array(plant)
             cv2.circle(safe_remove_img, (int(point[0]), int(point[1])),
                        int(point[2]), (255, 255, 255), -1)
         # Show only safe-remove plant shapes in original morphed mask
@@ -422,13 +411,8 @@ class Image(object):
             mask=safe_remove_img)
         # Remove known plants and their safe zones from the mask
         for plant in self.plant_db.plants['known']:
-            self.plant_db.coordinate_locations = [
-                plant['x'],
-                plant['y'],
-                plant['radius']
-                + self.plant_db.weeder_destrut_r]
-            p2c.c2p(self.plant_db)
-            point = np.array(self.plant_db.pixel_locations)[0]
+            point = p2c.plant_dict_to_pixel_array(
+                plant, extend_radius=self.plant_db.weeder_destrut_r)
             cv2.circle(self.images['morphed'], (int(point[0]), int(point[1])),
                        int(point[2]), (0, 0, 0), -1)
         # Detect the locations of the remaining plants in the mask
@@ -457,64 +441,57 @@ class Image(object):
 
     def label(self, p2c=None, weeder_remove=False, weeder_safe_remove=False):
         """Draw circles on image indicating detected plants."""
-        def _circle(color):
+        def _circle(objects, color, already_pixels=False):
             bgr = {'red': (0, 0, 255),
                    'green': (0, 255, 0),
                    'blue': (255, 0, 0),
                    'cyan': (255, 255, 0),
                    'grey': (200, 200, 200)}
-            for obj in self.plant_db.pixel_locations:
+            if not already_pixels:
+                pixel_objects = p2c.convert(objects, to='pixels')
+            else:
+                pixel_objects = objects
+            for obj in pixel_objects:
                 cv2.circle(self.images['marked'], (int(obj[0]), int(obj[1])),
                            int(obj[2]), bgr[color], 4)
 
         if p2c is None:
-            _circle('red')
+            detected_pixel_objects = self.plant_db.pixel_locations
+            _circle(detected_pixel_objects, 'red', already_pixels=True)
         else:
             # Mark known plants
             known = [[_['x'], _['y'], _['radius']] for _
                      in self.plant_db.plants['known']]
-            self.plant_db.coordinate_locations = known
-            p2c.c2p(self.plant_db)
-            _circle('green')
+            _circle(known, 'green')
 
             # Mark weeds
             remove = [[_['x'], _['y'], _['radius']] for _
                       in self.plant_db.plants['remove']]
-            self.plant_db.coordinate_locations = remove
-            p2c.c2p(self.plant_db)
-            _circle('red')
+            _circle(remove, 'red')
 
             # Mark weeder size for weeds
             if weeder_remove:
                 weeder_size = self.plant_db.weeder_destrut_r
                 remove_circle = [[_['x'], _['y'], weeder_size] for _
                                  in self.plant_db.plants['remove']]
-                self.plant_db.coordinate_locations = remove_circle
-                p2c.c2p(self.plant_db)
-                _circle('grey')
+                _circle(remove_circle, 'grey')
 
             # Mark saved plants
             save = [[_['x'], _['y'], _['radius']] for _
                     in self.plant_db.plants['save']]
-            self.plant_db.coordinate_locations = save
-            p2c.c2p(self.plant_db)
-            _circle('blue')
+            _circle(save, 'blue')
 
             # Mark safe-remove weeds
             safe_remove = [[_['x'], _['y'], _['radius']] for _
                            in self.plant_db.plants['safe_remove']]
-            self.plant_db.coordinate_locations = safe_remove
-            p2c.c2p(self.plant_db)
-            _circle('cyan')
+            _circle(safe_remove, 'cyan')
 
             # Mark weeder size for safe-remove weeds
             if weeder_safe_remove:
                 weeder_size = self.plant_db.weeder_destrut_r
                 safe_remove_circle = [[_['x'], _['y'], weeder_size] for _
                                       in self.plant_db.plants['safe_remove']]
-                self.plant_db.coordinate_locations = safe_remove_circle
-                p2c.c2p(self.plant_db)
-                _circle('grey')
+                _circle(safe_remove_circle, 'grey')
 
     def grid(self, p2c):
         """Draw grid on image indicating coordinate system."""
@@ -526,10 +503,8 @@ class Image(object):
             if pointtype == 'coordinates':
                 if len(point) < 3:
                     point = list(point) + [0]
-                self.plant_db.coordinate_locations = point
-                p2c.c2p(self.plant_db)
                 point_pixel_location = np.array(
-                    self.plant_db.pixel_locations)[0]
+                    p2c.convert(point, to='pixels'))[0]
                 pt_x = point_pixel_location[0]
                 pt_y = point_pixel_location[1]
             else:  # pixels
@@ -557,9 +532,7 @@ class Image(object):
 
         grid_range = np.array([[x] for x in range(-10000, 10000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
-        self.plant_db.coordinate_locations = large_grid
-        p2c.c2p(self.plant_db)
-        large_grid_pixel = np.array(self.plant_db.pixel_locations)
+        large_grid_pixel = np.array(p2c.convert(large_grid, to='pixels'))
         for pixel_x, coord_x in zip(large_grid_pixel[:, 0], large_grid[:, 0]):
             if pixel_x > self.images['marked'].shape[1] or pixel_x < 0:
                 continue
@@ -588,24 +561,25 @@ class Image(object):
         textweight = int(3.5 * textsize)
         font = cv2.FONT_HERSHEY_SIMPLEX
         add = lineheight + lineheight * len(lines)
-        if self.status['morph'] and self.params.array:  # multiple morphs
+        if self.status()['morphed'] and self.params.array:  # multiple morphs
             add_1 = add
             add += lineheight + lineheight * len(self.params.array)
         try:  # color image?
             color_array = self.images['current'].shape[2]
-            new_shape = (self.images['current'].shape[0] + add,
-                         self.images['current'].shape[1],
-                         color_array)
         except IndexError:
             new_shape = (self.images['current'].shape[0] + add,
                          self.images['current'].shape[1])
+        else:
+            new_shape = (self.images['current'].shape[0] + add,
+                         self.images['current'].shape[1],
+                         color_array)
         annotated_image = np.full(new_shape, color_value['black'], np.uint8)
         annotated_image[add:, :] = self.images['current']
         for line_num, line in enumerate(lines):
             cv2.putText(annotated_image, line,
                         (10, lineheight + line_num * lineheight),
                         font, textsize, color_bgr['white'], textweight)
-        if self.status['morph'] and self.params.array:  # multiple morphs
+        if self.status()['morphed'] and self.params.array:  # multiple morphs
             for line_num, line in enumerate(self.params.array):
                 cv2.putText(annotated_image, str(line),
                             (10, add_1 + line_num * lineheight),
@@ -614,12 +588,12 @@ class Image(object):
 
     def annotate(self):
         """Annotate image with processing parameters."""
-        if self.status['blur']:
+        if self.status()['blurred']:
             lines = ["blur kernel size = {}".format(
                 self.params.parameters['blur'])]
         else:
             return self.images['current']
-        if self.status['mask']:
+        if self.status()['masked']:
             hsv_min = [self.params.parameters['H'][0],
                        self.params.parameters['S'][0],
                        self.params.parameters['V'][0]]
@@ -629,7 +603,7 @@ class Image(object):
             lines = lines + [
                 "HSV lower bound = {}".format(hsv_min),
                 "HSV upper bound = {}".format(hsv_max)]
-            if self.status['morph'] and not self.params.array:  # single morph
+            if self.status()['morphed'] and not self.params.array:  # 1 morph
                 lines = lines + [
                     "kernel type = {}".format(self.params.kernel_type),
                     "kernel size = {}".format(self.params.parameters['morph']),
@@ -638,5 +612,5 @@ class Image(object):
                     "number of iterations = {}".format(
                         self.params.parameters['iterations'])]
         annotated_image = self._add_annotation_text(lines)
-        self.status['annotate'] = True
+        self.images['annotated'] = annotated_image
         return annotated_image
