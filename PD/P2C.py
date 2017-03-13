@@ -66,6 +66,9 @@ class Pixel2coord(object):
 
     def _calibration_data_preparation(self, calibration_data=None,
                                       load_data_from=None):
+        for key, value in self.defaults.items():
+            if key in self.cparams.defaults:
+                self.cparams.defaults[key] = value
         if calibration_data is not None:
             self.calibration_params = calibration_data
         elif load_data_from == 'file':
@@ -385,7 +388,7 @@ class Pixel2coord(object):
         if self.viewoutputimage:
             self.image.images['current'] = self.image.images['marked']
             self.image.show()
-
+        return self.plant_db.get_json_coordinates()
 
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep

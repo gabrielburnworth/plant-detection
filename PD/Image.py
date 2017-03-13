@@ -293,7 +293,7 @@ class Image(object):
         self.images['output'] = self.images['greyed']
         self.images['marked'] = self.images['greyed']
 
-    def _find_contours(self):
+    def _find_contours(self, calibration):
         # Find contours (hopefully of outside edges of plants)
         contoured = self.images['morphed'].copy()
         try:
@@ -309,6 +309,12 @@ class Image(object):
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)
             contoured = np.zeros_like(contoured, np.uint8)
+        if calibration:
+            # sort contours by size; calibration uses the first two
+            areas = [cv2.contourArea(cnt) for cnt in contours]
+            contour_order = sorted(range(len(areas)),
+                                   key=lambda i: areas[i], reverse=True)
+            contours = [contours[index] for index in contour_order]
         self.images['contoured'] = contoured
         return contours
 
@@ -347,7 +353,7 @@ class Image(object):
         Requires morphed image.
         """
         # Loop through contours
-        contours = self._find_contours()
+        contours = self._find_contours(calibration)
         if not safe_remove:
             self.plant_db.object_count = len(contours)
         self.plant_db.pixel_locations = []
@@ -363,13 +369,13 @@ class Image(object):
             except ZeroDivisionError:
                 continue
 
-            if calibration:
+            self._draw_contour(cnt, calibration, draw_contours)
+
+            if calibration and i < 2:
                 # Mark calibration object with blue circle
                 center = (int(cir_center_x), int(cir_center_y))
                 cv2.circle(
                     self.images['marked'], center, int(radius), (255, 0, 0), 4)
-
-            self._draw_contour(cnt, calibration, draw_contours)
 
             self.plant_db.pixel_locations.append(
                 [cnt_center_x, cnt_center_y, radius])

@@ -244,6 +244,15 @@ class DB(object):
             action='have been saved',
             plants='save')
 
+    def get_json_coordinates(self):
+        """Return coordinate dictionaries."""
+        coordinate_list = []
+        for coordinate in self.coordinate_locations:
+            coordinate_list.append({"x": coordinate[0],
+                                    "y": coordinate[1],
+                                    "radius": coordinate[2]})
+        return coordinate_list
+
     def print_coordinates(self):
         """Output coordinate data for detected (but not identified) plants."""
         if len(self.coordinate_locations) > 0:

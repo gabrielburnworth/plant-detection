@@ -6,6 +6,7 @@ For Plant Detection.
 import os
 import sys
 import cv2
+import json
 import unittest
 from PD.P2C import Pixel2coord
 from PD.DB import DB
@@ -16,8 +17,8 @@ def image_file(filename, image):
     return filename
 
 
-class P2CTest(unittest.TestCase):
-    """Check calibration"""
+class P2CcountTest(unittest.TestCase):
+    """Check calibration count"""
 
     def setUp(self):
         self.outfile = open('p2c_text_output_test.txt', 'w')
@@ -84,3 +85,48 @@ class P2CTest(unittest.TestCase):
             os.remove('three.jpg')
         except OSError:
             pass
+
+
+class P2CorientationTest(unittest.TestCase):
+    """Check calibration orientation"""
+
+    def setUp(self):
+        self.outfile = open('p2c_text_output_test.txt', 'w')
+        sys.stdout = self.outfile
+        os.environ.clear()
+
+    def test_orientation(self):
+        """Detect calibration objects, top left image origin"""
+        orientations = [[0, 0], [0, 1], [1, 0], [1, 1]]
+        expectations = [
+            [{"x": 1300, "y": 800}, {"x": 300, "y": 800}],
+            [{"x": 1300, "y": 200}, {"x": 300, "y": 200}],
+            [{"x": 300, "y": 800}, {"x": 1300, "y": 800}],
+            [{"x": 300, "y": 200}, {"x": 1300, "y": 200}]
+        ]
+        for orientation, expectation in zip(orientations, expectations):
+            image_origin = '{} {}'.format(
+                ['top', 'bottom'][orientation[0]],
+                ['left', 'right'][orientation[1]])
+            os.environ['PLANT_DETECTION_calibration'] = json.dumps({
+                'image_bot_origin_location': orientation})
+            p2c = Pixel2coord(
+                DB(), calibration_image='PD/p2c_test_calibration.jpg',
+                load_data_from='env_var')
+            p2c.calibration()
+            coordinates = p2c.determine_coordinates()
+            for axis in ['x', 'y']:
+                for obj in range(2):
+                    self.assertAlmostEqual(
+                        coordinates[obj][axis],
+                        expectation[obj][axis], delta=5,
+                        msg="[{}][{}]: {} != {} within 5 delta for {}"
+                            " image origin".format(
+                            obj, axis,
+                            coordinates[obj][axis], expectation[obj][axis],
+                            image_origin))
+
+    def tearDown(self):
+        self.outfile.close()
+        sys.stdout = sys.__stdout__
+        os.remove('p2c_text_output_test.txt')
