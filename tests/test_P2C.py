@@ -93,10 +93,17 @@ class P2CorientationTest(unittest.TestCase):
     def setUp(self):
         self.outfile = open('p2c_text_output_test.txt', 'w')
         sys.stdout = self.outfile
-        os.environ.clear()
 
     def test_orientation(self):
-        """Detect calibration objects, top left image origin"""
+        """Detect calibration objects based on image origin.
+
+                  |  top (0)  | bottom (1) |
+                    ---------   ----------
+        left  (0) |    00     |     01     |
+                    ---------   ----------
+        right (1) |    10     |     11     |
+                    ---------   ----------
+        """
         orientations = [[0, 0], [0, 1], [1, 0], [1, 1]]
         expectations = [
             [{"x": 1300, "y": 800}, {"x": 300, "y": 800}],
@@ -106,8 +113,8 @@ class P2CorientationTest(unittest.TestCase):
         ]
         for orientation, expectation in zip(orientations, expectations):
             image_origin = '{} {}'.format(
-                ['top', 'bottom'][orientation[0]],
-                ['left', 'right'][orientation[1]])
+                ['top', 'bottom'][orientation[1]],
+                ['left', 'right'][orientation[0]])
             os.environ['PLANT_DETECTION_calibration'] = json.dumps({
                 'image_bot_origin_location': orientation})
             p2c = Pixel2coord(

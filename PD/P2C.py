@@ -202,8 +202,8 @@ class Pixel2coord(object):
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
         threshold = 0
-        obj_1_x, obj_1_y, _ = self.plant_db.calibration_pixel_locations[0]
-        obj_2_x, obj_2_y, _ = self.plant_db.calibration_pixel_locations[1]
+        obj_1_x, obj_1_y = self.plant_db.calibration_pixel_locations[0][:2]
+        obj_2_x, obj_2_y = self.plant_db.calibration_pixel_locations[1][:2]
         if not self.calibration_params['calibration_circles_xaxis']:
             if obj_1_x > obj_2_x:
                 obj_1_x, obj_2_x = obj_2_x, obj_1_x

@@ -67,6 +67,7 @@ class PDTestJSONinput(unittest.TestCase):
     """Test ENV VAR inputs"""
 
     def setUp(self):
+        os.environ.clear()
         self.pd = PlantDetection(image='soil_image.jpg',
                                  from_env_var=True,
                                  text_output=False)
@@ -78,6 +79,9 @@ class PDTestJSONinput(unittest.TestCase):
     def test_json_parameters_input(self):
         """Load JSON input parameters from ENV VAR"""
         self.assertEqual(self.pd.params.parameters, self.json_params)
+
+    def tearDown(self):
+        os.environ.clear()
 
 
 class PDTestNoJSONinput(unittest.TestCase):
@@ -297,6 +301,7 @@ class ENV_VAR(unittest.TestCase):
     """Test environment variable use"""
 
     def setUp(self):
+        os.environ.clear()
         self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
                              'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.input_plants = {'plants': [{'y': 600, 'x': 200, 'radius': 100},
@@ -334,6 +339,9 @@ class ENV_VAR(unittest.TestCase):
                             from_env_var=True, coordinates=True,
                             text_output=False, save=False)
         pd.detect_plants()
+
+    def tearDown(self):
+        os.environ.clear()
 
 
 class TestFromFile(unittest.TestCase):
