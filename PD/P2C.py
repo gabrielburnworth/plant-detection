@@ -199,29 +199,6 @@ class Pixel2coord(object):
             self.plant_db.tmp_dir = "/tmp/"
             _load(self.plant_db.tmp_dir)
 
-    def rotationdetermination(self):
-        """Determine angle of rotation if necessary."""
-        threshold = 0
-        obj_1_x, obj_1_y = self.plant_db.calibration_pixel_locations[0][:2]
-        obj_2_x, obj_2_y = self.plant_db.calibration_pixel_locations[1][:2]
-        if not self.calibration_params['calibration_circles_xaxis']:
-            if obj_1_x > obj_2_x:
-                obj_1_x, obj_2_x = obj_2_x, obj_1_x
-                obj_1_y, obj_2_y = obj_2_y, obj_1_y
-        obj_dx = (obj_1_x - obj_2_x)
-        obj_dy = (obj_1_y - obj_2_y)
-        if self.calibration_params['calibration_circles_xaxis']:
-            difference = abs(obj_dy)
-            trig = difference / obj_dx
-        else:
-            difference = abs(obj_dx)
-            trig = difference / obj_dy
-        if difference > threshold:
-            rotation_angle_radians = np.tan(trig)
-            self.rotationangle = 180. / np.pi * rotation_angle_radians
-        else:
-            self.rotationangle = 0
-
     def validate_calibration_data(self, image):
         """Check that calibration parameters can be applied to the image."""
         # Prepare data
@@ -241,17 +218,28 @@ class Pixel2coord(object):
                 check_status = False
         return check_status
 
-    def calibrate(self):
-        """Determine coordinate conversion parameters."""
+    def rotationdetermination(self):
+        """Determine angle of rotation if necessary."""
+        threshold = 0
+        [[cdx, cdy]] = np.diff(
+            self.plant_db.calibration_pixel_locations[:2, :2], axis=0)
+        if not self.calibration_params['calibration_circles_xaxis']:
+            cdx, cdy = cdy, cdx
+        difference = abs(cdy)
+        trig = difference / cdx
+        if difference > threshold:
+            rotation_angle_radians = np.tan(trig)
+            self.rotationangle = 180. / np.pi * rotation_angle_radians
+        else:
+            self.rotationangle = 0
+
+    def determine_scale(self):
+        """Determine coordinate conversion scale."""
         if len(self.plant_db.calibration_pixel_locations) > 1:
             calibration_circle_sep = float(
                 self.calibration_params['calibration_circle_separation'])
-            if self.calibration_params['calibration_circles_xaxis']:
-                i = 0
-            else:
-                i = 1
-            object_sep = abs(self.plant_db.calibration_pixel_locations[0][i] -
-                             self.plant_db.calibration_pixel_locations[1][i])
+            object_sep = max(abs(np.diff(
+                self.plant_db.calibration_pixel_locations[:2, :2], axis=0)[0]))
             self.calibration_params['coord_scale'] = round(
                 calibration_circle_sep / object_sep, 4)
 
@@ -350,7 +338,7 @@ class Pixel2coord(object):
                     return True
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle
-        self.calibrate()
+        self.determine_scale()
         fail_flag = self._calibration_output(total_rotation_angle)
         return fail_flag
 
