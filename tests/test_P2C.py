@@ -12,6 +12,13 @@ from PD.P2C import Pixel2coord
 from PD.DB import DB
 
 
+def rotate(image, angle):
+    rows, cols = image.shape[:2]
+    mtrx = cv2.getRotationMatrix2D((int(cols / 2), int(rows / 2)), angle, 1)
+    image = cv2.warpAffine(image, mtrx, (cols, rows))
+    return image
+
+
 def image_file(filename, image):
     cv2.imwrite(filename, image)
     return filename
@@ -133,7 +140,43 @@ class P2CorientationTest(unittest.TestCase):
                             coordinates[obj][axis], expectation[obj][axis],
                             image_origin))
 
+    def test_location_rotation(self):
+        """Detect using different calibration object locations and rotations."""
+        i = 0
+        for flip in range(3):
+            for angle in [-10, 10]:
+                img = 'test_objects_{}.jpg'.format(i)
+                i += 1
+                calibration_img = cv2.imread('PD/p2c_test_calibration.jpg', 1)
+                if flip > 1:
+                    cv2.circle(calibration_img,
+                               (465, 290), int(1000),
+                               (255, 255, 255), -1)
+                    cv2.circle(calibration_img,
+                               (172, 290), int(25),
+                               (0, 0, 255), -1)
+                    cv2.circle(calibration_img,
+                               (755, 290), int(25),
+                               (0, 0, 255), -1)
+                elif flip:
+                    calibration_img = cv2.flip(calibration_img, 0)
+                calibration_img = rotate(calibration_img, angle)
+                cv2.imwrite(img, calibration_img)
+                p2c = Pixel2coord(DB(), calibration_image=img)
+                p2c.calibration()
+                self.assertAlmostEqual(
+                    p2c.calibration_params['total_rotation_angle'],
+                    -angle, delta=1)
+                self.assertAlmostEqual(
+                    p2c.calibration_params['coord_scale'],
+                    1.7, delta=0.1)
+
     def tearDown(self):
         self.outfile.close()
         sys.stdout = sys.__stdout__
         os.remove('p2c_text_output_test.txt')
+        try:
+            for i in range(6):
+                os.remove('test_objects_{}.jpg'.format(i))
+        except OSError:
+            pass

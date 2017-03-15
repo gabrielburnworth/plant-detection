@@ -225,8 +225,8 @@ class Pixel2coord(object):
             self.plant_db.calibration_pixel_locations[:2, :2], axis=0)
         if not self.calibration_params['calibration_circles_xaxis']:
             cdx, cdy = cdy, cdx
+        trig = cdy / cdx
         difference = abs(cdy)
-        trig = difference / cdx
         if difference > threshold:
             rotation_angle_radians = np.tan(trig)
             self.rotationangle = 180. / np.pi * rotation_angle_radians
@@ -377,6 +377,7 @@ class Pixel2coord(object):
             self.image.images['current'] = self.image.images['marked']
             self.image.show()
         return self.plant_db.get_json_coordinates()
+
 
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
