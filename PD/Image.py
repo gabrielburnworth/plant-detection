@@ -106,6 +106,18 @@ class Image(object):
 
     def _rotate(self, rotationangle):
         """Rotate image number of degrees."""
+        # 90 degree rotational turns
+        turns = -int(rotationangle / 90.)
+        remain = abs(rotationangle) % 90
+        if rotationangle < 0:
+            remain = -remain
+        if remain > 45:
+            turns -= 1
+        if remain < -45:
+            turns += 1
+        self.images['current'] = np.rot90(self.images['current'], k=turns)
+        rotationangle += 90 * turns
+        # rotate remaining degrees
         try:
             rows, cols, _ = self.images['current'].shape
         except ValueError:
