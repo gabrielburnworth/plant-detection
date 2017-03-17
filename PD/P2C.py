@@ -198,6 +198,8 @@ class Pixel2coord(object):
         """Check that calibration parameters can be applied to the image."""
         # Prepare data
         image_center = self.get_image_center(image)
+        image_center = self._block_rotations(
+            self.calibration_params['total_rotation_angle'], cpl=image_center)
         image_location = self.plant_db.coordinates
         camera_dz = abs(
             self.calibration_params['camera_z'] - image_location[2])
@@ -213,7 +215,7 @@ class Pixel2coord(object):
                 check_status = False
         return check_status
 
-    def _block_rotations(self, angle):
+    def _block_rotations(self, angle, cpl=None):
         def _determine_turns(angle):  # number of 90 degree rotations
             turns = -int(angle / 90.)
             remain = abs(angle) % 90
@@ -235,21 +237,34 @@ class Pixel2coord(object):
                 origin[horiz] = not origin[horiz]
             # set image origin
             self.calibration_params['image_bot_origin_location'] = origin
+            # swap image center pixel horiz/vert
+            if cpl is None:
+                center = self.calibration_params['center_pixel_location']
+            else:
+                center = cpl
+            center = center[::-1]
+            self.calibration_params['center_pixel_location'] = center
+            return center
 
         turns = _determine_turns(angle)
         if turns > 0:
-            _origin_rot(0, 1)
+            cpl = _origin_rot(0, 1)
         if turns < 0:
-            _origin_rot(1, 0)
+            cpl = _origin_rot(1, 0)
+        return cpl
 
     def rotationdetermination(self):
         """Determine angle of rotation if necessary."""
         threshold = 0
+        along_x = self.calibration_params['calibration_circles_xaxis']
         [[cdx, cdy]] = np.diff(
             self.plant_db.calibration_pixel_locations[:2, :2], axis=0)
-        trig = cdy / cdx
+        if cdx == 0:
+            trig = None
+        else:
+            trig = cdy / cdx
         difference = abs(cdy)
-        if not self.calibration_params['calibration_circles_xaxis']:
+        if not along_x:
             if cdy == 0:
                 trig = None
             else:
@@ -259,8 +274,12 @@ class Pixel2coord(object):
             if trig is None:
                 self.rotationangle = 90
             else:
-                rotation_angle_radians = np.tan(trig)
+                rotation_angle_radians = np.arctan(trig)
                 self.rotationangle = 180. / np.pi * rotation_angle_radians
+                if abs(cdy) > abs(cdx) and along_x:
+                    self.rotationangle = -self.rotationangle
+                if abs(cdx) > abs(cdy) and not along_x:
+                    self.rotationangle = -self.rotationangle
             self._block_rotations(self.rotationangle)
         else:
             self.rotationangle = 0
@@ -406,6 +425,7 @@ class Pixel2coord(object):
         self.p2c(self.plant_db)
         self.plant_db.print_coordinates()
         if self.viewoutputimage:
+            self.image.grid(self)
             self.image.images['current'] = self.image.images['marked']
             self.image.show()
         return self.plant_db.get_json_coordinates()

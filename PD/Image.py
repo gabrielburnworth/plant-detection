@@ -12,6 +12,9 @@ try:
 except:  # noqa pylint:disable=W0702
     from Capture import Capture
 
+CIRCLE_LINEWIDTH = 3
+CONTOUR_LINEWIDTH = 2
+
 
 class Image(object):
     """Provide image processes to Plant Detection."""
@@ -339,9 +342,11 @@ class Image(object):
             cv2.drawContours(
                 self.images['contoured'], [contour], 0, (255, 255, 255), 3)
             cv2.drawContours(
-                self.images['marked'], [contour], 0, (0, 0, 0), 6)
+                self.images['marked'], [contour], 0, (0, 0, 0),
+                CONTOUR_LINEWIDTH * 3)
             cv2.drawContours(
-                self.images['marked'], [contour], 0, (255, 255, 255), 2)
+                self.images['marked'], [contour], 0, (255, 255, 255),
+                CONTOUR_LINEWIDTH)
 
     def _save_calibration_contour(self, i, only_one_object, location=None):
         if i == 0:
@@ -465,7 +470,7 @@ class Image(object):
                 pixel_objects = objects
             for obj in pixel_objects:
                 cv2.circle(self.images['marked'], (int(obj[0]), int(obj[1])),
-                           int(obj[2]), bgr[color], 4)
+                           int(obj[2]), bgr[color], CIRCLE_LINEWIDTH)
 
         if p2c is None:
             detected_pixel_objects = self.plant_db.pixel_locations
@@ -512,6 +517,11 @@ class Image(object):
         textweight = int(3.5 * textsize)
 
         def _grid_point(point, pointtype):
+            # use contrasting point markers
+            if np.mean(self.images['marked']) > 127:  # light image
+                color = (0, 0, 0)  # black
+            else:  # dark image
+                color = (255, 255, 255)  # white
             if pointtype == 'coordinates':
                 if len(point) < 3:
                     point = list(point) + [0]
@@ -527,20 +537,18 @@ class Image(object):
             self.images['marked'][
                 int(pt_y - tps):int(pt_y + tps + 1),
                 int(pt_x - tps):int(pt_x + tps + 1)
-            ] = (255, 255, 255)
+            ] = color
             # crosshair lines
-            self.images['marked'][
-                int(pt_y - tps * 4):int(pt_y + tps * 4 + 1),
-                int(pt_x - tps / 4):int(pt_x + tps / 4 + 1)
-            ] = (255, 255, 255)
-            self.images['marked'][
-                int(pt_y - tps / 4):int(pt_y + tps / 4 + 1),
-                int(pt_x - tps * 4):int(pt_x + tps * 4 + 1)
-            ] = (255, 255, 255)
-        # _grid_point([1650, 2050, 0], 'coordinates')  # test point
-        _grid_point(self.plant_db.coordinates, 'coordinates')  # UTM location
-        _grid_point(p2c.calibration_params['center_pixel_location'],
-                    'pixels')  # image center
+            short_half = tps / 4
+            long_half = tps * 4
+            self.images['marked'][  # vertical
+                int(pt_y - long_half):int(pt_y + long_half) + 1,
+                int(pt_x - short_half):int(pt_x + short_half) + 1
+            ] = color
+            self.images['marked'][  # horizontal
+                int(pt_y - short_half):int(pt_y + short_half) + 1,
+                int(pt_x - long_half):int(pt_x + long_half) + 1
+            ] = color
 
         grid_range = np.array([[x] for x in range(-10000, 10000, 100)])
         large_grid = np.hstack((grid_range, grid_range, grid_range))
@@ -564,6 +572,11 @@ class Image(object):
                 cv2.FONT_HERSHEY_SIMPLEX, textsize,
                 (255, 255, 255), textweight)
         self.images['current'] = self.images['marked']
+
+        # _grid_point([1650, 2050, 0], 'coordinates')  # test point
+        _grid_point(self.plant_db.coordinates, 'coordinates')  # UTM location
+        _grid_point(p2c.calibration_params['center_pixel_location'],
+                    'pixels')  # image center
 
     def _add_annotation_text(self, lines):
         color_bgr = {'white': (255, 255, 255), 'black': (0, 0, 0)}
