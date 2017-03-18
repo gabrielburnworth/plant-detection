@@ -217,7 +217,7 @@ class PlantDetection(object):
         self._calibration_output()  # save calibration data
 
     def _calibration_output(self):  # save calibration data
-        if self.args['save']:
+        if self.args['save'] or self.args['debug']:
             self.p2c.image.images['current'] = self.p2c.image.images['marked']
             self.p2c.image.save('calibration_result')
 
@@ -435,11 +435,12 @@ class PlantDetection(object):
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
     IMG = DIR + 'soil_image.jpg'
+    CALIBRATION_IMG = DIR + "PD/p2c_test_calibration.jpg"
     if len(sys.argv) == 1:
         PD = PlantDetection(
             image=IMG,
             blur=15, morph=6, iterations=4,
-            calibration_img=DIR + "PD/p2c_test_calibration.jpg",
+            calibration_img=CALIBRATION_IMG,
             known_plants=[{'x': 200, 'y': 600, 'radius': 100},
                           {'x': 900, 'y': 200, 'radius': 120}])
         PD.calibrate()  # use calibration img to get coordinate conversion data
@@ -450,11 +451,27 @@ if __name__ == "__main__":
             if len(sys.argv) == 3:  # image filename provided
                 GUI = PlantDetectionGUI(image_filename=sys.argv[2],
                                         plant_detection=PlantDetection)
-                GUI.run()
             else:  # Use `soil_image.jpg`
                 GUI = PlantDetectionGUI(image_filename=IMG,
                                         plant_detection=PlantDetection)
-                GUI.run()
+            GUI.run()
+        elif sys.argv[1] == '--cGUI':
+            from PD.GUI import CalibrationGUI
+            if len(sys.argv) == 3:  # calibration image filename provided
+                calibrationGUI = CalibrationGUI(
+                    cimage_filename=sys.argv[2],
+                    image_filename=IMG,
+                    plant_detection=PlantDetection)
+            elif len(sys.argv) == 4:  # both image filenames provided
+                calibrationGUI = CalibrationGUI(
+                    cimage_filename=sys.argv[2],
+                    image_filename=sys.argv[3],
+                    plant_detection=PlantDetection)
+            else:  # Use `soil_image.jpg`
+                calibrationGUI = CalibrationGUI(
+                    image_filename=IMG,
+                    plant_detection=PlantDetection)
+            calibrationGUI.run()
         else:  # image filename provided
             IMG = sys.argv[1]
             PD = PlantDetection(

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Plant Detection GUI."""
-import sys
 import os
 import json
 import cv2
@@ -25,10 +24,7 @@ class PlantDetectionGUI(object):
         if image_filename:
             self.filename = image_filename
         else:
-            if len(sys.argv) == 1:  # use test image
-                self.filename = directory + 'soil_image.jpg'
-            else:  # image filename provided in command line argument
-                self.filename = sys.argv[1]
+            self.filename = directory + 'soil_image.jpg'
 
         # Load input parameters
         try:  # from file
@@ -137,6 +133,104 @@ class PlantDetectionGUI(object):
         cv2.setTrackbarPos('Blur', self.window, self.blur_amount)
         cv2.setTrackbarPos('Morph', self.window, self.morph_amount)
         cv2.setTrackbarPos('Iterations', self.window, self.iterations)
+
+        while True:
+            k = cv2.waitKey(1) & 0xFF
+            if k == 27:
+                break
+
+        cv2.destroyAllWindows()
+
+
+class CalibrationGUI(object):
+    """Interactively change calibration parameters.
+
+    for PlantDetection.calibrate()
+    """
+
+    def __init__(self, cimage_filename=None, image_filename=None,
+                 plant_detection=None):
+        """Set initial attributes, get image path, and load inputs."""
+        self.plant_detection = plant_detection
+        self.window = 'Plant Detection Calibration'
+        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+        # Image
+        if cimage_filename:
+            self.cfilename = cimage_filename
+        else:
+            self.cfilename = directory + 'p2c_test_calibration.jpg'
+        self.filename = image_filename
+
+    def process(self, _):
+        """GUI trackbar callback."""
+        # Get parameter values
+        axis = cv2.getTrackbarPos('Axis', self.window)
+        origin_vert = cv2.getTrackbarPos('Origin_Vert', self.window)
+        origin_horiz = cv2.getTrackbarPos('Origin_Horiz', self.window)
+        separation = cv2.getTrackbarPos('Object Separation', self.window)
+        offset_x = cv2.getTrackbarPos('Camera X Offset', self.window)
+        offset_y = cv2.getTrackbarPos('Camera Y Offset', self.window)
+        iterations = cv2.getTrackbarPos('Calibration Iterations', self.window)
+
+        # Process image with parameters
+        # Get calibration object
+        plantdetection = self.plant_detection(
+            image=self.filename,
+            calibration_img=self.cfilename,
+            from_file=True, GUI=True)
+        plantdetection.params.parameters['H'] = [160, 20]
+        plantdetection.params.parameters['S'] = [100, 255]
+        plantdetection.params.parameters['V'] = [100, 255]
+        plantdetection.params.save()
+        plantdetection.calibrate()
+        # Set new calibration parameters
+        calibration_params = {
+            'calibration_circles_xaxis': axis,
+            'image_bot_origin_location': [origin_horiz, origin_vert],
+            'calibration_circle_separation': separation,
+            'camera_offset_coordinates': [offset_x, offset_y],
+            'calibration_iters': iterations}
+        plantdetection.p2c.calibration_params = calibration_params
+        plantdetection.p2c.save_calibration_parameters()
+        # Calibrate
+        plantdetection.calibrate()
+        img = plantdetection.p2c.image.images['marked']
+        # Detect coordinates for result image
+        plantdetection.params.parameters['H'] = [30, 90]
+        plantdetection.params.parameters['S'] = [50, 255]
+        plantdetection.params.parameters['V'] = [50, 255]
+        plantdetection.params.save()
+        plantdetection.detect_plants()
+        result = plantdetection.final_marked_image
+
+        # Show processed image
+        cv2.imshow(self.window, img)
+        cv2.imshow('Result', result)
+
+    def run(self):
+        """Start the GUI."""
+        cv2.namedWindow(self.window)
+        cv2.namedWindow('Result')
+        cv2.createTrackbar('Axis', self.window, 0, 1, self.process)
+        cv2.createTrackbar('Origin_Vert', self.window, 0, 1, self.process)
+        cv2.createTrackbar('Origin_Horiz', self.window, 0, 1, self.process)
+        cv2.createTrackbar(
+            'Object Separation', self.window, 1, 1000, self.process)
+        cv2.createTrackbar(
+            'Camera X Offset', self.window, 0, 1000, self.process)
+        cv2.createTrackbar(
+            'Camera Y Offset', self.window, 0, 1000, self.process)
+        cv2.createTrackbar(
+            'Calibration Iterations', self.window, 1, 10, self.process)
+
+        cv2.setTrackbarPos('Axis', self.window, 1)
+        cv2.setTrackbarPos('Origin_Vert', self.window, 1)
+        cv2.setTrackbarPos('Origin_Horiz', self.window, 0)
+        cv2.setTrackbarPos('Object Separation', self.window, 1000)
+        cv2.setTrackbarPos('Camera X Offset', self.window, 200)
+        cv2.setTrackbarPos('Camera Y Offset', self.window, 100)
+        cv2.setTrackbarPos('Calibration Iterations', self.window, 3)
 
         while True:
             k = cv2.waitKey(1) & 0xFF
