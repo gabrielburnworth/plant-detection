@@ -128,7 +128,7 @@ class Pixel2coord(object):
 
     @staticmethod
     def get_image_center(image):
-        """Return the pixel location of the image center."""
+        """Return the pixel location (X, Y) of the image center."""
         return [int(a / 2) for a in image.shape[:2][::-1]]
 
     def _calibration_image_preparation(self, calibration_image):
@@ -194,10 +194,10 @@ class Pixel2coord(object):
             self.plant_db.tmp_dir = "/tmp/"
             _load(self.plant_db.tmp_dir)
 
-    def validate_calibration_data(self, image):
+    def validate_calibration_data(self, check_image):
         """Check that calibration parameters can be applied to the image."""
         # Prepare data
-        image_center = self.get_image_center(image)
+        image_center = self.get_image_center(check_image)
         image_center = self._block_rotations(
             self.calibration_params['total_rotation_angle'], cpl=image_center)
         image_location = self.plant_db.coordinates
@@ -209,7 +209,7 @@ class Pixel2coord(object):
         # Check data
         check_status = True
         if camera_dz > 5:
-            check_status = False
+            check_status = False  # set True to try camera height compensation
         for center_delta in center_deltas:
             if center_delta > 5:
                 check_status = False
@@ -327,6 +327,7 @@ class Pixel2coord(object):
             input_ = np.vstack([input_])
         # Get conversion parameters
         bot_location = np.array(self.plant_db.coordinates[:2], dtype=float)
+        current_z = self.plant_db.coordinates[2]
         camera_offset = np.array(
             self.calibration_params['camera_offset_coordinates'], dtype=float)
         camera_coordinates = bot_location + camera_offset  # img center coord
@@ -335,6 +336,10 @@ class Pixel2coord(object):
         sign = [1 if s == 1 else -1 for s
                 in self.calibration_params['image_bot_origin_location']]
         coord_scale = np.repeat(self.calibration_params['coord_scale'], 2)
+        # Adjust scale factor for camera height
+        calibration_z = self.calibration_params['camera_z']
+        camera_dz = current_z - calibration_z
+        coord_scale = coord_scale + camera_dz / 157.3
         # Convert
         output_ = []
         for obj_num, obj_loc in enumerate(input_[:, :2]):

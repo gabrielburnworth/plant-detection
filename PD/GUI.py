@@ -203,10 +203,12 @@ class CalibrationGUI(object):
         plantdetection.params.save()
         plantdetection.detect_plants()
         result = plantdetection.final_marked_image
+        # scale = plantdetection.p2c.calibration_params['coord_scale'] * 1000
 
         # Show processed image
         cv2.imshow(self.window, img)
         cv2.imshow('Result', result)
+        # cv2.setTrackbarPos('Scale * 1000', self.window, int(scale))
 
     def run(self):
         """Start the GUI."""
@@ -223,6 +225,8 @@ class CalibrationGUI(object):
             'Camera Y Offset', self.window, 0, 1000, self.process)
         cv2.createTrackbar(
             'Calibration Iterations', self.window, 1, 10, self.process)
+        # cv2.createTrackbar(
+        #     'Scale * 1000', self.window, 0, 10000, self.process)
 
         cv2.setTrackbarPos('Axis', self.window, 1)
         cv2.setTrackbarPos('Origin_Vert', self.window, 1)
@@ -231,6 +235,7 @@ class CalibrationGUI(object):
         cv2.setTrackbarPos('Camera X Offset', self.window, 200)
         cv2.setTrackbarPos('Camera Y Offset', self.window, 100)
         cv2.setTrackbarPos('Calibration Iterations', self.window, 3)
+        # cv2.setTrackbarPos('Scale * 1000', self.window, 0)
 
         while True:
             k = cv2.waitKey(1) & 0xFF

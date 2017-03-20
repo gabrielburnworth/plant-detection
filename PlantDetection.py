@@ -458,20 +458,20 @@ if __name__ == "__main__":
         elif sys.argv[1] == '--cGUI':
             from PD.GUI import CalibrationGUI
             if len(sys.argv) == 3:  # calibration image filename provided
-                calibrationGUI = CalibrationGUI(
+                calibration_gui = CalibrationGUI(
                     cimage_filename=sys.argv[2],
                     image_filename=IMG,
                     plant_detection=PlantDetection)
             elif len(sys.argv) == 4:  # both image filenames provided
-                calibrationGUI = CalibrationGUI(
+                calibration_gui = CalibrationGUI(
                     cimage_filename=sys.argv[2],
                     image_filename=sys.argv[3],
                     plant_detection=PlantDetection)
             else:  # Use `soil_image.jpg`
-                calibrationGUI = CalibrationGUI(
+                calibration_gui = CalibrationGUI(
                     image_filename=IMG,
                     plant_detection=PlantDetection)
-            calibrationGUI.run()
+            calibration_gui.run()
         else:  # image filename provided
             IMG = sys.argv[1]
             PD = PlantDetection(

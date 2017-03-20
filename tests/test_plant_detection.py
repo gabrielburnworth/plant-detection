@@ -70,7 +70,7 @@ class PDTestJSONinput(unittest.TestCase):
         os.environ.clear()
         self.pd = PlantDetection(image='soil_image.jpg',
                                  from_env_var=True,
-                                 text_output=False)
+                                 text_output=False, save=False)
         self.json_params = {"blur": 15, "morph": 6, "iterations": 4,
                             "H": [30, 90], "S": [20, 255], "V": [20, 255]}
         os.environ["PLANT_DETECTION_options"] = json.dumps(self.json_params)
@@ -90,7 +90,8 @@ class PDTestNoJSONinput(unittest.TestCase):
     def setUp(self):
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
-        self.pd = PlantDetection(image='soil_image.jpg', text_output=False)
+        self.pd = PlantDetection(
+            image='soil_image.jpg', text_output=False, save=False)
         self.pd.detect_plants()
 
     def test_json_parameters_input(self):
@@ -106,7 +107,7 @@ class PDTestCalibration(unittest.TestCase):
         self.pd = PlantDetection(image="PD/p2c_test_objects.jpg",
                                  calibration_img="PD/p2c_test_calibration.jpg",
                                  HSV_min=[160, 100, 100], HSV_max=[20, 255, 255],
-                                 morph=15, blur=5, text_output=False)
+                                 morph=15, blur=5, text_output=False, save=False)
         self.pd.calibrate()
         self.calibration_json = {"blur": 5, "morph": 15, "calibration_iters": 3,
                                  "H": [160, 20], "S": [100, 255], "V": [100, 255],
@@ -243,7 +244,7 @@ class PDTestOutput(unittest.TestCase):
                                  known_plants=[{'x': 200, 'y': 600, 'radius': 100},
                                                {'x': 900, 'y': 200, 'radius': 120}],
                                  blur=15, morph=6, iterations=4,
-                                 text_output=False)
+                                 text_output=False, save=False)
         self.pd.calibrate()
         self.pd.detect_plants()
         self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
@@ -582,7 +583,7 @@ class PDTestSafeRemove(unittest.TestCase):
         self.pd = PlantDetection(
             image="soil_image.jpg",
             calibration_img="PD/p2c_test_calibration.jpg",
-            text_output=False)
+            text_output=False, save=False)
         self.pd.calibrate()
         self.input_params = {"blur": 15, "morph": 6, "iterations": 4,
                              "H": [30, 90], "S": [20, 255], "V": [20, 255]}

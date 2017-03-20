@@ -55,8 +55,19 @@ class Image(object):
         else:
             self.images['output'] = self.images['original'].copy()
 
+    def _undistort(self):
+        height, width = self.images['output'].shape[:2]
+        undistort_fx = 10. * width / 2
+        undistort_fy = 8.7 * height / 2
+        self.images['output'] = cv2.undistort(
+            self.images['output'],
+            np.array([[undistort_fx, 0, width / 2.],
+                      [0, undistort_fy, height / 2.],
+                      [0, 0, 1]]), 1.6)
+
     def _prepare(self):
         self._reduce()
+        # self._undistort()
         self.images['current'] = self.images['output'].copy()
         self.images['marked'] = self.images['output'].copy()
 
