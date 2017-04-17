@@ -133,6 +133,24 @@ def move_absolute(location, offset, speed):
 
 
 @_print_json
+def move_relative(distance=(0, 0, 0), speed=800):
+    """Celery Script to move relative to the current location.
+
+    Kind:
+        move_relative
+    Arguments:
+        x distance (mm)
+        y distance (mm)
+        z distance (mm)
+        Speed (mm/s)
+    """
+    args = _encode_coordinates(*distance)
+    args['speed'] = speed
+    _move_relative = create_node(kind='move_relative', args=args)
+    return _move_relative
+
+
+@_print_json
 def data_update(endpoint, ids_):
     """Celery Script to signal that a sync is required.
 
@@ -159,3 +177,152 @@ def data_update(endpoint, ids_):
         body = [create_node(kind='pair', args=_endpoint)]
     _data_update['body'] = body
     return _data_update
+
+
+@_print_json
+def send_message(message='Hello World!', message_type='success', channel=None):
+    """Celery Script to send a message.
+
+    Kind:
+        send_message
+    Arguments:
+        message
+        message_type: success, busy, warn, error, info, fun
+        channel: toast
+    """
+    args = {}
+    args['message'] = message
+    args['message_type'] = message_type
+    _send_message = create_node(kind='send_message', args=args)
+    if channel is not None:
+        body = [create_node(kind='channel', args={"channel_name": channel})]
+        _send_message['body'] = body
+    return _send_message
+
+
+@_print_json
+def if_statement(lhs='x', op='is', rhs=0, _then=None, _else=None):
+    """Celery Script if statement.
+
+    Kind:
+        _if
+    Arguments:
+        lhs (left-hand side)
+        op (operator)
+        rhs (right-hand side)
+        _then (id of sequence to execute on `then`)
+        _else (id of sequence to execute on `else`)
+    """
+    args = {}
+    args['lhs'] = lhs
+    args['op'] = op
+    args['rhs'] = rhs
+    if _then is None:
+        _then_args = {}
+    else:
+        _then_args = {"sequence_id": _then}
+    if _else is None:
+        _else_args = {}
+    else:
+        _else_args = {"sequence_id": _else}
+    args['_then'] = create_node(kind='nothing', args=_then_args)
+    args['_else'] = create_node(kind='nothing', args=_else_args)
+    _if_statement = create_node(kind='_if', args=args)
+    return _if_statement
+
+
+@_print_json
+def write_pin(number=0, value=0, mode=0):
+    """Celery Script to write a value to a pin.
+
+    Kind:
+        write_pin
+    Arguments:
+        pin_number: 0
+        pin_value: 0 [0, 1]
+        pin_mode: 0 [0, 1]
+    """
+    args = {}
+    args['pin_number'] = number
+    args['pin_value'] = value
+    args['pin_mode'] = mode
+    _write_pin = create_node(kind='write_pin', args=args)
+    return _write_pin
+
+
+@_print_json
+def read_pin(number=0, mode=0, label='---'):
+    """Celery Script to read the value of a pin.
+
+    Kind:
+        read_pin
+    Arguments:
+        pin_number: 0
+        pin_mode: 0 [0, 1]
+        label: '---'
+    """
+    args = {}
+    args['pin_number'] = number
+    args['pin_mode'] = mode
+    args['label'] = label
+    _read_pin = create_node(kind='read_pin', args=args)
+    return _read_pin
+
+
+@_print_json
+def execute_sequence(sequence_id=0):
+    """Celery Script to execute a sequence.
+
+    Kind:
+        execute
+    Arguments:
+        sequence_id: 0
+    """
+    args = {}
+    args['sequence_id'] = sequence_id
+    _execute_sequence = create_node(kind='execute', args=args)
+    return _execute_sequence
+
+
+@_print_json
+def execute_script(label):
+    """Celery Script to execute a farmware.
+
+    Kind:
+        execute_script
+    Arguments:
+        label
+    """
+    args = {}
+    args['label'] = label
+    _execute_script = create_node(kind='execute_script', args=args)
+    return _execute_script
+
+
+@_print_json
+def take_photo():
+    """Celery Script to take a photo.
+
+    Kind:
+        take_photo
+    Arguments:
+        {}
+    """
+    args = {}
+    _take_photo = create_node(kind='take_photo', args=args)
+    return _take_photo
+
+
+@_print_json
+def wait(milliseconds=0):
+    """Celery Script to wait.
+
+    Kind:
+        wait
+    Arguments:
+        milliseconds: 0
+    """
+    args = {}
+    args['milliseconds'] = milliseconds
+    _wait = create_node(kind='wait', args=args)
+    return _wait
