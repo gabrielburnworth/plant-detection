@@ -137,15 +137,16 @@ class DB(object):
 
     def load_plants_from_web_app(self):
         """Download known plants from the FarmBot Web App API."""
-        response = self.api_get('plants')
-        app_plants = response.json()
+        response = self.api_get('points')
+        app_points = response.json()
         if response.status_code == 200:
             plants = []
-            for plant in app_plants:
-                plants.append({
-                    'x': plant['x'],
-                    'y': plant['y'],
-                    'radius': plant['radius']})
+            for point in app_points:
+                if point['pointer_type'] == 'Plant':
+                    plants.append({
+                        'x': point['x'],
+                        'y': point['y'],
+                        'radius': point['radius']})
             self.plants['known'] = plants
 
     def identify_plant(self, plant_x, plant_y, known):
@@ -283,15 +284,25 @@ class DB(object):
             unsent_cs.append(unsent)
         return unsent_cs
 
-    def upload_point(self, point, color, id_list):
+    def upload_point(self, point, name, id_list):
         """Upload a point to the FarmBot Web App."""
+        # color
+        if name == 'Weed':
+            color = 'red'
+        elif name == 'Detected Plant':
+            color = 'blue'
+        elif name == 'Known Plant':
+            color = 'green'
+        elif name == 'Safe-Remove Weed':
+            color = 'cyan'
         # payload
         plant_x, plant_y = round(point['x'], 2), round(point['y'], 2)
         plant_r = round(point['radius'], 2)
         plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
                  'radius': str(plant_r),
                  'meta': {'created_by': 'plant-detection',
-                          'color': color}}
+                          'color': color},
+                 'name': name, 'pointer_type': 'GenericPointer'}
         payload = json.dumps(plant)
         # API Request
         response = requests.post(self.api_url + 'points',
@@ -307,13 +318,13 @@ class DB(object):
         """Add plants to FarmBot Web App Farm Designer."""
         point_ids = []
         for plant in self.plants['remove']:
-            point_ids = self.upload_point(plant, 'red', point_ids)
+            point_ids = self.upload_point(plant, 'Weed', point_ids)
         for plant in self.plants['save']:
-            point_ids = self.upload_point(plant, 'blue', point_ids)
+            point_ids = self.upload_point(plant, 'Detected Plant', point_ids)
         for plant in self.plants['known']:
-            point_ids = self.upload_point(plant, 'green', point_ids)
+            point_ids = self.upload_point(plant, 'Known Plant', point_ids)
         for plant in self.plants['safe_remove']:
-            point_ids = self.upload_point(plant, 'cyan', point_ids)
+            point_ids = self.upload_point(plant, 'Safe-Remove Weed', point_ids)
         self.api_response_error_printer()
         if point_ids:
             # Points have been added to the web app

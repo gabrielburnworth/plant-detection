@@ -13,11 +13,11 @@ def _print_json(function):
     def wrapper(*args, **kwargs):
         """Send Celery Script or return the JSON string.
 
-        Celery Script is sent by prefixing the string in the `BEGIN_CS`
-        environment variable.
+        Celery Script is sent by prefixing the string in the
+        `BEGIN_CELERYSCRIPT` environment variable.
         """
         try:
-            begin_cs = os.environ['BEGIN_CS']
+            begin_cs = os.environ['BEGIN_CELERYSCRIPT']
         except KeyError:
             return function(*args, **kwargs)
         else:

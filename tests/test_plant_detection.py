@@ -190,7 +190,7 @@ class PDTestArgs(unittest.TestCase):
             'output_celeryscript_points': False,
             'grey_out': False,
             'draw_contours': True, 'circle_plants': True,
-            'GUI': False, 'app': False,
+            'GUI': False, 'app': False, 'app_image_id': None
         }
         self.func_args = {}
         for key, value in self.default_func_args.items():
@@ -200,6 +200,7 @@ class PDTestArgs(unittest.TestCase):
                 self.func_args[key] = self.set_input_params[key]
         self.func_args['image'] = 'soil_image.jpg'
         self.func_args['calibration_img'] = 'PD/p2c_test_calibration.jpg'
+        self.func_args['app_image_id'] = 1
         self.func_args['known_plants'] = [
             {'x': 200, 'y': 600, 'radius': 100},
             {'x': 900, 'y': 200, 'radius': 120}]

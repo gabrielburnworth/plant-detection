@@ -70,6 +70,7 @@ class PlantDetection(object):
             detected plants (default = True)
        GUI (boolean): settings for the local GUI (default = False)
        app (boolean): connect to the FarmBot web app (default = False)
+       app_image_id (string): use image from the FarmBot API (default = None)
 
     Examples:
        PD = PlantDetection()
@@ -131,6 +132,7 @@ class PlantDetection(object):
         default_args = {
             # Default Data Inputs
             'image': None, 'calibration_img': None, 'known_plants': None,
+            'app_image_id': None,
             # Default Program Options
             'coordinates': False, 'from_file': False, 'from_env_var': False,
             'clump_buster': False, 'GUI': False, 'app': False,
@@ -276,7 +278,7 @@ class PlantDetection(object):
         self.image = Image(self.params, self.plant_db)
         # Get image to process
         try:  # check for API image ID
-            image_id = self.params.parameters['image_id']
+            image_id = self.args['app_image_id']
         except KeyError:
             image_id = None
         if image_id is not None:  # download image
