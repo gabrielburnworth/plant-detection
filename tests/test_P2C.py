@@ -100,6 +100,11 @@ class P2CorientationTest(unittest.TestCase):
     def setUp(self):
         self.outfile = open('p2c_text_output_test.txt', 'w')
         sys.stdout = self.outfile
+        one_obj = cv2.imread('PD/p2c_test_calibration.jpg', 1)
+        cv2.circle(one_obj,
+                   (175, 475), int(50),
+                   (255, 255, 255), -1)
+        self.single_object = image_file('single_object.jpg', one_obj)
 
     def test_orientation(self):
         """Detect calibration objects based on image origin.
@@ -113,10 +118,10 @@ class P2CorientationTest(unittest.TestCase):
         """
         orientations = [[0, 0], [0, 1], [1, 0], [1, 1]]
         expectations = [
-            [{"x": 1300, "y": 800}, {"x": 300, "y": 800}],
-            [{"x": 1300, "y": 200}, {"x": 300, "y": 200}],
-            [{"x": 300, "y": 800}, {"x": 1300, "y": 800}],
-            [{"x": 300, "y": 200}, {"x": 1300, "y": 200}]
+            {"x": 1300, "y": 800},
+            {"x": 1300, "y": 200},
+            {"x": 300, "y": 800},
+            {"x": 300, "y": 200}
         ]
         for orientation, expectation in zip(orientations, expectations):
             image_origin = '{} {}'.format(
@@ -128,16 +133,15 @@ class P2CorientationTest(unittest.TestCase):
                 DB(), calibration_image='PD/p2c_test_calibration.jpg',
                 load_data_from='env_var')
             p2c.calibration()
+            p2c.image.load('single_object.jpg')
             coordinates = p2c.determine_coordinates()
             for axis in ['x', 'y']:
-                for obj in range(2):
-                    self.assertAlmostEqual(
-                        coordinates[obj][axis],
-                        expectation[obj][axis], delta=5,
-                        msg="[{}][{}]: {} != {} within 5 delta for {}"
-                            " image origin".format(
-                            obj, axis,
-                            coordinates[obj][axis], expectation[obj][axis],
+                self.assertAlmostEqual(
+                    coordinates[0][axis],
+                    expectation[axis], delta=5,
+                    msg="object {} coordinate {} != {} within 5 delta for {}"
+                        " image origin".format(
+                            axis, coordinates[0][axis], expectation[axis],
                             image_origin))
 
     def test_location_rotation(self):
@@ -176,6 +180,7 @@ class P2CorientationTest(unittest.TestCase):
         sys.stdout = sys.__stdout__
         os.remove('p2c_text_output_test.txt')
         try:
+            os.remove('single_object.jpg')
             for i in range(6):
                 os.remove('test_objects_{}.jpg'.format(i))
         except OSError:

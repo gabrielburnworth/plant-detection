@@ -175,6 +175,10 @@ class DB(object):
 
     def identify(self, second_pass=False):
         """Compare detected plants to known to separate plants from weeds."""
+        def _round(number, places):
+            """Round number to given number of decimal places."""
+            factor = 10 ** places
+            return int(number * factor) / float(factor)
         if not second_pass:
             self.plants['remove'] = []
             self.plants['save'] = []
@@ -184,9 +188,9 @@ class DB(object):
         kplants = np.array(
             [[_['x'], _['y'], _['radius']] for _ in self.plants['known']])
         for plant_coord in self.coordinate_locations:
-            plant_x = round(plant_coord[0], 2)
-            plant_y = round(plant_coord[1], 2)
-            plant_r = round(plant_coord[2], 2)
+            plant_x = _round(plant_coord[0], 2)
+            plant_y = _round(plant_coord[1], 2)
+            plant_r = _round(plant_coord[2], 2)
             plant_is = self.identify_plant(plant_x, plant_y, kplants)
             if plant_is == 'remove':
                 self.plants['remove'].append(

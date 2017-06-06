@@ -15,6 +15,12 @@ except:  # noqa pylint:disable=W0702
 from PD import ENV
 
 
+def _round(number, places):
+    """Round number to given number of decimal places."""
+    factor = 10 ** places
+    return int(number * factor) / float(factor)
+
+
 class Pixel2coord(object):
     """Image pixel to machine coordinate conversion.
 
@@ -291,7 +297,7 @@ class Pixel2coord(object):
                 self.calibration_params['calibration_circle_separation'])
             object_sep = max(abs(np.diff(
                 self.plant_db.calibration_pixel_locations[:2, :2], axis=0)[0]))
-            self.calibration_params['coord_scale'] = round(
+            self.calibration_params['coord_scale'] = _round(
                 calibration_circle_sep / object_sep, 4)
 
     def c2p(self, plant_db):
@@ -407,8 +413,8 @@ class Pixel2coord(object):
                 total_rotation_angle += 360
             else:
                 total_rotation_angle -= 360
-        self.calibration_params['total_rotation_angle'] = round(
-            total_rotation_angle, 3)
+        self.calibration_params['total_rotation_angle'] = _round(
+            total_rotation_angle, 2)
         self.calibration_params['camera_z'] = self.plant_db.coordinates[2]
         try:
             self.calibration_params['coord_scale']  # pylint:disable=W0104
