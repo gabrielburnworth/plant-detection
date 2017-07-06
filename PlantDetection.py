@@ -49,13 +49,6 @@ class PlantDetection(object):
             (default = False)
        from_env_var (boolean): load data from environment variable,
             overriding other parameter inputs
-            Example:
-            PLANT_DETECTION_options={"blur": 15, "morph": 8, "iterations": 4,
-             "H": [37, 82], "S": [38, 255], "V": [61, 255]}
-            DB={"plants": [{"x": 10, "y": 20, "radius": 30}]}
-            PLANT_DETECTION_calibration={'total_rotation_angle': 0.0,
-                                         'coord_scale': 1.7182,
-                                         'center_pixel_location': [465, 290]}
             (default = False)
        text_output (boolean): print text to STDOUT (default = True)
        verbose (boolean): print verbose text to STDOUT.
@@ -266,8 +259,7 @@ class PlantDetection(object):
             self.plant_db.load_plants_from_web_app()
         if self.args['from_env_var']:
             # Requested to load detection parameters from json ENV variable
-            message = self.params.load_env_var()
-            print(message)
+            self.params.load_env_var('detect')
 
         # Print input parameters and filename of image to process
         if self.args['verbose'] and self.args['text_output']:
@@ -422,7 +414,7 @@ class PlantDetection(object):
         # Save input parameters
         if self.args['from_env_var']:
             # to environment variable
-            self.params.save_to_env_var()
+            self.params.save_to_env_var('detect')
         elif self.args['save']:
             # to file
             self.params.save()

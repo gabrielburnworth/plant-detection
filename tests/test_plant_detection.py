@@ -68,17 +68,35 @@ class PDTestJSONinput(unittest.TestCase):
 
     def setUp(self):
         os.environ.clear()
+        self.data = {
+            'WEED_DETECTOR_blur': 15,
+            'WEED_DETECTOR_morph': 6,
+            'WEED_DETECTOR_iteration': 4,
+            'WEED_DETECTOR_H_HI': 90,
+            'WEED_DETECTOR_H_LO': 30,
+            'WEED_DETECTOR_S_HI': 255,
+            'WEED_DETECTOR_S_LO': 20,
+            'WEED_DETECTOR_V_HI': 255,
+            'WEED_DETECTOR_V_LO': 20
+        }
+        for key, value in self.data.items():
+            os.environ[key] = str(value)
+        self.input_params = {
+            'blur': self.data['WEED_DETECTOR_blur'],
+            'morph': self.data['WEED_DETECTOR_morph'],
+            'iterations': self.data['WEED_DETECTOR_iteration'],
+            'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
+            'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
+            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']]}
         self.pd = PlantDetection(image='soil_image.jpg',
                                  from_env_var=True,
                                  text_output=False, save=False)
-        self.json_params = {"blur": 15, "morph": 6, "iterations": 4,
-                            "H": [30, 90], "S": [20, 255], "V": [20, 255]}
-        os.environ["PLANT_DETECTION_options"] = json.dumps(self.json_params)
+        # os.environ["PLANT_DETECTION_options"] = json.dumps(self.input_params)
         self.pd.detect_plants()
 
     def test_json_parameters_input(self):
         """Load JSON input parameters from ENV VAR"""
-        self.assertEqual(self.pd.params.parameters, self.json_params)
+        self.assertEqual(self.pd.params.parameters, self.input_params)
 
     def tearDown(self):
         os.environ.clear()
@@ -304,20 +322,61 @@ class ENV_VAR(unittest.TestCase):
 
     def setUp(self):
         os.environ.clear()
-        self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
-                             'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+        self.data = {
+            'WEED_DETECTOR_blur': 15,
+            'WEED_DETECTOR_morph': 6,
+            'WEED_DETECTOR_iteration': 4,
+            'WEED_DETECTOR_H_HI': 90,
+            'WEED_DETECTOR_H_LO': 30,
+            'WEED_DETECTOR_S_HI': 255,
+            'WEED_DETECTOR_S_LO': 20,
+            'WEED_DETECTOR_V_HI': 255,
+            'WEED_DETECTOR_V_LO': 20,
+            'CAMERA_CALIBRATION_blur': 5,
+            'CAMERA_CALIBRATION_morph': 15,
+            'CAMERA_CALIBRATION_iteration': 4,
+            'CAMERA_CALIBRATION_H_HI': 20,
+            'CAMERA_CALIBRATION_H_LO': 160,
+            'CAMERA_CALIBRATION_S_HI': 255,
+            'CAMERA_CALIBRATION_S_LO': 100,
+            'CAMERA_CALIBRATION_V_HI': 255,
+            'CAMERA_CALIBRATION_V_LO': 100,
+            # 'CAMERA_CALIBRATION_total_rotation_angle': 0,
+            # 'CAMERA_CALIBRATION_invert_hue_selection': 'TRUE',
+            # 'CAMERA_CALIBRATION_image_bot_origin_location': 'TOP_LEFT',
+            # 'CAMERA_CALIBRATION_coord_scale': 0,
+            # 'CAMERA_CALIBRATION_camera_offset_y': 0,
+            # 'CAMERA_CALIBRATION_camera_offset_x': 0,
+            # 'CAMERA_CALIBRATION_calibration_object_separation': 0,
+            # 'CAMERA_CALIBRATION_calibration_along_axis': 'X',
+            # 'CAMERA_CALIBRATION_camera_z': 0,
+            # 'CAMERA_CALIBRATION_center_pixel_location_x': 0,
+            # 'CAMERA_CALIBRATION_center_pixel_location_y': 0
+        }
+        for key, value in self.data.items():
+            os.environ[key] = str(value)
+        self.input_params = {
+            'blur': self.data['WEED_DETECTOR_blur'],
+            'morph': self.data['WEED_DETECTOR_morph'],
+            'iterations': self.data['WEED_DETECTOR_iteration'],
+            'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
+            'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
+            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']]}
         self.input_plants = {'plants': [{'y': 600, 'x': 200, 'radius': 100},
                                         {'y': 200, 'x': 900, 'radius': 120}]}
-        self.calibration_input_params = {'blur': 5, 'morph': 15,
-                                         'H': [160, 20], 'S': [100, 255], 'V': [100, 255]}
+        self.calibration_input_params = {
+            'blur': self.data['CAMERA_CALIBRATION_blur'],
+            'morph': self.data['CAMERA_CALIBRATION_morph'],
+            'iterations': self.data['CAMERA_CALIBRATION_iteration'],
+            'H': [self.data['CAMERA_CALIBRATION_H_LO'], self.data['CAMERA_CALIBRATION_H_HI']],
+            'S': [self.data['CAMERA_CALIBRATION_S_LO'], self.data['CAMERA_CALIBRATION_S_HI']],
+            'V': [self.data['CAMERA_CALIBRATION_V_LO'], self.data['CAMERA_CALIBRATION_V_HI']]}
         self.calibration = {'total_rotation_angle': 0.0,
                             'coord_scale': 1.7182,
                             'center_pixel_location': [465, 290]}
 
     def test_set_inputs(self):
         """Set input environment variable"""
-        os.environ["PLANT_DETECTION_options"] = json.dumps(self.input_params)
-        os.environ["DB"] = json.dumps(self.input_plants)
         pd = PlantDetection(image="soil_image.jpg",
                             from_env_var=True,
                             text_output=False, save=False)
@@ -327,16 +386,12 @@ class ENV_VAR(unittest.TestCase):
 
     def test_calibration_ENV_VAR(self):
         """Use calibration data environment variable"""
-        os.environ["PLANT_DETECTION_options"] = json.dumps(
-            self.calibration_input_params)
-        os.environ["DB"] = json.dumps(self.input_plants)
         self.pd = PlantDetection(calibration_img="PD/p2c_test_calibration.jpg",
                                  from_env_var=True,
                                  text_output=False, save=False)
         self.pd.calibrate()
         compare_calibration_results(self)
 
-        os.environ["PLANT_DETECTION_options"] = json.dumps(self.input_params)
         pd = PlantDetection(image="soil_image.jpg",
                             from_env_var=True, coordinates=True,
                             text_output=False, save=False)

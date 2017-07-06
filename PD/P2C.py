@@ -49,13 +49,7 @@ class Pixel2coord(object):
         self.debug = False
         self.env_var_name = 'PLANT_DETECTION_calibration'
         self.plant_db = plant_db
-        self.defaults = {'blur': 5, 'morph': 15,
-                         'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
-                         'calibration_circles_xaxis': True,
-                         'image_bot_origin_location': [0, 1],
-                         'calibration_circle_separation': 1000,
-                         'camera_offset_coordinates': [200, 100],
-                         'calibration_iters': 3}
+        self.defaults = Parameters().cdefaults
 
         # Data and parameter preparation
         self.cparams = Parameters()
@@ -84,13 +78,18 @@ class Pixel2coord(object):
                 self.load_calibration_parameters, IOError)
             self.initialize_data_keys()
         elif load_data_from == 'env_var':
+            # Method 1
             # self._load_parameters(self.load_calibration_data_from_env,
             #                       ValueError)
-            self._load_inputs(
-                self.cparams.load_env_var, ValueError)
-            self._additional_calibration_inputs(
-                self.load_calibration_data_from_env, ValueError)
-            self.initialize_data_keys()
+            # Method 2
+            # self._load_inputs(
+            #     self.cparams.load_env_var, ValueError)
+            # self._additional_calibration_inputs(
+            #     self.load_calibration_data_from_env, ValueError)
+            # self.initialize_data_keys()
+            # Method 3
+            self.cparams.load_env_var('calibration')
+            self.calibration_params = self.cparams.parameters.copy()
         else:  # load defaults
             self.calibration_params = self.defaults
 
@@ -157,8 +156,9 @@ class Pixel2coord(object):
 
     def save_calibration_data_to_env(self):
         """Save calibration parameters to environment variable."""
-        self.json_calibration_data = ENV.save(self.env_var_name,
-                                              self.calibration_params)
+        self.json_calibration_data = self.calibration_params
+        self.cparams.parameters = self.calibration_params
+        self.cparams.save_to_env_var('calibration')
 
     def load_calibration_data_from_env(self):
         """Load calibration parameters from environment variable."""

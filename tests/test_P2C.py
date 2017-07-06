@@ -127,8 +127,12 @@ class P2CorientationTest(unittest.TestCase):
             image_origin = '{} {}'.format(
                 ['top', 'bottom'][orientation[1]],
                 ['left', 'right'][orientation[0]])
-            os.environ['PLANT_DETECTION_calibration'] = json.dumps({
-                'image_bot_origin_location': orientation})
+            convert_to_env_var = {
+                '[0, 0]': 'TOP_LEFT', '[1, 0]': 'TOP_RIGHT',
+                '[0, 1]': 'BOTTOM_LEFT', '[1, 1]': 'BOTTOM_RIGHT'}
+            os.environ[
+                'CAMERA_CALIBRATION_image_bot_origin_location'
+            ] = json.dumps(convert_to_env_var[str(orientation)])
             p2c = Pixel2coord(
                 DB(), calibration_image='PD/p2c_test_calibration.jpg',
                 load_data_from='env_var')
