@@ -50,10 +50,16 @@ def create_pair(label=None, value=None):
     return pair
 
 
-def _saved_location_node(name, _id):
+def _saved_location_node(pointer_type, pointer_id):
     args = {}
-    args[name + '_id'] = _id
-    saved_location = create_node(kind=name, args=args)
+    if 'tool' in pointer_type.lower():
+        location_type = 'tool'
+        args['tool_id'] = pointer_id
+    else:
+        location_type = 'point'
+        args['pointer_type'] = pointer_type
+        args['pointer_id'] = pointer_id
+    saved_location = create_node(kind=location_type, args=args)
     return saved_location
 
 
@@ -114,7 +120,11 @@ def move_absolute(location, offset, speed):
         move_absolute
     Arguments:
         Location:
-            Coordinate (x, y, z) or Saved Location ['tool', tool_id]
+            Coordinate (x, y, z)
+            Saved Location
+                ['tool', tool_id]
+                ['Plant', pointer_id]
+                ['GenericPointer', pointer_id]
         Offset:
             Distance (x, y, z)
         Speed:
@@ -188,16 +198,42 @@ def send_message(message='Hello World!', message_type='success', channel=None):
     Arguments:
         message
         message_type: success, busy, warn, error, info, fun
-        channel: toast
+        channel: toast, email
     """
     args = {}
     args['message'] = message
     args['message_type'] = message_type
     _send_message = create_node(kind='send_message', args=args)
     if channel is not None:
-        body = [create_node(kind='channel', args={"channel_name": channel})]
+        channels = []
+        if isinstance(channel, list):
+            for channel_ in channel:
+                channels.append(channel_)
+        else:
+            channels.append(channel)
+        body = []
+        for channel_ in channels:
+            body.append(create_node(kind='channel',
+                                    args={"channel_name": channel_}))
         _send_message['body'] = body
     return _send_message
+
+
+@_print_json
+def find_home(axis='all', speed=100):
+    """Find home.
+
+    Kind:
+        find_home
+    Arguments:
+        axis: x, y, z, or all
+        speed
+    """
+    args = {}
+    args['axis'] = axis
+    args['speed'] = speed
+    _find_home = create_node(kind='find_home', args=args)
+    return _find_home
 
 
 @_print_json
