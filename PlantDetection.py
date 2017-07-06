@@ -54,7 +54,7 @@ class PlantDetection(object):
        verbose (boolean): print verbose text to STDOUT.
             otherwise, print condensed text output (default = True)
        print_all_json (boolean): print all JSON data used to STDOUT
-            (defalut = False)
+            (default = False)
        grey_out (boolean): grey out regions in image that have
             not been selected (default = False)
        draw_contours (boolean): draw an outline around the boundary of

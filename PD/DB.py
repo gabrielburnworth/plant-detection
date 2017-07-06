@@ -107,7 +107,7 @@ class DB(object):
         """Get machine coordinates from bot."""
         location = ENV.redis_load('location')
         if location is None or test_coordinates:
-            self.coordinates = self.test_coordinates  # testing coordintes
+            self.coordinates = self.test_coordinates  # testing coordinates
         else:
             self.coordinates = location  # current bot coordinates
 

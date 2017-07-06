@@ -381,13 +381,13 @@ class Pixel2coord(object):
                 if self.plant_db.object_count > 2:
                     if not warning_issued:
                         print(" Warning: {} objects detected. "
-                              "Exactly 2 reccomended. "
+                              "Exactly 2 recommended. "
                               "Incorrect results likely.".format(
                                   self.plant_db.object_count))
                         warning_issued = True
                 if self.plant_db.object_count < 2:
                     print(" ERROR: {} objects detected. "
-                          "At least 2 required. Exactly 2 reccomended.".format(
+                          "At least 2 required. Exactly 2 recommended.".format(
                               self.plant_db.object_count))
                     return True
                 # Use detected objects to determine required rotation angle

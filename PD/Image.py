@@ -151,7 +151,7 @@ class Image(object):
 
         try:
             self.images['morphed'].shape  # pylint:disable=W0104
-            self.images['current'] = self.images['morphed']  # workon morphed
+            self.images['current'] = self.images['morphed']  # work on morphed
             self._rotate(rotationangle)  # rotate according to angle
             self.images['morphed'] = self.images['current'].copy()  # morphed
         except AttributeError:

@@ -66,7 +66,7 @@ class LoadENVTest(unittest.TestCase):
             None)
 
     def test_none_user_env_load(self):
-        """Try to get a non-existant user_env from redis"""
+        """Try to get a non-existent user_env from redis"""
         self.assertEqual(
             ENV.redis_load('user_env', name='doesntexist', other_redis=self.r),
             None)
@@ -77,7 +77,7 @@ class LoadENVTest(unittest.TestCase):
         self.assertEqual(ENV.load_env('oktestenv', get_json=False), 'test')
 
     def test_none_os_env_load(self):
-        """Try to get a non-existant env from os"""
+        """Try to get a non-existent env from os"""
         self.assertEqual(ENV.load_env('doesntexist'), None)
 
     def test_bad_json_os_env_load(self):

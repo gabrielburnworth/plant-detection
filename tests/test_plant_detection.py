@@ -573,7 +573,7 @@ class PDTestTextOutput(unittest.TestCase):
         check_file_length(self, 8)
 
     def test_verbose_text_output(self):
-        """Test verbpse text output"""
+        """Test verbose text output"""
         pd = PlantDetection(
             image="soil_image.jpg",
             calibration_img="PD/p2c_test_calibration.jpg",
