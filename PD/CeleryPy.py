@@ -254,15 +254,19 @@ def if_statement(lhs='x', op='is', rhs=0, _then=None, _else=None):
     args['op'] = op
     args['rhs'] = rhs
     if _then is None:
+        _then_kind = 'nothing'
         _then_args = {}
     else:
+        _then_kind = 'execute'
         _then_args = {"sequence_id": _then}
     if _else is None:
+        _else_kind = 'nothing'
         _else_args = {}
     else:
+        _else_kind = 'execute'
         _else_args = {"sequence_id": _else}
-    args['_then'] = create_node(kind='nothing', args=_then_args)
-    args['_else'] = create_node(kind='nothing', args=_else_args)
+    args['_then'] = create_node(kind=_then_kind, args=_then_args)
+    args['_else'] = create_node(kind=_else_kind, args=_else_args)
     _if_statement = create_node(kind='_if', args=args)
     return _if_statement
 
