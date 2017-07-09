@@ -288,8 +288,9 @@ class DB(object):
             unsent_cs.append(unsent)
         return unsent_cs
 
-    def upload_point(self, point, name, id_list):
-        """Upload a point to the FarmBot Web App."""
+    @staticmethod
+    def prepare_point_data(point, name):
+        """Prepare point payload for uploading to the FarmBot Web App."""
         # color
         if name == 'Weed':
             color = 'red'
@@ -299,15 +300,21 @@ class DB(object):
             color = 'green'
         elif name == 'Safe-Remove Weed':
             color = 'cyan'
+        else:
+            color = 'grey'
         # payload
         plant_x, plant_y = round(point['x'], 2), round(point['y'], 2)
         plant_r = round(point['radius'], 2)
-        plant = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
-                 'radius': str(plant_r),
-                 'meta': {'created_by': 'plant-detection',
-                          'color': color},
-                 'name': name, 'pointer_type': 'GenericPointer'}
-        payload = json.dumps(plant)
+        point_data = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
+                      'radius': str(plant_r),
+                      'meta': {'created_by': 'plant-detection',
+                               'color': color},
+                      'name': name, 'pointer_type': 'GenericPointer'}
+        return point_data
+
+    def upload_point(self, point, name, id_list):
+        """Upload a point to the FarmBot Web App."""
+        payload = json.dumps(self.prepare_point_data(point, name))
         # API Request
         response = requests.post(self.api_url + 'points',
                                  data=payload, headers=self.headers)

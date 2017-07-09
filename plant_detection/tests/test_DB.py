@@ -40,6 +40,18 @@ class DBTest(unittest.TestCase):
                 'value': 'plant-detection', 'label': 'created_by'}}],
              'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
                  'kind': 'coordinate', 'args': {'y': 1000.0, 'x': 800.0, 'z': 0}}}}]
+        self.point_data = {
+            "pointer_type": "GenericPointer",
+            "name": "Weed",
+            "x": "1000.0",
+            "y": "825.0",
+            "z": 0,
+            "radius": "50.0",
+            "meta": {
+                "created_by": "plant-detection",
+                "color": "red"
+            }
+        }
 
     def test_plant_id_remove(self):
         """Check plants to be removed"""
@@ -52,6 +64,11 @@ class DBTest(unittest.TestCase):
     def test_plant_id_safe_remove(self):
         """Check plants to be safely removed"""
         self.assertEqual(self.safe_remove, self.db.plants['safe_remove'])
+
+    def test_point_data_preparation(self):
+        """Verify point data content and format."""
+        self.assertEqual(self.point_data,
+                         self.db.prepare_point_data(self.remove[0], 'Weed'))
 
     def test_api_download(self):
         """Run (failing) plant download assuming no API_TOKEN ENV"""
