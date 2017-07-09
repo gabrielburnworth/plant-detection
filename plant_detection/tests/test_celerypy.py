@@ -5,7 +5,7 @@ For Plant Detection.
 """
 import unittest
 import json
-from PD import CeleryPy
+from plant_detection import CeleryPy
 
 
 class CeleryScript(unittest.TestCase):

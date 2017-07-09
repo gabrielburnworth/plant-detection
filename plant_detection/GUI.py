@@ -18,7 +18,7 @@ class PlantDetectionGUI(object):
         self.hsv_window = 'HSV Selection'
         self.override_hsv_defaults = 0
         self.hsv_window_loaded = 0
-        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
         # Image
         if image_filename:

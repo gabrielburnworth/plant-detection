@@ -36,7 +36,10 @@ class Image(object):
         self.debug = False
         self.calibration_debug = False
         self.image_name = None
-        self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        self.dir = (
+            os.path.dirname(
+                os.path.realpath(__file__))[:-(len('plant_detection') + 1)]
+            + os.sep)
 
     def status(self):
         """Get state of images."""

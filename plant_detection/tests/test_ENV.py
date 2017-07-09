@@ -11,7 +11,7 @@ try:
     test_redis = True
 except ImportError:
     test_redis = False
-from PD import ENV
+from plant_detection import ENV
 
 
 @unittest.skipUnless(test_redis, "requires fakeredis")

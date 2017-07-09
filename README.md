@@ -27,27 +27,26 @@ For an overview of the image processing performed, see [the wiki](../../wiki/Pla
 
 Using the sample soil image, `soil_image.jpg`.
 
-Run the script: `python PlantDetection.py`
+Run the script: `python -m plant_detection.PlantDetection`
 
 View `soil_image_marked.jpg`
 
 #### Alternatively, process images using a python command line:
 ```python
-from PlantDetection import PlantDetection
+from plant_detection.PlantDetection import PlantDetection
 help(PlantDetection)
-PD = PlantDetection(image='soil_image.jpg')
-PD.calibrate()
+PD = PlantDetection(image='plant_detection/soil_image.jpg')
 PD.detect_plants()
-PD = PlantDetection(image='soil_image.jpg', morph=15, iterations=2, debug=True)
+PD = PlantDetection(image='plant_detection/soil_image.jpg', morph=15, iterations=2, debug=True)
 PD.detect_plants()
 ```
 
 #### Or, run the GUI and move the sliders:
-`python PlantDetection.py --GUI`
+`python -m plant_detection.PlantDetection --GUI`
 
 Default image to process is `soil_image.jpg`. To process other images, use:
 
-`python PlantDetection.py --GUI other_image_name.png`
+`python -m plant_detection.PlantDetection --GUI other_image_name.png`
 
 <img src="https://cloud.githubusercontent.com/assets/12681652/15620382/b7f31dd6-240e-11e6-853f-356d1a90376e.png" width="350">
 
@@ -57,16 +56,16 @@ Default image to process is `soil_image.jpg`. To process other images, use:
 For example: `test_image.jpg`
 
 #### 2. Run the GUI and move the sliders:
-`python PlantDetection.py --GUI test_image.jpg`
+`python -m plant_detection.PlantDetection --GUI test_image.jpg`
 
 This will create a plant detection parameters input file from the slider values.
 
 #### 3. Run detection:
-`python PlantDetection.py test_image.jpg`
+`python -m plant_detection.PlantDetection test_image.jpg`
 
 >Or, for more options, enter a python command line: `python`
 ```python
-from PlantDetection import PlantDetection
+from plant_detection.PlantDetection import PlantDetection
 PD = PlantDetection(image='test_image.jpg', from_file=True)
 PD.detect_plants()
 ```
@@ -78,17 +77,18 @@ Annotated image: `test_image_marked.png`
 ## Tips
 
 #### View help
-`python -c 'from PlantDetection import PlantDetection; help(PlantDetection)'`
+`python -c 'from plant_detection.PlantDetection import PlantDetection; help(PlantDetection)'`
 
 #### Hue range aid
-`python PlantDetection.py --GUI PD/p2c_test_color.jpg`
+`python -m plant_detection.PlantDetection --GUI plant_detection/p2c_test_color.jpg`
 
 ## Project Directory
 
 ```
 plant-detection
-├── PD  - Plant Detection Package
-│   ├── __init__.py
+├── plant_detection  - Plant Detection Package
+│   ├── tests  - project test suite
+│   ├── PlantDetection.py  - calibrate and detect plants
 │   ├── Capture.py  - take photos with a camera
 │   ├── Parameters.py  - handle input parameters
 │   ├── Image.py  - image processing
@@ -99,10 +99,8 @@ plant-detection
 │   ├── GUI.py  - interactively change input parameters
 │   ├── p2c_test_calibration.jpg  - coordinate conversion calibration test image
 │   ├── p2c_test_objects.jpg  - coordinate conversion detection test image
-│   └── p2c_test_color.jpg  - color range test image
-├── tests  - project test suite
+│   ├── p2c_test_color.jpg  - color range test image
+│   └── soil_image.jpg  - plant detection test image
 ├── quickscripts  - scripts to run specific tasks
-├── soil_image.jpg  - plant detection test image
-├── PlantDetection.py  - calibrate and detect plants
 └── README.md
 ```

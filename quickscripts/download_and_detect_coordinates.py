@@ -9,8 +9,8 @@ import sys
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from PlantDetection import PlantDetection
-from PD import ENV
+from plant_detection.PlantDetection import PlantDetection
+from plant_detection import ENV
 
 if __name__ == "__main__":
     IMAGE_ID = ENV.load('PLANT_DETECTION_selected_image', get_json=False)

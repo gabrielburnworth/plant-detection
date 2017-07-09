@@ -6,7 +6,7 @@ For Plant Detection.
 import os
 import sys
 import unittest
-from PD.DB import DB
+from plant_detection.DB import DB
 
 
 class DBTest(unittest.TestCase):

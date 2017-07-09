@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 import numpy as np
-from PD.Capture import Capture
+from plant_detection.Capture import Capture
 
 
 class CheckCameraTest(unittest.TestCase):

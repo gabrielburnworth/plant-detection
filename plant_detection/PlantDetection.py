@@ -6,11 +6,11 @@ Detects green plants on a dirt background
 """
 import sys
 import os
-from PD.P2C import Pixel2coord
-from PD.Image import Image
-from PD.Parameters import Parameters
-from PD.DB import DB
-from PD.Capture import Capture
+from plant_detection.P2C import Pixel2coord
+from plant_detection.Image import Image
+from plant_detection.Parameters import Parameters
+from plant_detection.DB import DB
+from plant_detection.Capture import Capture
 
 
 class PlantDetection(object):
@@ -69,16 +69,20 @@ class PlantDetection(object):
        PD = PlantDetection()
        PD.detect_plants()
 
-       PD = PlantDetection(image='soil_image.jpg', morph=3, iterations=10,
+       PD = PlantDetection(
+          image='plant_detection/soil_image.jpg', morph=3, iterations=10,
           debug=True)
        PD.detect_plants()
 
-       PD = PlantDetection(image='soil_image.jpg', blur=9, morph=7,
-          iterations=4, calibration_img="PD/p2c_test_calibration.jpg")
+       PD = PlantDetection(
+          image='plant_detection/soil_image.jpg',
+          blur=9, morph=7, iterations=4,
+          calibration_img="plant_detection/p2c_test_calibration.jpg")
        PD.calibrate()
        PD.detect_plants()
 
-       PD = PlantDetection(image='soil_image.jpg', blur=15, grey_out=True,
+       PD = PlantDetection(
+         image='plant_detection/soil_image.jpg', blur=15, grey_out=True,
          array=[
             {"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
             {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
@@ -426,10 +430,11 @@ class PlantDetection(object):
         if self.args['save']:
             self.plant_db.save_plants()
 
+
 if __name__ == "__main__":
     DIR = os.path.dirname(os.path.realpath(__file__)) + os.sep
     IMG = DIR + 'soil_image.jpg'
-    CALIBRATION_IMG = DIR + "PD/p2c_test_calibration.jpg"
+    CALIBRATION_IMG = DIR + "p2c_test_calibration.jpg"
     if len(sys.argv) == 1:
         PD = PlantDetection(
             image=IMG,
@@ -441,7 +446,7 @@ if __name__ == "__main__":
         PD.detect_plants()  # detect coordinates and sizes of weeds and plants
     else:  # command line argument(s)
         if sys.argv[1] == '--GUI':
-            from PD.GUI import PlantDetectionGUI
+            from plant_detection.GUI import PlantDetectionGUI
             if len(sys.argv) == 3:  # image filename provided
                 GUI = PlantDetectionGUI(image_filename=sys.argv[2],
                                         plant_detection=PlantDetection)
@@ -450,7 +455,7 @@ if __name__ == "__main__":
                                         plant_detection=PlantDetection)
             GUI.run()
         elif sys.argv[1] == '--cGUI':
-            from PD.GUI import CalibrationGUI
+            from plant_detection.GUI import CalibrationGUI
             if len(sys.argv) == 3:  # calibration image filename provided
                 calibration_gui = CalibrationGUI(
                     cimage_filename=sys.argv[2],

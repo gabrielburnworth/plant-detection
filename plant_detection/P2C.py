@@ -12,7 +12,7 @@ except:  # noqa pylint:disable=W0702
     from Parameters import Parameters
     from Image import Image
     from DB import DB
-from PD import ENV
+from plant_detection import ENV
 
 
 def _round(number, places):

@@ -1,0 +1,3 @@
+include README.md
+include PD/*.jpg
+include requirements.txt

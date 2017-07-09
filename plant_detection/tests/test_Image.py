@@ -6,9 +6,9 @@ For Plant Detection.
 import os
 import unittest
 import numpy as np
-from PD.Image import Image
-from PD.Parameters import Parameters
-from PD.DB import DB
+from plant_detection.Image import Image
+from plant_detection.Parameters import Parameters
+from plant_detection.DB import DB
 
 
 class ImageTest(unittest.TestCase):
@@ -24,7 +24,7 @@ class ImageTest(unittest.TestCase):
         self.image.params.parameters['blur'] = 2
         self.image.params.parameters['morph'] = 0
         self.image.params.parameters['iterations'] = 0
-        self.image.load('soil_image.jpg')
+        self.image.load('plant_detection/soil_image.jpg')
         self.image.initial_processing()
         self.assertEqual(self.image.params.parameters['blur'], 3)
         self.assertEqual(self.image.params.parameters['morph'], 1)

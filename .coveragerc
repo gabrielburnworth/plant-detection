@@ -1,9 +1,10 @@
 [run]
 branch = True
 omit =
-    test*
+    *test*
     *__init__.py
     *GUI*
+    setup.py
 source = .
 
 [report]

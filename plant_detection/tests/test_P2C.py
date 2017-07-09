@@ -8,8 +8,8 @@ import sys
 import cv2
 import json
 import unittest
-from PD.P2C import Pixel2coord
-from PD.DB import DB
+from plant_detection.P2C import Pixel2coord
+from plant_detection.DB import DB
 
 
 def rotate(image, angle):
@@ -31,7 +31,8 @@ class P2CcountTest(unittest.TestCase):
         self.outfile = open('p2c_text_output_test.txt', 'w')
         sys.stdout = self.outfile
         self.db = DB()
-        self.two_objects = cv2.imread('PD/p2c_test_calibration.jpg', 1)
+        self.two_objects = cv2.imread(
+            'plant_detection/p2c_test_calibration.jpg', 1)
         self.three_objects = self.two_objects.copy()
         self.one_object = self.two_objects.copy()
         self.zero_objects = self.two_objects.copy()
@@ -100,7 +101,7 @@ class P2CorientationTest(unittest.TestCase):
     def setUp(self):
         self.outfile = open('p2c_text_output_test.txt', 'w')
         sys.stdout = self.outfile
-        one_obj = cv2.imread('PD/p2c_test_calibration.jpg', 1)
+        one_obj = cv2.imread('plant_detection/p2c_test_calibration.jpg', 1)
         cv2.circle(one_obj,
                    (175, 475), int(50),
                    (255, 255, 255), -1)
@@ -134,7 +135,7 @@ class P2CorientationTest(unittest.TestCase):
                 'CAMERA_CALIBRATION_image_bot_origin_location'
             ] = json.dumps(convert_to_env_var[str(orientation)])
             p2c = Pixel2coord(
-                DB(), calibration_image='PD/p2c_test_calibration.jpg',
+                DB(), calibration_image='plant_detection/p2c_test_calibration.jpg',
                 load_data_from='env_var')
             p2c.calibration()
             p2c.image.load('single_object.jpg')
@@ -155,7 +156,8 @@ class P2CorientationTest(unittest.TestCase):
             for angle in [-10, 10]:
                 img = 'test_objects_{}.jpg'.format(i)
                 i += 1
-                calibration_img = cv2.imread('PD/p2c_test_calibration.jpg', 1)
+                calibration_img = cv2.imread(
+                    'plant_detection/p2c_test_calibration.jpg', 1)
                 if flip > 1:
                     cv2.circle(calibration_img,
                                (465, 290), int(1000),

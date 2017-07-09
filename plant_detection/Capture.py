@@ -8,7 +8,7 @@ import os
 from time import sleep
 from subprocess import call
 import cv2
-from PD import ENV
+from plant_detection import ENV
 
 CAMERA = ENV.load('camera', get_json=False)
 if CAMERA is None:
@@ -47,7 +47,7 @@ class Capture(object):
 
     def save(self, filename_only=False):
         """Save captured image."""
-        directory = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
         try:
             testfilename = directory + 'test_write.try_to_write'
             testfile = open(testfilename, "w")

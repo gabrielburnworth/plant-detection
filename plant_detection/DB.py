@@ -8,8 +8,8 @@ import json
 import base64
 import requests
 import numpy as np
-from PD import CeleryPy
-from PD import ENV
+from plant_detection import CeleryPy
+from plant_detection import ENV
 
 
 class DB(object):
@@ -23,7 +23,7 @@ class DB(object):
         self.pixel_locations = []
         self.coordinate_locations = []
         self.calibration_pixel_locations = []
-        self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.plants_file = "plant-detection_plants.json"
         self.tmp_dir = None
         self.weeder_destrut_r = 50

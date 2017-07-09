@@ -6,7 +6,7 @@ For Plant Detection.
 import os
 import json
 import cv2
-from PD import ENV
+from plant_detection import ENV
 
 
 class Parameters(object):
@@ -30,7 +30,7 @@ class Parameters(object):
         self.array = None  # default
         self.kernel_type = 'ellipse'
         self.morph_type = 'close'
-        self.dir = os.path.dirname(os.path.realpath(__file__))[:-3] + os.sep
+        self.dir = os.path.dirname(os.path.realpath(__file__)) + os.sep
         self.input_parameters_file = "plant-detection_inputs.json"
         self.tmp_dir = None
         self.calibration_data = None

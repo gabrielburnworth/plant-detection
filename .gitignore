@@ -1,6 +1,6 @@
 # Plant Detection results
 *
-!PD
+!plant_detection
 !tests
 !quickscripts
 !.gitignore
@@ -14,3 +14,4 @@
 !p2c_test_calibration.jpg
 !p2c_test_color.jpg
 !p2c_test_objects.jpg
+!MANIFEST.in
