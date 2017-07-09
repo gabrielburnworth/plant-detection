@@ -13,155 +13,367 @@ class CeleryScript(unittest.TestCase):
 
     def setUp(self):
         # add_point
-        self.add_point = CeleryPy.add_point(1, 2, 3, 4)
+        self.add_point = CeleryPy.add_point(
+            point_x=1, point_y=2, point_z=3, point_r=4)
         self.add_point_static = {
-            'kind': 'add_point', 'args': {'radius': 4, 'location': {
-                'kind': 'coordinate', 'args': {'y': 2, 'x': 1, 'z': 3}}},
-            'body': [{'kind': 'pair', 'args': {
-                'value': 'plant-detection', 'label': 'created_by'}}]
+            "kind": "add_point",
+            "args": {
+                "radius": 4,
+                "location": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 1,
+                        "y": 2,
+                        "z": 3
+                    }
+                }
+            },
+            "body": [
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "created_by",
+                        "value": "plant-detection"
+                    }
+                }
+            ]
         }
         # set_user_env
-        self.set_env_var = CeleryPy.set_user_env('PLANT_DETECTION_options',
-                                                 json.dumps({"in": "puts"}))
-        self.set_env_var_static = {"kind": "set_user_env", "args": {},
-                                   "body": [{"kind": "pair", "args": {
-                                       "label": "PLANT_DETECTION_options",
-                                       "value": "{\"in\": \"puts\"}"}}]}
+        self.set_env_var = CeleryPy.set_user_env(
+            label='PLANT_DETECTION_options', value=json.dumps({"in": "puts"}))
+        self.set_env_var_static = {
+            "kind": "set_user_env",
+            "args": {},
+            "body": [
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "PLANT_DETECTION_options",
+                        "value": "{\"in\": \"puts\"}"
+                    }
+                }
+            ]
+        }
         # move_absolute: coordinate
         self.move_absolute_coordinate = CeleryPy.move_absolute(
-            [10, 20, 30],
-            [40, 50, 60],
-            800)
+            location=[10, 20, 30],
+            offset=[40, 50, 60],
+            speed=800)
         self.move_absolute_coordinate_static = {
-            'kind': 'move_absolute', 'args': {'speed': 800, 'location': {
-                'kind': 'coordinate', 'args': {'y': 20, 'x': 10, 'z': 30}},
-                'offset': {'kind': 'coordinate',
-                           'args': {'y': 50, 'x': 40, 'z': 60}}}
+            "kind": "move_absolute",
+            "args": {
+                "location": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 10,
+                        "y": 20,
+                        "z": 30
+                    }
+                },
+                "offset": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 40,
+                        "y": 50,
+                        "z": 60
+                    }
+                },
+                "speed": 800
+            }
         }
         # move_absolute: tool
         self.move_absolute_tool = CeleryPy.move_absolute(
-            ['tool', 1],
-            [40, 50, 60],
-            800)
+            location=['tool', 1],
+            offset=[40, 50, 60],
+            speed=800)
         self.move_absolute_tool_static = {
-            'kind': 'move_absolute', 'args': {'speed': 800, 'location': {
-                'kind': 'tool', 'args': {'tool_id': 1}},
-                'offset': {'kind': 'coordinate',
-                           'args': {'y': 50, 'x': 40, 'z': 60}}}
+            "kind": "move_absolute",
+            "args": {
+                "location": {
+                    "kind": "tool",
+                    "args": {
+                        "tool_id": 1
+                    }
+                },
+                "offset": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 40,
+                        "y": 50,
+                        "z": 60
+                    }
+                },
+                "speed": 800
+            }
         }
         # move_absolute: plant
         self.move_absolute_plant = CeleryPy.move_absolute(
-            ['Plant', 1],
-            [40, 50, 60],
-            800)
+            location=['Plant', 1],
+            offset=[40, 50, 60],
+            speed=800)
         self.move_absolute_plant_static = {
-            'kind': 'move_absolute', 'args': {'speed': 800, 'location': {
-                'kind': 'point', 'args': {
-                    'pointer_type': 'Plant', 'pointer_id': 1}},
-                'offset': {'kind': 'coordinate',
-                           'args': {'y': 50, 'x': 40, 'z': 60}}}}
+            "kind": "move_absolute",
+            "args": {
+                "location": {
+                    "kind": "point",
+                    "args": {
+                        "pointer_type": "Plant",
+                        "pointer_id": 1
+                    }
+                },
+                "offset": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 40,
+                        "y": 50,
+                        "z": 60
+                    }
+                },
+                "speed": 800
+            }
+        }
         # move_absolute: point
         self.move_absolute_point = CeleryPy.move_absolute(
-            ['GenericPointer', 1],
-            [40, 50, 60],
-            800)
+            location=['GenericPointer', 1],
+            offset=[40, 50, 60],
+            speed=800)
         self.move_absolute_point_static = {
-            'kind': 'move_absolute', 'args': {'speed': 800, 'location': {
-                'kind': 'point', 'args': {
-                    'pointer_type': 'GenericPointer', 'pointer_id': 1}},
-                'offset': {'kind': 'coordinate',
-                           'args': {'y': 50, 'x': 40, 'z': 60}}}}
+            "kind": "move_absolute",
+            "args": {
+                "location": {
+                    "kind": "point",
+                    "args": {
+                        "pointer_type": "GenericPointer",
+                        "pointer_id": 1
+                    }
+                },
+                "offset": {
+                    "kind": "coordinate",
+                    "args": {
+                        "x": 40,
+                        "y": 50,
+                        "z": 60
+                    }
+                },
+                "speed": 800
+            }
+        }
         # move_relative
-        self.move_relative = CeleryPy.move_relative((100, 200, 300), 800)
+        self.move_relative = CeleryPy.move_relative(
+            distance=(100, 200, 300), speed=800)
         self.move_relative_static = {
-            'kind': 'move_relative',
-            'args': {'x': 100, 'y': 200, 'z': 300, 'speed': 800}}
+            "kind": "move_relative",
+            "args": {
+                "x": 100,
+                "y": 200,
+                "z": 300,
+                "speed": 800
+            }
+        }
         # data_update: all
-        self.data_update = CeleryPy.data_update('points', '*')
+        self.data_update = CeleryPy.data_update(endpoint='points')
         self.data_update_static = {
             "kind": "data_update",
-            "args": {"value": "updated"},
-            "body": [{"kind": "pair", "args": {"label": "points", "value": "*"}}]
+            "args": {
+                "value": "updated"
+            },
+            "body": [
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "*"
+                    }
+                }
+            ]
+        }
+        # data_update: one
+        self.data_update_id = CeleryPy.data_update(endpoint='points', ids_=101)
+        self.data_update_id_static = {
+            "kind": "data_update",
+            "args": {
+                "value": "updated"
+            },
+            "body": [
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "101"
+                    }
+                }
+            ]
         }
         # data_update: ids
-        self.data_update_list = CeleryPy.data_update('points', [123, 456, 789])
+        self.data_update_list = CeleryPy.data_update(
+            endpoint='points', ids_=[123, 456, 789])
         self.data_update_list_static = {
             "kind": "data_update",
-            "args": {"value": "updated"},
+            "args": {
+                "value": "updated"
+            },
             "body": [
-                {"kind": "pair", "args": {"label": "points", "value": "123"}},
-                {"kind": "pair", "args": {"label": "points", "value": "456"}},
-                {"kind": "pair", "args": {"label": "points", "value": "789"}}
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "123"
+                    }
+                },
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "456"
+                    }
+                },
+                {
+                    "kind": "pair",
+                    "args": {
+                        "label": "points",
+                        "value": "789"
+                    }
+                }
             ]
         }
         # send_message: logs
-        self.send_message = CeleryPy.send_message('Hello', 'fun')
+        self.send_message = CeleryPy.send_message(
+            message='Hello', message_type='fun')
         self.send_message_static = {
             "kind": "send_message",
-            "args": {"message": "Hello", "message_type": "fun"}
+            "args": {
+                "message": "Hello",
+                "message_type": "fun"
+            }
         }
         # send_message: toast
         self.send_message_toast = CeleryPy.send_message(
-            'Hello', 'fun', 'toast')
+            message='Hello', message_type='fun', channel='toast')
         self.send_message_toast_static = {
             "kind": "send_message",
-            "args": {"message": "Hello", "message_type": "fun"},
-            "body": [{"kind": "channel", "args": {"channel_name": "toast"}}]
+            "args": {
+                "message": "Hello",
+                "message_type": "fun"
+            },
+            "body": [
+                {
+                    "kind": "channel",
+                    "args": {
+                        "channel_name": "toast"
+                    }
+                }
+            ]
         }
         # send_message: channels
         self.send_message_channels = CeleryPy.send_message(
-            'Hello', 'fun', ['toast', 'email'])
+            message='Hello', message_type='fun', channel=['toast', 'email'])
         self.send_message_channels_static = {
             "kind": "send_message",
-            "args": {"message": "Hello", "message_type": "fun"},
-            "body": [{"kind": "channel", "args": {"channel_name": "toast"}},
-                     {"kind": "channel", "args": {"channel_name": "email"}}]
+            "args": {
+                "message": "Hello",
+                "message_type": "fun"
+            },
+            "body": [
+                {
+                    "kind": "channel",
+                    "args": {
+                        "channel_name": "toast"
+                    }
+                },
+                {
+                    "kind": "channel",
+                    "args": {
+                        "channel_name": "email"
+                    }
+                }
+            ]
         }
         # find_home
-        self.find_home = CeleryPy.find_home('all', 100)
+        self.find_home = CeleryPy.find_home(axis='all', speed=100)
         self.find_home_static = {
             "kind": "find_home",
-            "args": {"axis": "all", "speed": 100}
+            "args": {
+                "axis": "all",
+                "speed": 100
+            }
         }
         # _if: execute
-        self.if_statement = CeleryPy.if_statement('x', 'is', 0, 1, 2)
+        self.if_statement = CeleryPy.if_statement(
+            lhs='x', op='is', rhs=0, _then=1, _else=2)
         self.if_statement_static = {
-            "kind": "_if", "args": {
-                "lhs": "x", "op": "is", "rhs": 0,
-                "_then": {"kind": "execute", "args": {"sequence_id": 1}},
-                "_else": {"kind": "execute", "args": {"sequence_id": 2}}}
+            "kind": "_if",
+            "args": {
+                "lhs": "x",
+                "op": "is",
+                "rhs": 0,
+                "_then": {
+                    "kind": "execute",
+                    "args": {
+                        "sequence_id": 1
+                    }
+                },
+                "_else": {
+                    "kind": "execute",
+                    "args": {
+                        "sequence_id": 2
+                    }
+                }
+            }
         }
         # _if: nothing
-        self.if_statement_nothing = CeleryPy.if_statement('x', 'is', 0)
+        self.if_statement_nothing = CeleryPy.if_statement(
+            lhs='x', op='is', rhs=0)
         self.if_statement_nothing_static = {
-            "kind": "_if", "args": {
-                "lhs": "x", "op": "is", "rhs": 0,
-                "_then": {"kind": "nothing", "args": {}},
-                "_else": {"kind": "nothing", "args": {}}}
+            "kind": "_if",
+            "args": {
+                "lhs": "x",
+                "op": "is",
+                "rhs": 0,
+                "_then": {
+                    "kind": "nothing",
+                    "args": {}
+                },
+                "_else": {
+                    "kind": "nothing",
+                    "args": {}
+                }
+            }
         }
         # write_pin
-        self.write_pin = CeleryPy.write_pin(0, 1)
+        self.write_pin = CeleryPy.write_pin(number=0, value=1)
         self.write_pin_static = {
             "kind": "write_pin",
-            "args": {"pin_number": 0, "pin_value": 1, "pin_mode": 0}
+            "args": {
+                "pin_number": 0,
+                "pin_value": 1,
+                "pin_mode": 0
+            }
         }
         # read_pin
-        self.read_pin = CeleryPy.read_pin(0, 0, 'pin')
+        self.read_pin = CeleryPy.read_pin(number=0, mode=0, label='pin')
         self.read_pin_static = {
             "kind": "read_pin",
-            "args": {"pin_number": 0, "pin_mode": 0, "label": "pin"}
+            "args": {
+                "pin_number": 0,
+                "pin_mode": 0,
+                "label": "pin"
+            }
         }
         # execute_sequence
-        self.execute_sequence = CeleryPy.execute_sequence(1)
+        self.execute_sequence = CeleryPy.execute_sequence(sequence_id=1)
         self.execute_sequence_static = {
             "kind": "execute",
-            "args": {"sequence_id": 1}
+            "args": {
+                "sequence_id": 1
+            }
         }
         # execute_script
-        self.execute_script = CeleryPy.execute_script('plant-detection')
+        self.execute_script = CeleryPy.execute_script(label='plant-detection')
         self.execute_script_static = {
             "kind": "execute_script",
-            "args": {"label": "plant-detection"}
+            "args": {
+                "label": "plant-detection"
+            }
         }
         # take_photo
         self.take_photo = CeleryPy.take_photo()
@@ -170,10 +382,12 @@ class CeleryScript(unittest.TestCase):
             "args": {}
         }
         # wait
-        self.wait = CeleryPy.wait(100)
+        self.wait = CeleryPy.wait(milliseconds=100)
         self.wait_static = {
             "kind": "wait",
-            "args": {"milliseconds": 100}
+            "args": {
+                "milliseconds": 100
+            }
         }
 
     def test_add_point(self):
@@ -212,6 +426,10 @@ class CeleryScript(unittest.TestCase):
     def test_data_update(self):
         """Check data_update Celery Script"""
         self.assertEqual(self.data_update_static, self.data_update)
+
+    def test_data_update_one(self):
+        """Check data_update Celery Script for one ID"""
+        self.assertEqual(self.data_update_id_static, self.data_update_id)
 
     def test_data_update_list(self):
         """Check data_update Celery Script for a list of IDs"""

@@ -161,7 +161,7 @@ def move_relative(distance=(0, 0, 0), speed=800):
 
 
 @_print_json
-def data_update(endpoint, ids_):
+def data_update(endpoint, ids_=None):
     """Celery Script to signal that a sync is required.
 
     Kind:
@@ -182,8 +182,11 @@ def data_update(endpoint, ids_):
         for id_ in ids_:
             _endpoint = create_pair(label=endpoint, value=str(id_))
             body.append(create_node(kind='pair', args=_endpoint))
+    elif ids_ is None:
+        _endpoint = create_pair(label=endpoint, value='*')
+        body = [create_node(kind='pair', args=_endpoint)]
     else:
-        _endpoint = create_pair(label=endpoint, value=ids_)
+        _endpoint = create_pair(label=endpoint, value=str(ids_))
         body = [create_node(kind='pair', args=_endpoint)]
     _data_update['body'] = body
     return _data_update
