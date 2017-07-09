@@ -1,3 +1,4 @@
 include README.md
-include PD/*.jpg
+include plant_detection/*.jpg
+include quickscripts/*
 include requirements.txt

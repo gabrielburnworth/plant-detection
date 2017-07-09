@@ -32,7 +32,7 @@ _Settings are stored in `.landscape.yml`_
 `prospector`
 
 ## Test Suite
-_Can also be run via `python tests/tests.py`_
+_Can also be run via `python -m plant_detection.tests.tests`_
 ### Setup
 `pip install fakeredis`
 ### Run

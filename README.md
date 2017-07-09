@@ -21,6 +21,8 @@ For an overview of the image processing performed, see [the wiki](../../wiki/Pla
 
 `pip install -r requirements.txt`
 
+see [Contributing](contributing.md) for more installation options
+
 ## Basic Usage
 
 #### Run the script:

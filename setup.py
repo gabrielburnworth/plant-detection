@@ -5,16 +5,18 @@
 from setuptools import setup
 
 with open('README.md') as f:
-    readme = f.read()
+    README = f.read()
 
 with open('requirements.txt') as f:
-    required = f.read().splitlines()
+    REQUIRED = f.read().splitlines()
+
+DESCRIPTION = 'Detect and mark plants in a soil area image using Python OpenCV'
 
 if __name__ == '__main__':
     setup(name='plant_detection',
           version='0.0.1',
-          description='Detect and mark plants in a soil area image using Python OpenCV',
-          long_description=readme,
+          description=DESCRIPTION,
+          long_description=README,
           url='https://github.com/FarmBot-Labs/plant-detection',
           author='FarmBot Inc.',
           license='MIT',
@@ -32,7 +34,7 @@ if __name__ == '__main__':
               'Topic :: Scientific/Engineering :: Image Recognition',
           ],
           keywords=['farmbot', 'python', 'opencv'],
-          #   install_requires=required,
+          # install_requires=REQUIRED,
           test_suite='plant_detection.tests.tests.test_suite',
-          scripts=['quickscripts/load_and_detect.py'],
+          scripts=['quickscripts/capture_and_detect.py'],
           zip_safe=False)
