@@ -6,6 +6,7 @@ Python wrappers for FarmBot Celery Script JSON nodes.
 import os
 import json
 from functools import wraps
+import requests
 
 
 def _print_json(function):
@@ -13,15 +14,22 @@ def _print_json(function):
     def wrapper(*args, **kwargs):
         """Send Celery Script or return the JSON string.
 
-        Celery Script is sent by prefixing the string in the
-        `BEGIN_CELERYSCRIPT` environment variable.
+        Celery Script is sent by sending an HTTP POST request to /celery_script
+        using the url in the `FARMWARE_URL` environment variable.
         """
         try:
-            begin_cs = os.environ['BEGIN_CELERYSCRIPT']
+            farmware_url = os.environ['FARMWARE_URL']
         except KeyError:
+            # Not running as a Farmware: return JSON
             return function(*args, **kwargs)
         else:
-            print(begin_cs + json.dumps(function(*args, **kwargs)))
+            # Running as a Farmware: send Celery Script command
+            farmware_token = os.environ['FARMWARE_TOKEN']
+            headers = {'Authorization': 'bearer {}'.format(farmware_token),
+                       'content-type': "application/json"}
+            payload = json.dumps(function(*args, **kwargs))
+            requests.post(farmware_url + 'celery_script',
+                          data=payload, headers=headers)
             return
     return wrapper
 
