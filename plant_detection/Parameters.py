@@ -108,7 +108,7 @@ class Parameters(object):
             elif 'camera_offset' in label:
                 ENV.save(prefix + 'camera_offset_x', value[0])
                 ENV.save(prefix + 'camera_offset_y', value[1])
-            elif 'calibration_object_separation' in label:
+            elif 'calibration_circle_separation' in label:
                 ENV.save(prefix + 'calibration_object_separation', value)
             elif 'calibration_circles_xaxis' in label:
                 if value:
@@ -183,6 +183,9 @@ class Parameters(object):
                 elif 'calibration_along_axis' in name:
                     if 'x' in loaded_value.lower():
                         input_template['calibration_circles_xaxis'] = True
+                elif 'calibration_object_separation' in name:
+                    input_template[
+                        'calibration_circle_separation'] = loaded_value
                 elif 'image_bot_origin_location' in name:
                     if 'bottom_left' in loaded_value.lower():
                         input_template['image_bot_origin_location'] = [0, 1]
