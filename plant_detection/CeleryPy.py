@@ -175,7 +175,7 @@ def data_update(endpoint, ids_=None):
     Kind:
         data_update
     Args:
-        value: updated
+        value: update
     Body:
         Kind: pair
         Args:
@@ -183,7 +183,7 @@ def data_update(endpoint, ids_=None):
             value: id
     """
     args = {}
-    args['value'] = 'updated'
+    args['value'] = 'update'
     _data_update = create_node(kind='data_update', args=args)
     if isinstance(ids_, list):
         body = []

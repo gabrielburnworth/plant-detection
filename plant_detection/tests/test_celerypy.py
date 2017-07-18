@@ -175,7 +175,7 @@ class CeleryScript(unittest.TestCase):
         self.data_update_static = {
             "kind": "data_update",
             "args": {
-                "value": "updated"
+                "value": "update"
             },
             "body": [
                 {
@@ -192,7 +192,7 @@ class CeleryScript(unittest.TestCase):
         self.data_update_id_static = {
             "kind": "data_update",
             "args": {
-                "value": "updated"
+                "value": "update"
             },
             "body": [
                 {
@@ -210,7 +210,7 @@ class CeleryScript(unittest.TestCase):
         self.data_update_list_static = {
             "kind": "data_update",
             "args": {
-                "value": "updated"
+                "value": "update"
             },
             "body": [
                 {
