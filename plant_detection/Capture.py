@@ -9,6 +9,7 @@ from time import sleep
 from subprocess import call
 import cv2
 from plant_detection import ENV
+from plant_detection.CeleryPy import log
 
 CAMERA = ENV.load('camera', get_json=False)
 if CAMERA is None:
@@ -44,6 +45,8 @@ class Capture(object):
                 if not self.silent:
                     print("No camera detected at video{}.".format(
                         self.camera_port))
+                    log("USB Camera not detected.",
+                        message_type='error', title='take-photo')
 
     def save(self, filename_only=False):
         """Save captured image."""
@@ -72,7 +75,8 @@ class Capture(object):
                 retcode = call(["raspistill", "-w", "640", "-h", "480",
                                 "-o", self.save(filename_only=True)])
             except OSError:
-                print("Raspberry Pi Camera not detected.")
+                log("Raspberry Pi Camera not detected.",
+                    message_type='error', title='take-photo')
                 sys.exit(0)
             else:
                 if retcode == 0:
@@ -80,7 +84,8 @@ class Capture(object):
                         self.save(filename_only=True)))
                     return self.save(filename_only=True)
                 else:
-                    print("Problem getting image.")
+                    log("Problem getting image.",
+                        message_type='error', title='take-photo')
                     sys.exit(0)
         else:  # With USB camera:
             self.camera_port = 0
@@ -101,7 +106,8 @@ class Capture(object):
             self.ret, self.image = camera.read()
             camera.release()
             if not self.ret:
-                print("Problem getting image.")
+                log("Problem getting image.",
+                    message_type='error', title='take-photo')
                 sys.exit(0)
             self.image_captured = True
             return self.save()

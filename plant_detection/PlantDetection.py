@@ -11,6 +11,7 @@ from plant_detection.Image import Image
 from plant_detection.Parameters import Parameters
 from plant_detection.DB import DB
 from plant_detection.Capture import Capture
+from plant_detection.CeleryPy import log
 
 
 class PlantDetection(object):
@@ -317,15 +318,17 @@ class PlantDetection(object):
             for key in present:
                 present[key] = self.p2c.calibration_params[key]
         except KeyError:
-            print("ERROR: Coordinate conversion calibration values "
-                  "not found. Run calibration first.")
+            log("ERROR: Coordinate conversion calibration values "
+                "not found. Run calibration first.",
+                message_type='error', title='plant-detection')
             sys.exit(0)
         # Validate coordinate conversion calibration data for image
         calibration_data_valid = self.p2c.validate_calibration_data(
             self.image.images['current'])
         if not calibration_data_valid:
-            print("ERROR: Coordinate conversion calibration values "
-                  "invalid for provided image.")
+            log("ERROR: Coordinate conversion calibration values "
+                "invalid for provided image.",
+                message_type='error', title='plant-detection')
             sys.exit(0)
         # Determine object coordinates
         self.image.coordinates(self.p2c,

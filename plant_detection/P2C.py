@@ -4,15 +4,11 @@ import sys
 import os
 import json
 import numpy as np
-try:
-    from .Parameters import Parameters
-    from .Image import Image
-    from .DB import DB
-except:  # noqa pylint:disable=W0702
-    from Parameters import Parameters
-    from Image import Image
-    from DB import DB
+from plant_detection.Parameters import Parameters
+from plant_detection.Image import Image
+from plant_detection.DB import DB
 from plant_detection import ENV
+from plant_detection.CeleryPy import log
 
 
 def _round(number, places):
@@ -376,27 +372,31 @@ class Pixel2coord(object):
             if i != (self.calibration_params['calibration_iters'] - 1):
                 # Check number of objects detected and notify user if needed.
                 if len(self.plant_db.calibration_pixel_locations) == 0:
-                    print("ERROR: Calibration failed. No objects detected.")
+                    log("ERROR: Calibration failed. No objects detected.",
+                        message_type='error', title='camera-calibration')
                     return True
                 if self.plant_db.object_count > 2:
                     if not warning_issued:
-                        print(" Warning: {} objects detected. "
-                              "Exactly 2 recommended. "
-                              "Incorrect results likely.".format(
-                                  self.plant_db.object_count))
+                        log(" Warning: {} objects detected. "
+                            "Exactly 2 recommended. "
+                            "Incorrect results likely.".format(
+                                self.plant_db.object_count),
+                            message_type='warning', title='camera-calibration')
                         warning_issued = True
                 if self.plant_db.object_count < 2:
-                    print(" ERROR: {} objects detected. "
-                          "At least 2 required. Exactly 2 recommended.".format(
-                              self.plant_db.object_count))
+                    log(" ERROR: {} objects detected. "
+                        "At least 2 required. Exactly 2 recommended.".format(
+                            self.plant_db.object_count),
+                        message_type='error', title='camera-calibration')
                     return True
                 # Use detected objects to determine required rotation angle
                 self.rotationdetermination()
                 if abs(self.rotationangle) > 120:
-                    print(" ERROR: Excessive rotation required. "
-                          "Check that the calibration objects are "
-                          "parallel with the desired axis and that "
-                          "they are the only two objects detected.")
+                    log(" ERROR: Excessive rotation required. "
+                        "Check that the calibration objects are "
+                        "parallel with the desired axis and that "
+                        "they are the only two objects detected.",
+                        message_type='error', title='camera-calibration')
                     return True
                 self.image.rotate_main_images(self.rotationangle)
                 total_rotation_angle += self.rotationangle
@@ -420,7 +420,8 @@ class Pixel2coord(object):
             self.calibration_params['coord_scale']  # pylint:disable=W0104
             failure_flag = False
         except KeyError:
-            print("ERROR: Calibration failed.")
+            log("ERROR: Calibration failed.",
+                message_type='error', title='camera-calibration')
             failure_flag = True
         return failure_flag
 

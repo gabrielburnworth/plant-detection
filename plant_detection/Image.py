@@ -7,10 +7,7 @@ import sys
 import os
 import numpy as np
 import cv2
-try:
-    from .Capture import Capture
-except:  # noqa pylint:disable=W0702
-    from Capture import Capture
+from plant_detection.Capture import Capture
 
 CIRCLE_LINEWIDTH = 3
 CONTOUR_LINEWIDTH = 2
