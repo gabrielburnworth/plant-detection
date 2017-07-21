@@ -234,9 +234,9 @@ class Pixel2coord(object):
             origin = self.calibration_params['image_bot_origin_location']
             # rotate image origin
             if origin[0] == origin[1]:
-                origin[vert] = not origin[vert]
+                origin[vert] = int(not origin[vert])
             else:
-                origin[horiz] = not origin[horiz]
+                origin[horiz] = int(not origin[horiz])
             # set image origin
             self.calibration_params['image_bot_origin_location'] = origin
             # swap image center pixel horiz/vert

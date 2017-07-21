@@ -4,6 +4,7 @@
 For Plant Detection.
 """
 import os
+import copy
 import json
 import cv2
 from plant_detection import ENV
@@ -153,10 +154,10 @@ class Parameters(object):
                 common_app_var_names + calibration_names)]
         if 'calibration' in widget:
             app_var_names = calibration_app_var_names
-            input_template = self.cdefaults.copy()
+            input_template = copy.deepcopy(self.cdefaults)
         else:
             app_var_names = options_app_var_names
-            input_template = self.defaults.copy()
+            input_template = copy.deepcopy(self.defaults)
         invert_hue_selection = False
         try:
             if input_template['invert_hue_selection']:
@@ -181,8 +182,8 @@ class Parameters(object):
                 elif 'iteration' in name:
                     input_template['iterations'] = loaded_value
                 elif 'calibration_along_axis' in name:
-                    if 'x' in loaded_value.lower():
-                        input_template['calibration_circles_xaxis'] = True
+                    input_template['calibration_circles_xaxis'] = bool(
+                        'x' in loaded_value.lower())
                 elif 'calibration_object_separation' in name:
                     input_template[
                         'calibration_circle_separation'] = loaded_value
@@ -214,10 +215,9 @@ class Parameters(object):
                         input_template['center_pixel_location'] = [0, 0]
                     input_template['center_pixel_location'][1] = loaded_value
                 elif 'invert_hue_selection' in name:
-                    if 'true' in loaded_value.lower():
-                        invert_hue_selection = True
+                    invert_hue_selection = bool('true' in loaded_value.lower())
                 else:
-                    for cname in calibration_names:
+                    for cname in calibration_names + common_app_var_names:
                         if cname in name:
                             input_template[cname] = loaded_value
         if invert_hue_selection:
