@@ -230,15 +230,15 @@ class Pixel2coord(object):
             return turns
 
         def _origin_rot(horiz, vert):  # rotate image origin with image
-            # # get image origin
-            # origin = self.calibration_params['image_bot_origin_location']
-            # # rotate image origin
-            # if origin[0] == origin[1]:
-            #     origin[vert] = int(not origin[vert])
-            # else:
-            #     origin[horiz] = int(not origin[horiz])
-            # # set image origin
-            # self.calibration_params['image_bot_origin_location'] = origin
+            # get image origin
+            origin = self.calibration_params['image_bot_origin_location']
+            # rotate image origin
+            if origin[0] == origin[1]:
+                origin[vert] = int(not origin[vert])
+            else:
+                origin[horiz] = int(not origin[horiz])
+            # set image origin
+            self.calibration_params['image_bot_origin_location'] = origin
             # swap image center pixel horiz/vert
             if cpl is None:
                 center = self.calibration_params['center_pixel_location']
