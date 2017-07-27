@@ -6,6 +6,11 @@ For Plant Detection.
 import os
 import sys
 import unittest
+try:
+    import fakeredis
+    test_redis = True
+except ImportError:
+    test_redis = False
 from plant_detection.DB import DB
 
 
@@ -101,3 +106,45 @@ class DBTest(unittest.TestCase):
         self.outfile.close()
         sys.stdout = sys.__stdout__
         os.remove('db_text_output_test.txt')
+
+
+@unittest.skipUnless(test_redis, "requires fakeredis")
+class LocationTest(unittest.TestCase):
+    """Get the bot's location"""
+
+    def setUp(self):
+        self.coordinates = [300, 500, -100]
+        self.test_coordinates = [600, 400, 0]
+        self.r = fakeredis.FakeStrictRedis()
+        self.db = DB()
+
+    def test_get_coordinates(self):
+        """Get location from redis"""
+        self.r.set('BOT_STATUS.location_data.position.x', self.coordinates[0])
+        self.r.set('BOT_STATUS.location_data.position.y', self.coordinates[1])
+        self.r.set('BOT_STATUS.location_data.position.z', self.coordinates[2])
+        self.db.getcoordinates(redis=self.r)
+        self.assertEqual(self.db.coordinates, self.coordinates)
+
+    def test_partial_coordinates(self):
+        """Coordinates aren't complete"""
+        self.r.set('BOT_STATUS.location_data.position.x', self.coordinates[0])
+        self.r.set('BOT_STATUS.location_data.position.y', self.coordinates[1])
+        self.db.getcoordinates(redis=self.r)
+        self.assertEqual(self.db.coordinates, self.test_coordinates)
+
+    def test_no_coordinates(self):
+        """Coordinates don't exist"""
+        self.db.getcoordinates(redis=self.r)
+        self.assertEqual(self.db.coordinates, self.test_coordinates)
+
+    def test_not_coordinates(self):
+        """Coordinates aren't numbers"""
+        self.r.set('BOT_STATUS.location_data.position.x', 'text')
+        self.r.set('BOT_STATUS.location_data.position.y', 'text')
+        self.r.set('BOT_STATUS.location_data.position.z', 'text')
+        self.db.getcoordinates(redis=self.r)
+        self.assertEqual(self.db.coordinates, self.test_coordinates)
+
+    def tearDown(self):
+        self.r.flushall()

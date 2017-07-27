@@ -8,6 +8,7 @@ import os
 import numpy as np
 import cv2
 from plant_detection.Capture import Capture
+from plant_detection.CeleryPy import log
 
 CIRCLE_LINEWIDTH = 3
 CONTOUR_LINEWIDTH = 2
@@ -75,6 +76,10 @@ class Image(object):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
         self.plant_db.getcoordinates(test_coordinates=False)
+        if self.plant_db.coordinates is None and self.plant_db.app:
+            log("ERROR: Could not get image coordinates.",
+                message_type='error', title='take-photo')
+            sys.exit(0)
         if self.images['original'] is None:
             print("ERROR: Incorrect image path ({}).".format(filename))
             sys.exit(0)

@@ -19,30 +19,10 @@ class LoadENVTest(unittest.TestCase):
     """Check data retrieval from redis"""
 
     def setUp(self):
-        self.coordinates = [300, 500, -100]
         self.r = fakeredis.FakeStrictRedis()
         self.testvalue = 'some test data'
         self.testjson = {"label": "testdata", "value": 5}
         self.badjson_string = '{"label": "whoop'
-
-    def test_get_coordinates(self):
-        """Get location from redis"""
-        self.r.lpush('BOT_STATUS.location', self.coordinates[2])
-        self.r.lpush('BOT_STATUS.location', self.coordinates[1])
-        self.r.lpush('BOT_STATUS.location', self.coordinates[0])
-        self.assertEqual(ENV.redis_load(
-            'location', other_redis=self.r), self.coordinates)
-
-    def test_no_coordinates(self):
-        """Coordinates don't exist"""
-        self.assertEqual(ENV.redis_load(
-            'location', other_redis=self.r), None)
-
-    def test_not_coordinates(self):
-        """Coordinates aren't a list"""
-        self.r.set('BOT_STATUS.location', 'notalist')
-        self.assertEqual(ENV.redis_load(
-            'location', other_redis=self.r), None)
 
     def test_env_load(self):
         """Get user_env from redis"""

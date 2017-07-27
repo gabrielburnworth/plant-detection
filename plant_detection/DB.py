@@ -29,6 +29,7 @@ class DB(object):
         self.weeder_destrut_r = 50
         self.test_coordinates = [600, 400, 0]
         self.coordinates = None
+        self.app = False
 
         # API requests setup
         try:
@@ -103,10 +104,21 @@ class DB(object):
         else:
             return None
 
-    def getcoordinates(self, test_coordinates=False):
+    def getcoordinates(self, test_coordinates=False, redis=None):
         """Get machine coordinates from bot."""
-        location = ENV.redis_load('location')
-        if location is None or test_coordinates:
+        location = None
+        temp = []
+        for axis in ['x', 'y', 'z']:
+            temp.append(ENV.redis_load('location_data.position.' + axis,
+                                       other_redis=redis))
+        if all(axis_value is not None for axis_value in temp):
+            try:
+                location = [int(coordinate) for coordinate in temp]
+            except ValueError:
+                pass
+        if test_coordinates:
+            self.coordinates = self.test_coordinates  # testing coordinates
+        elif location is None and not self.app:
             self.coordinates = self.test_coordinates  # testing coordinates
         else:
             self.coordinates = location  # current bot coordinates

@@ -119,6 +119,7 @@ class PlantDetection(object):
         if self.args['app']:
             self.args['verbose'] = False
             self.args['from_env_var'] = True
+            self.plant_db.app = True
 
         # Remaining initialization
         self.p2c = None

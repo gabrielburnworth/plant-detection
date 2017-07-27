@@ -49,20 +49,18 @@ def redis_load(key, name=None, get_json=True, other_redis=None):
         except redis.exceptions.ConnectionError:
             return
 
-        if key == 'location':
-            temp = _redis.lrange('BOT_STATUS.location', 0, -1)
-            if temp and isinstance(temp, list):
-                value = [int(coordinate) for coordinate in temp]
+        if name is None:
+            temp = _redis.get('BOT_STATUS.{}'.format(key))
         else:
             temp = _redis.get('BOT_STATUS.{}.{}'.format(key, name))
-            if temp is None:
-                return
+        if temp is None:
+            return
 
-            decoded = temp.decode('utf-8')
-            if get_json:
-                value = _load_json(decoded)
-            else:
-                value = decoded
+        decoded = temp.decode('utf-8')
+        if get_json:
+            value = _load_json(decoded)
+        else:
+            value = decoded
     return value
 
 
