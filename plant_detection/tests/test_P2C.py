@@ -191,3 +191,15 @@ class P2CorientationTest(unittest.TestCase):
                 os.remove('test_objects_{}.jpg'.format(i))
         except OSError:
             pass
+
+
+class P2CoriginTest(unittest.TestCase):
+    """Check origin after calibration"""
+
+    def test_origin_location(self):
+        p2c = Pixel2coord(DB())
+        p2c.calibration_params['image_bot_origin_location'] = [0, 0]
+        p2c.calibration_params['center_pixel_location'] = [100, 200]
+        p2c._block_rotations(90)
+        self.assertEqual(
+            p2c.calibration_params['image_bot_origin_location'], [0, 0])
