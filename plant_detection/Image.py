@@ -92,7 +92,7 @@ class Image(object):
         image_filename = self.plant_db.get_image(image_id)
         if image_filename is None:
             raise IOError("Image download failed.")
-        self.images['original'] = self.load(image_filename)
+        self.load(image_filename)
         os.remove(image_filename)
 
     def save(self, title, image=None):

@@ -185,6 +185,8 @@ class PlantDetection(object):
                 self.params.parameters['V'][1] = hsv_max[2]
 
     def _calibration_input(self):  # provide inputs to calibration
+        if self.args['app_image_id'] is not None:
+            self.args['calibration_img'] = int(self.args['app_image_id'])
         if self.args['calibration_img'] is None and self.args['coordinates']:
             # Calibration requested, but no image provided.
             # Take a calibration image.

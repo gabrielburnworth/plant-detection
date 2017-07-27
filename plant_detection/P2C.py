@@ -135,7 +135,15 @@ class Pixel2coord(object):
     def _calibration_image_preparation(self, calibration_image):
         if calibration_image is not None:
             self.image = Image(self.cparams, self.plant_db)
-            self.image.load(calibration_image)
+            if isinstance(calibration_image, int):
+                try:
+                    self.image.download(calibration_image)
+                except IOError:
+                    print("Image download failed for image ID {}.".format(
+                        str(calibration_image)))
+                    sys.exit(0)
+            else:
+                self.image.load(calibration_image)
             self.calibration_params[
                 'center_pixel_location'] = self.get_image_center(
                     self.image.images['current'])
