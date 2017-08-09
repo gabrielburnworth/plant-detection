@@ -344,8 +344,8 @@ class DB(object):
             point_ids = self.upload_point(plant, 'Weed', point_ids)
         for plant in self.plants['save']:
             point_ids = self.upload_point(plant, 'Detected Plant', point_ids)
-        for plant in self.plants['known']:
-            point_ids = self.upload_point(plant, 'Known Plant', point_ids)
+        # for plant in self.plants['known']:
+        #     point_ids = self.upload_point(plant, 'Known Plant', point_ids)
         for plant in self.plants['safe_remove']:
             point_ids = self.upload_point(plant, 'Safe-Remove Weed', point_ids)
         self.api_response_error_printer()
