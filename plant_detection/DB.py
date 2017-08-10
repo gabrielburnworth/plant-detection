@@ -43,7 +43,8 @@ class DB(object):
             server = json.loads(json_payload)['iss']
         except:  # noqa pylint:disable=W0702
             server = '//my.farmbot.io'
-        self.api_url = 'https:' + server + '/api/'
+        self.api_url = 'http{}:{}/api/'.format(
+            's' if 'localhost' not in server else '', server)
         self.headers = {'Authorization': 'Bearer {}'.format(api_token),
                         'content-type': "application/json"}
         self.errors = {}
