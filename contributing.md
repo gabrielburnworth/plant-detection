@@ -1,6 +1,6 @@
 # Contributing
 
-## Setup
+## Setup (Dependency installation)
 #### python / OpenCV 3:
 `pip install -r requirements.txt`
 #### python / OpenCV 2 (Debian):
@@ -11,11 +11,11 @@ sudo apt-get install python3-numpy python3-requests python3-redis
 pip install opencv-python
 ```
 
-## Support
-| Python | NumPy | OpenCV |
-|:------:|:-----:|:------:|
-| 2.7    | 1.8   | 2.4    |
-| 3.5    | 1.12  | 3.2    |
+## Supported dependency versions
+|             | Python | NumPy | OpenCV |
+|:-----------:|:------:|:-----:|:------:|
+| **Legacy**  | 2.7    | 1.8   | 2.4    |
+| **Current** | 3.6    | 1.13  | 3.3    |
 #### Check versions:
 ```
 python --version
@@ -24,7 +24,7 @@ python -c 'import numpy; print("NumPy " + numpy.__version__)'
 ```
 _Build matrix in `.travis.yml`_
 
-## Style
+## Static code analysis
 _Settings are stored in `.landscape.yml`_
 ### Setup
 `sudo pip install prospector`
@@ -44,7 +44,7 @@ python -m plant_detection.Capture
 python -m plant_detection.P2C
 ```
 
-## Coverage
+## Test coverage
 _Settings stored in `.coveragerc`_
 ### Setup
 `sudo pip install coverage`
