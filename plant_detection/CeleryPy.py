@@ -9,6 +9,13 @@ from functools import wraps
 import requests
 
 
+def farmware_api_url():
+    """Return the correct Farmware API URL according to FarmBot OS version."""
+    major_version = int(os.getenv('FARMBOT_OS_VERSION', '0.0.0')[0])
+    base_url = os.environ['FARMWARE_URL']
+    return base_url + 'api/v1/' if major_version > 5 else base_url
+
+
 def _print_json(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -18,7 +25,7 @@ def _print_json(function):
         using the url in the `FARMWARE_URL` environment variable.
         """
         try:
-            farmware_url = os.environ['FARMWARE_URL']
+            os.environ['FARMWARE_URL']
         except KeyError:
             # Not running as a Farmware: return JSON
             return function(*args, **kwargs)
@@ -28,7 +35,7 @@ def _print_json(function):
             headers = {'Authorization': 'bearer {}'.format(farmware_token),
                        'content-type': "application/json"}
             payload = json.dumps(function(*args, **kwargs))
-            requests.post(farmware_url + 'celery_script',
+            requests.post(farmware_api_url() + 'celery_script',
                           data=payload, headers=headers)
             return
     return wrapper
