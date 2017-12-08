@@ -30,28 +30,48 @@ class DB(object):
         self.test_coordinates = [600, 400, 0]
         self.coordinates = None
         self.app = False
-
-        # API requests setup
-        try:
-            api_token = os.environ['API_TOKEN']
-        except KeyError:
-            api_token = 'x.eyJpc3MiOiAiLy9zdGFnaW5nLmZhcm1ib3QuaW86NDQzIn0.x'
-        try:
-            encoded_payload = api_token.split('.')[1]
-            encoded_payload += '=' * (4 - len(encoded_payload) % 4)
-            json_payload = base64.b64decode(encoded_payload).decode('utf-8')
-            server = json.loads(json_payload)['iss']
-        except:  # noqa pylint:disable=W0702
-            server = '//my.farmbot.io'
-        self.api_url = 'http{}:{}/api/'.format(
-            's' if 'localhost' not in server else '', server)
-        self.headers = {'Authorization': 'Bearer {}'.format(api_token),
-                        'content-type': "application/json"}
         self.errors = {}
+
+    @staticmethod
+    def _api_info(api):
+        """API requests setup."""
+        api_info = {}
+        if api == 'app':
+            try:
+                api_info['token'] = os.environ['API_TOKEN']
+            except KeyError:
+                api_info['token'] = 'x.{}.x'.format(
+                    'eyJpc3MiOiAiLy9zdGFnaW5nLmZhcm1ib3QuaW86NDQzIn0')
+            try:
+                encoded_payload = api_info['token'].split('.')[1]
+                encoded_payload += '=' * (4 - len(encoded_payload) % 4)
+                json_payload = base64.b64decode(
+                    encoded_payload).decode('utf-8')
+                server = json.loads(json_payload)['iss']
+            except:  # noqa pylint:disable=W0702
+                server = '//my.farmbot.io'
+            api_info['url'] = 'http{}:{}/api/'.format(
+                's' if 'localhost' not in server else '', server)
+        elif api == 'farmware':
+            try:
+                api_info['token'] = os.environ['FARMWARE_TOKEN']
+            except KeyError:
+                api_info['token'] = 'NA'
+            try:
+                os.environ['FARMWARE_URL']
+            except KeyError:
+                api_info['url'] = 'NA'
+            else:
+                api_info['url'] = CeleryPy.farmware_api_url()
+        api_info['headers'] = {
+            'Authorization': 'Bearer {}'.format(api_info['token']),
+            'content-type': "application/json"}
+        return api_info
 
     def api_get(self, endpoint):
         """GET from an API endpoint."""
-        response = requests.get(self.api_url + endpoint, headers=self.headers)
+        api = self._api_info('app')
+        response = requests.get(api['url'] + endpoint, headers=api['headers'])
         self.api_response_error_collector(response)
         self.api_response_error_printer()
         return response
@@ -81,6 +101,15 @@ class DB(object):
                 for chunk in response:
                     img_file.write(chunk)
 
+    def _get_bot_state(self):
+        api = self._api_info('farmware')
+        response = requests.get(api['url'] + 'bot/state',
+                                headers=api['headers'])
+        self.api_response_error_collector(response)
+        self.api_response_error_printer()
+        if response.status_code == 200:
+            return response.json()
+
     def get_image(self, image_id):
         """Download an image from the FarmBot Web App API."""
         response = self.api_get('images/' + str(image_id))
@@ -105,16 +134,30 @@ class DB(object):
         else:
             return None
 
+    def _get_raw_coordinate_values(self, redis=None):
+        temp = []
+        legacy = int(os.getenv('FARMBOT_OS_VERSION', '0.0.0')[0]) < 6
+        if legacy:
+            for axis in ['x', 'y', 'z']:
+                temp.append(ENV.redis_load('location_data.position.' + axis,
+                                           other_redis=redis))
+        else:
+            state = self._get_bot_state()
+            for axis in ['x', 'y', 'z']:
+                try:
+                    value = state['location_data']['position'][str(axis)]
+                except KeyError:
+                    value = None
+                temp.append(value)
+        return temp
+
     def getcoordinates(self, test_coordinates=False, redis=None):
         """Get machine coordinates from bot."""
         location = None
-        temp = []
-        for axis in ['x', 'y', 'z']:
-            temp.append(ENV.redis_load('location_data.position.' + axis,
-                                       other_redis=redis))
-        if all(axis_value is not None for axis_value in temp):
+        raw_values = self._get_raw_coordinate_values(redis)
+        if all(axis_value is not None for axis_value in raw_values):
             try:
-                location = [int(coordinate) for coordinate in temp]
+                location = [int(coordinate) for coordinate in raw_values]
             except ValueError:
                 pass
         if test_coordinates:
@@ -329,8 +372,9 @@ class DB(object):
         """Upload a point to the FarmBot Web App."""
         payload = json.dumps(self.prepare_point_data(point, name))
         # API Request
-        response = requests.post(self.api_url + 'points',
-                                 data=payload, headers=self.headers)
+        api = self._api_info('app')
+        response = requests.post(api['url'] + 'points',
+                                 data=payload, headers=api['headers'])
         point_id = None
         if response.status_code == 200:
             point_id = response.json()['id']
