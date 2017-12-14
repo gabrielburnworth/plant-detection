@@ -388,7 +388,7 @@ class Pixel2coord(object):
                     if not warning_issued:
                         log(" Warning: {} objects detected. "
                             "Exactly 2 recommended. "
-                            "Incorrect results likely.".format(
+                            "Incorrect results possible. Check output.".format(
                                 self.plant_db.object_count),
                             message_type='warning', title='camera-calibration')
                         warning_issued = True

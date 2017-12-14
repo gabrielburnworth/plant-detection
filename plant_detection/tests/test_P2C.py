@@ -106,6 +106,12 @@ class P2CorientationTest(unittest.TestCase):
                    (175, 475), int(50),
                    (255, 255, 255), -1)
         self.single_object = image_file('single_object.jpg', one_obj)
+        self.calibration_data = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
+                                 'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                                 'calibration_circles_xaxis': True,
+                                 'camera_offset_coordinates': [200, 100],
+                                 'image_bot_origin_location': [0, 1],
+                                 'calibration_circle_separation': 1000}
 
     def test_orientation(self):
         """Detect calibration objects based on image origin.
@@ -134,6 +140,10 @@ class P2CorientationTest(unittest.TestCase):
             os.environ[
                 'CAMERA_CALIBRATION_image_bot_origin_location'
             ] = json.dumps(convert_to_env_var[str(orientation)])
+            os.environ['CAMERA_CALIBRATION_calibration_object_separation'] = '1000'
+            os.environ['CAMERA_CALIBRATION_camera_offset_x'] = '200'
+            os.environ['CAMERA_CALIBRATION_camera_offset_y'] = '100'
+            os.environ['CAMERA_CALIBRATION_calibration_along_axis'] = 'X'
             p2c = Pixel2coord(
                 DB(), calibration_image='plant_detection/p2c_test_calibration.jpg',
                 load_data_from='env_var')
@@ -172,7 +182,8 @@ class P2CorientationTest(unittest.TestCase):
                     calibration_img = cv2.flip(calibration_img, 0)
                 calibration_img = rotate(calibration_img, angle)
                 cv2.imwrite(img, calibration_img)
-                p2c = Pixel2coord(DB(), calibration_image=img)
+                p2c = Pixel2coord(DB(), calibration_image=img,
+                    calibration_data=self.calibration_data)
                 p2c.calibration()
                 self.assertAlmostEqual(
                     p2c.calibration_params['total_rotation_angle'],

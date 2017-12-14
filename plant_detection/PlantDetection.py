@@ -23,6 +23,8 @@ class PlantDetection(object):
        coordinates (boolean): use coordinate conversion (default = False)
        calibration_img (filename): calibration image filename used to
            output coordinates instead of pixel locations (default = None)
+       calibration_data (dict): calibration data inputs,
+           overwrites other calibration data inputs (default = None)
        known_plants (list): {'x': x, 'y': y, 'radius': radius}
                             of known (intentional) plants
                             (default = None)
@@ -131,7 +133,7 @@ class PlantDetection(object):
         default_args = {
             # Default Data Inputs
             'image': None, 'calibration_img': None, 'known_plants': None,
-            'app_image_id': None,
+            'app_image_id': None, 'calibration_data': None,
             # Default Program Options
             'coordinates': False, 'from_file': False, 'from_env_var': False,
             'clump_buster': False, 'GUI': False, 'app': False,
@@ -204,6 +206,7 @@ class PlantDetection(object):
         # Call coordinate conversion module
         self.p2c = Pixel2coord(self.plant_db,
                                calibration_image=self.args['calibration_img'],
+                               calibration_data=self.args['calibration_data'],
                                load_data_from=calibration_input)
         self.p2c.debug = self.args['debug']
 

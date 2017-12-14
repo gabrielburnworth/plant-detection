@@ -19,12 +19,12 @@ class Parameters(object):
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.defaults = {'blur': 15, 'morph': 6, 'iterations': 4,
                          'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
-        self.cdefaults = {'blur': 5, 'morph': 15, 'iterations': 1,
+        self.cdefaults = {'blur': 5, 'morph': 5, 'iterations': 1,
                           'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
                           'calibration_circles_xaxis': True,
                           'image_bot_origin_location': [0, 1],
-                          'calibration_circle_separation': 1000,
-                          'camera_offset_coordinates': [200, 100],
+                          'calibration_circle_separation': 100,
+                          'camera_offset_coordinates': [50, 100],
                           'calibration_iters': 3,
                           'total_rotation_angle': 0,
                           'invert_hue_selection': True}
