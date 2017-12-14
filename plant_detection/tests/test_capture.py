@@ -38,7 +38,7 @@ class CheckImageSaveTest(unittest.TestCase):
 
     def test_image_save(self):
         """Test image save"""
-        img_filename = self.capture.save()
+        img_filename = self.capture.save(add_timestamp=False)
         self.assertEqual(img_filename, self.expected_filename)
 
     def tearDown(self):

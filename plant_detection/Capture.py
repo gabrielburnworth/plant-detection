@@ -5,7 +5,7 @@ For Plant Detection.
 """
 import sys
 import os
-from time import sleep
+from time import time, sleep
 from subprocess import call
 import cv2
 from plant_detection import ENV
@@ -48,7 +48,7 @@ class Capture(object):
                     log("USB Camera not detected.",
                         message_type='error', title='take-photo')
 
-    def save(self, filename_only=False):
+    def save(self, filename_only=False, add_timestamp=True):
         """Save captured image."""
         directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
         try:
@@ -58,13 +58,13 @@ class Capture(object):
             os.remove(testfilename)
         except IOError:
             directory = '/tmp/images/'
-            image_filename = directory + 'capture.jpg'
-            if not filename_only:
-                cv2.imwrite(image_filename, self.image)
+        if add_timestamp:
+            image_filename = directory +  'capture_{timestamp}.jpg'.format(
+                timestamp=int(time()))
         else:
-            image_filename = directory + 'capture.jpg'
-            if not filename_only:
-                cv2.imwrite(image_filename, self.image)
+            image_filename = directory +  'capture.jpg'
+        if not filename_only:
+            cv2.imwrite(image_filename, self.image)
         return image_filename
 
     def capture(self):
