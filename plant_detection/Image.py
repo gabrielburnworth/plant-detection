@@ -387,8 +387,7 @@ class Image(object):
         """
         # Loop through contours
         contours = self._find_contours(calibration)
-        if not safe_remove:
-            self.plant_db.object_count = len(contours)
+        valid_contours = []
         self.plant_db.pixel_locations = []
         only_one_object = False
         for i, cnt in enumerate(contours):
@@ -401,6 +400,11 @@ class Image(object):
                  cir_center_y), radius = cv2.minEnclosingCircle(cnt)
             except ZeroDivisionError:
                 continue
+            else:
+                if cv2.contourArea(cnt) > 1:
+                    valid_contours.append(cnt)
+                else:
+                    continue
 
             self._draw_contour(cnt, calibration, draw_contours)
 
@@ -423,6 +427,7 @@ class Image(object):
             self.plant_db.object_count = 1
         if not safe_remove:
             self.images['current'] = self.images['contoured']
+            self.plant_db.object_count = len(valid_contours)
 
     def safe_remove(self, p2c):
         """Process plants marked as 'safe_remove'.

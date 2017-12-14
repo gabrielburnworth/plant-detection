@@ -563,12 +563,12 @@ class PDTestTextOutput(unittest.TestCase):
         sys.stdout = self.outfile
 
     def test_verbose_text_output_no_coordinates(self):
-        """Test verbpse text output without coordinate conversion"""
+        """Test verbose text output without coordinate conversion"""
         pd = PlantDetection(
             image="plant_detection/soil_image.jpg",
             save=False, print_all_json=True)
         pd.detect_plants()
-        check_file_length(self, 71)
+        check_file_length(self, 69)
 
     def test_condensed_text_output_no_coordinates(self):
         """Test condensed text output without coordinate conversion"""
@@ -587,7 +587,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 80)
+        check_file_length(self, 78)
 
     def test_condensed_text_output(self):
         """Test condensed text output"""
