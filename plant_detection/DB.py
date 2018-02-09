@@ -49,9 +49,9 @@ class DB(object):
                     encoded_payload).decode('utf-8')
                 server = json.loads(json_payload)['iss']
             except:  # noqa pylint:disable=W0702
-                server = '//my.farmbot.io'
+                server = '//my.farmbot.io:443'
             api_info['url'] = 'http{}:{}/api/'.format(
-                's' if 'localhost' not in server else '', server)
+                's' if ':443' in server else '', server)
         elif api == 'farmware':
             try:
                 api_info['token'] = os.environ['FARMWARE_TOKEN']
