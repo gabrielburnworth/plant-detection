@@ -1,21 +1,22 @@
 language: python
-dist: trusty
+dist: xenial
 sudo: required
 python:
   - "2.7"
-  - "3.5"
+  - "3.7"
 env:
   - OPENCV_VERSION=2
   - OPENCV_VERSION=3
 before_script:
   - sudo apt-get update -qq
   - if [[ $OPENCV_VERSION == '2' ]]; then sudo apt-get install python-opencv; fi
-  - if [[ $OPENCV_VERSION == '3' ]]; then pip install -r requirements.txt; fi
+  - if [[ $OPENCV_VERSION == '2' ]]; then ln -s /usr/lib/python2.7/dist-packages/cv2.x86_64-linux-gnu.so cv2.so; fi
+  - if [[ $OPENCV_VERSION == '3' ]]; then pip install opencv-python==3.*; fi
+  - if [[ $OPENCV_VERSION == '4' ]]; then pip install opencv-python==4.*; fi
   - pip install coveralls
   - pip install fakeredis
 install: true
 script:
-  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python$TRAVIS_PYTHON_VERSION/dist-packages/
   - python -c 'import cv2; print("OpenCV " + cv2.__version__)'
   - python -c 'import numpy; print("NumPy " + numpy.__version__)'
   - python -m coverage run --source . --omit=*test*,*__init__.py,*GUI*,setup.py -m unittest discover
@@ -23,11 +24,11 @@ matrix:
   fast_finish: true
   exclude:
     - env: OPENCV_VERSION=2
-      python: "3.5"
+      python: "3.7"
   include:
-    - env: OPENCV_VERSION=3
-      python: "3.6"
+    - env: OPENCV_VERSION=4
+      python: "3.7"
   allow_failures:
-    - env: OPENCV_VERSION=3
-      python: "3.6"
+    - env: OPENCV_VERSION=4
+      python: "3.7"
 after_success: coveralls
