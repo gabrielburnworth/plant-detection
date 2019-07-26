@@ -4,10 +4,10 @@
 #### python / OpenCV 3:
 `pip install -r requirements.txt`
 #### python / OpenCV 2 (Debian):
-`sudo apt-get install python-opencv python-numpy python-requests python-redis`
-#### python3 / OpenCV 3 (Debian):
+`sudo apt-get install python-opencv python-numpy python-requests`
+#### python3 / OpenCV 3/4 (Debian):
 ```
-sudo apt-get install python3-numpy python3-requests python3-redis
+sudo apt-get install python3-numpy python3-requests
 pip install opencv-python
 ```
 
@@ -15,7 +15,7 @@ pip install opencv-python
 |             | Python | NumPy | OpenCV |
 |:-----------:|:------:|:-----:|:------:|
 | **Legacy**  | 2.7    | 1.8   | 2.4    |
-| **Current** | 3.6    | 1.13  | 3.3    |
+| **Current** | 3.7    | 1.16  | 3.4    |
 #### Check versions:
 ```
 python --version

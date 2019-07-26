@@ -10,6 +10,12 @@ import requests
 import numpy as np
 from plant_detection import CeleryPy
 from plant_detection import ENV
+try:
+    from farmware_tools import app, device
+except ImportError:
+    USE_FARMWARE_TOOLS = False
+else:
+    USE_FARMWARE_TOOLS = True
 
 
 class DB(object):
@@ -112,10 +118,16 @@ class DB(object):
 
     def get_image(self, image_id):
         """Download an image from the FarmBot Web App API."""
-        response = self.api_get('images/' + str(image_id))
-        if response.status_code == 200:
-            image_json = response.json()
+        if USE_FARMWARE_TOOLS:
+            image_json = app.get('images', image_id)
+        else:
+            response = self.api_get('images/' + str(image_id))
+            image_json = response.json() if response.status_code == 200 else {}
+        try:
             image_url = image_json['attachment_url']
+        except KeyError:
+            image_filename = None
+        else:
             try:
                 testfilename = self.dir + 'test_write.try_to_write'
                 testfile = open(testfilename, "w")
@@ -130,12 +142,13 @@ class DB(object):
             self.coordinates = list([int(image_json['meta']['x']),
                                      int(image_json['meta']['y']),
                                      int(image_json['meta']['z'])])
-            return image_filename
-        else:
-            return None
+        return image_filename
 
     def _get_raw_coordinate_values(self, redis=None):
         temp = []
+        if USE_FARMWARE_TOOLS and redis is None:
+            coord = device.get_current_position() or {}
+            return [coord.get('x'), coord.get('y'), coord.get('z')]
         legacy = int(os.getenv('FARMBOT_OS_VERSION', '0.0.0')[0]) < 6
         if legacy:
             for axis in ['x', 'y', 'z']:
@@ -157,7 +170,7 @@ class DB(object):
         raw_values = self._get_raw_coordinate_values(redis)
         if all(axis_value is not None for axis_value in raw_values):
             try:
-                location = [int(coordinate) for coordinate in raw_values]
+                location = [float(coordinate) for coordinate in raw_values]
             except ValueError:
                 pass
         if test_coordinates:
@@ -193,17 +206,20 @@ class DB(object):
 
     def load_plants_from_web_app(self):
         """Download known plants from the FarmBot Web App API."""
-        response = self.api_get('points')
-        app_points = response.json()
-        if response.status_code == 200:
-            plants = []
-            for point in app_points:
-                if point['pointer_type'] == 'Plant':
-                    plants.append({
-                        'x': point['x'],
-                        'y': point['y'],
-                        'radius': point['radius']})
-            self.plants['known'] = plants
+        if USE_FARMWARE_TOOLS:
+            response = app.get_plants()
+            app_plants = response if isinstance(response, list) else []
+        else:
+            response = self.api_get('points')
+            points = response.json() if response.status_code == 200 else []
+            app_plants = [p for p in points if p['pointer_type'] == 'Plant']
+        plants = []
+        for plant in app_plants:
+            plants.append({
+                'x': plant['x'],
+                'y': plant['y'],
+                'radius': plant['radius']})
+        self.plants['known'] = plants
 
     def identify_plant(self, plant_x, plant_y, known):
         """Identify a provided plant based on its location.
@@ -370,11 +386,14 @@ class DB(object):
 
     def upload_point(self, point, name, id_list):
         """Upload a point to the FarmBot Web App."""
-        payload = json.dumps(self.prepare_point_data(point, name))
+        payload = self.prepare_point_data(point, name)
+        if USE_FARMWARE_TOOLS:
+            app.post('points', payload)
+            return
         # API Request
         api = self._api_info('app')
         response = requests.post(api['url'] + 'points',
-                                 data=payload, headers=api['headers'])
+                                 json=payload, headers=api['headers'])
         point_id = None
         if response.status_code == 200:
             point_id = response.json()['id']
@@ -394,7 +413,7 @@ class DB(object):
         for plant in self.plants['safe_remove']:
             point_ids = self.upload_point(plant, 'Safe-Remove Weed', point_ids)
         self.api_response_error_printer()
-        if point_ids:
-            # Points have been added to the web app
-            # Indicate that a sync is required for the points
-            CeleryPy.data_update('points', point_ids)
+        # if point_ids:
+        #    # Points have been added to the web app
+        #    # Indicate that a sync is required for the points
+        #    CeleryPy.data_update('points', point_ids)

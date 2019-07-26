@@ -140,7 +140,8 @@ class P2CorientationTest(unittest.TestCase):
             os.environ[
                 'CAMERA_CALIBRATION_image_bot_origin_location'
             ] = json.dumps(convert_to_env_var[str(orientation)])
-            os.environ['CAMERA_CALIBRATION_calibration_object_separation'] = '1000'
+            os.environ[
+                'CAMERA_CALIBRATION_calibration_object_separation'] = '1000'
             os.environ['CAMERA_CALIBRATION_camera_offset_x'] = '200'
             os.environ['CAMERA_CALIBRATION_camera_offset_y'] = '100'
             os.environ['CAMERA_CALIBRATION_calibration_along_axis'] = 'X'
@@ -183,7 +184,7 @@ class P2CorientationTest(unittest.TestCase):
                 calibration_img = rotate(calibration_img, angle)
                 cv2.imwrite(img, calibration_img)
                 p2c = Pixel2coord(DB(), calibration_image=img,
-                    calibration_data=self.calibration_data)
+                                  calibration_data=self.calibration_data)
                 p2c.calibration()
                 self.assertAlmostEqual(
                     p2c.calibration_params['total_rotation_angle'],

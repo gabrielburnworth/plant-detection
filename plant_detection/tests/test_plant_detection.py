@@ -9,6 +9,11 @@ import json
 import unittest
 import numpy as np
 from plant_detection.PlantDetection import PlantDetection
+try:
+    import farmware_tools
+    USING_FT = True
+except ImportError:
+    USING_FT = False
 
 
 def assert_dict_values_almost_equal(assertE, assertAE, object1, object2):
@@ -44,10 +49,10 @@ def subset(dictionary, keylist):
 def compare_calibration_results(self):
     self.assertAlmostEqual(self.calibration['total_rotation_angle'],
                            self.pd.p2c.calibration_params[
-                           'total_rotation_angle'], places=1)
+                               'total_rotation_angle'], places=1)
     self.assertAlmostEqual(self.calibration['coord_scale'],
                            self.pd.p2c.calibration_params[
-                           'coord_scale'], places=3)
+                               'coord_scale'], places=3)
     self.assertEqual(self.calibration['center_pixel_location'],
                      self.pd.p2c.calibration_params['center_pixel_location'])
 
@@ -229,7 +234,7 @@ class PDTestArgs(unittest.TestCase):
             {'x': 200, 'y': 600, 'radius': 100},
             {'x': 900, 'y': 200, 'radius': 120}]
         self.func_args['array'] = [
-            {"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+            {"size": 5, "kernel": 'ellipse', "type": 'erode', "iters": 2},
             {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
         self.func_args['HSV_min'] = [
             self.set_input_params['H'][0],
@@ -463,7 +468,7 @@ class PDTestArray(unittest.TestCase):
         """Detect plants using simple array input"""
         pd = PlantDetection(
             image="plant_detection/soil_image.jpg",
-            array=[{"size": 5, "kernel": 'ellipse', "type": 'erode',  "iters": 2},
+            array=[{"size": 5, "kernel": 'ellipse', "type": 'erode', "iters": 2},
                    {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
             text_output=False, save=False)
         pd.detect_plants()
@@ -474,7 +479,7 @@ class PDTestArray(unittest.TestCase):
         """Detect plants using array input and debug"""
         pd = PlantDetection(
             image="plant_detection/soil_image.jpg",
-            array=[{"size": 5, "kernel": 'ellipse', "type": 'close',  "iters": 2},
+            array=[{"size": 5, "kernel": 'ellipse', "type": 'close', "iters": 2},
                    {"size": 3, "kernel": 'ellipse', "type": 'open', "iters": 8}],
             text_output=False, save=False, debug=True)
         pd.detect_plants()
@@ -568,7 +573,7 @@ class PDTestTextOutput(unittest.TestCase):
             image="plant_detection/soil_image.jpg",
             save=False, print_all_json=True)
         pd.detect_plants()
-        check_file_length(self, 69)
+        check_file_length(self, 71 if USING_FT else 69)
 
     def test_condensed_text_output_no_coordinates(self):
         """Test condensed text output without coordinate conversion"""
@@ -577,7 +582,7 @@ class PDTestTextOutput(unittest.TestCase):
             verbose=False,
             save=False, print_all_json=True)
         pd.detect_plants()
-        check_file_length(self, 8)
+        check_file_length(self, 10 if USING_FT else 8)
 
     def test_verbose_text_output(self):
         """Test verbose text output"""
@@ -587,7 +592,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 78)
+        check_file_length(self, 82 if USING_FT else 78)
 
     def test_condensed_text_output(self):
         """Test condensed text output"""
@@ -598,7 +603,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 10)
+        check_file_length(self, 14 if USING_FT else 10)
 
     def tearDown(self):
         self.outfile.close()

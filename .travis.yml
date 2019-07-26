@@ -13,6 +13,7 @@ before_script:
   - if [[ $OPENCV_VERSION == '2' ]]; then ln -s /usr/lib/python2.7/dist-packages/cv2.x86_64-linux-gnu.so cv2.so; fi
   - if [[ $OPENCV_VERSION == '3' ]]; then pip install opencv-python==3.*; fi
   - if [[ $OPENCV_VERSION == '4' ]]; then pip install opencv-python==4.*; fi
+  - if [[ $FARMWARE_TOOLS == 'y' ]]; then pip install farmware_tools; fi
   - pip install coveralls
   - pip install fakeredis
 install: true
@@ -28,7 +29,11 @@ matrix:
   include:
     - env: OPENCV_VERSION=4
       python: "3.7"
+    - env: OPENCV_VERSION=4 FARMWARE_TOOLS=y
+      python: "3.7"
   allow_failures:
     - env: OPENCV_VERSION=4
+      python: "3.7"
+    - env: OPENCV_VERSION=4 FARMWARE_TOOLS=y
       python: "3.7"
 after_success: coveralls

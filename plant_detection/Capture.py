@@ -9,7 +9,7 @@ from time import time, sleep
 from subprocess import call
 import cv2
 from plant_detection import ENV
-from plant_detection.CeleryPy import log
+from plant_detection.Log import log
 
 CAMERA = ENV.load('camera', get_json=False)
 if CAMERA is None:
@@ -59,10 +59,10 @@ class Capture(object):
         except IOError:
             directory = '/tmp/images/'
         if add_timestamp:
-            image_filename = directory +  'capture_{timestamp}.jpg'.format(
+            image_filename = directory + 'capture_{timestamp}.jpg'.format(
                 timestamp=int(time()))
         else:
-            image_filename = directory +  'capture.jpg'
+            image_filename = directory + 'capture.jpg'
         if not filename_only:
             cv2.imwrite(image_filename, self.image)
         return image_filename

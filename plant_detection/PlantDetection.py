@@ -11,7 +11,7 @@ from plant_detection.Image import Image
 from plant_detection.Parameters import Parameters
 from plant_detection.DB import DB
 from plant_detection.Capture import Capture
-from plant_detection.CeleryPy import log
+from plant_detection.Log import log
 
 
 class PlantDetection(object):

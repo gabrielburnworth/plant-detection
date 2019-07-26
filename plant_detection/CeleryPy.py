@@ -41,18 +41,6 @@ def _print_json(function):
     return wrapper
 
 
-def log(message, message_type='info', title='plant-detection'):
-    """Send a message to the log."""
-    try:
-        os.environ['FARMWARE_URL']
-    except KeyError:
-        print(message)
-    else:
-        log_message = '[{title}] {message}'.format(
-            title=title, message=message)
-        send_message(log_message, message_type)
-
-
 def _encode_coordinates(x_coord, y_coord, z_coord):
     coords = {}
     coords['x'] = x_coord

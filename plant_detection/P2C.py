@@ -8,7 +8,7 @@ from plant_detection.Parameters import Parameters
 from plant_detection.Image import Image
 from plant_detection.DB import DB
 from plant_detection import ENV
-from plant_detection.CeleryPy import log
+from plant_detection.Log import log
 
 
 def _round(number, places):
@@ -390,7 +390,7 @@ class Pixel2coord(object):
                             "Exactly 2 recommended. "
                             "Incorrect results possible. Check output.".format(
                                 self.plant_db.object_count),
-                            message_type='warning', title='camera-calibration')
+                            message_type='warn', title='camera-calibration')
                         warning_issued = True
                 if self.plant_db.object_count < 2:
                     log(" ERROR: {} objects detected. "

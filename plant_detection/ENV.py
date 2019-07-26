@@ -11,7 +11,10 @@ except ImportError:
     REDIS = False
 else:
     REDIS = True
-from plant_detection import CeleryPy
+try:
+    from farmware_tools.device import set_user_env
+except ImportError:
+    from plant_detection.CeleryPy import set_user_env
 
 
 def _load_json(string):
@@ -76,6 +79,5 @@ def save(name, value, its_json=True):
     """Save an environment variable to env and, if available, redis."""
     if its_json:
         value = json.dumps(value)
-    unsent_cs = CeleryPy.set_user_env(name, value)
+    set_user_env(name, value)
     os.environ[name] = value
-    return unsent_cs

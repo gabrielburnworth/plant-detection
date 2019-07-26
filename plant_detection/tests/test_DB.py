@@ -11,6 +11,11 @@ try:
     test_redis = True
 except ImportError:
     test_redis = False
+try:
+    import farmware_tools
+    USING_FT = True
+except ImportError:
+    USING_FT = False
 from plant_detection.DB import DB
 
 
@@ -78,12 +83,12 @@ class DBTest(unittest.TestCase):
     def test_api_download(self):
         """Run (failing) plant download assuming no API_TOKEN ENV"""
         self.db.load_plants_from_web_app()
-        self.assertEqual(self.db.errors, {'401': 1})
+        self.assertEqual(self.db.errors, {} if USING_FT else {'401': 1})
 
     def test_api_upload(self):
         """Run (failing) plant upload assuming no API_TOKEN ENV"""
         self.db.upload_plants()
-        self.assertEqual(self.db.errors, {'401': 1})
+        self.assertEqual(self.db.errors, {} if USING_FT else {'401': 1})
 
     def test_print_coordinates(self):
         """Print unidentified plant coordinate data"""
