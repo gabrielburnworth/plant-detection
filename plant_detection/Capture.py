@@ -71,18 +71,18 @@ class Capture(object):
         """Take a photo."""
         if CAMERA == 'RPI':
             # With Raspberry Pi Camera:
+            image_filename = self.save(filename_only=True)
             try:
                 retcode = call(["raspistill", "-w", "640", "-h", "480",
-                                "-o", self.save(filename_only=True)])
+                                "-o", image_filename])
             except OSError:
                 log("Raspberry Pi Camera not detected.",
                     message_type='error', title='take-photo')
                 sys.exit(0)
             else:
                 if retcode == 0:
-                    print("Image saved: {}".format(
-                        self.save(filename_only=True)))
-                    return self.save(filename_only=True)
+                    print("Image saved: {}".format(image_filename))
+                    return image_filename
                 else:
                     log("Problem getting image.",
                         message_type='error', title='take-photo')

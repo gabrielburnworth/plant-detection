@@ -90,7 +90,7 @@ class Image(object):
         """Capture image from camera."""
         image_filename = Capture().capture()
         self.plant_db.getcoordinates()
-        self.images['original'] = self.load(image_filename)
+        self.load(image_filename)
 
     def download(self, image_id):
         """Download an image from the FarmBot Web App API."""
