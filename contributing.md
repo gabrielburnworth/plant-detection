@@ -15,7 +15,7 @@ pip install opencv-python
 |             | Python | NumPy | OpenCV |
 |:-----------:|:------:|:-----:|:------:|
 | **Legacy**  | 2.7    | 1.8   | 2.4    |
-| **Current** | 3.7    | 1.16  | 3.4    |
+| **Current** | 3.8    | 1.17  | 3.4    |
 #### Check versions:
 ```
 python --version
