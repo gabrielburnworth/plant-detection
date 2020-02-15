@@ -129,6 +129,7 @@ class PDTestCalibration(unittest.TestCase):
     def setUp(self):
         self.calibration_json = {"blur": 5, "morph": 15, "calibration_iters": 3,
                                  "H": [160, 20], "S": [100, 255], "V": [100, 255],
+                                 "easy_calibration": False,
                                  "calibration_circles_xaxis": True,
                                  "camera_offset_coordinates": [200, 100],
                                  "image_bot_origin_location": [0, 1],
@@ -152,6 +153,7 @@ class PDTestCalibration(unittest.TestCase):
         """Check calibration input parameters"""
         calibration_input_keys = ["blur", "morph", "calibration_iters",
                                   "H", "S", "V",
+                                  "easy_calibration",
                                   "calibration_circles_xaxis",
                                   "camera_offset_coordinates",
                                   "image_bot_origin_location",
@@ -271,6 +273,7 @@ class PDTestOutput(unittest.TestCase):
         # self.maxDiff = None
         self.calibration = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
                             'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                            'easy_calibration': False,
                             'calibration_circles_xaxis': True,
                             'camera_offset_coordinates': [200, 100],
                             'image_bot_origin_location': [0, 1],
@@ -650,6 +653,7 @@ class PDTestSafeRemove(unittest.TestCase):
     def setUp(self):
         self.calibration = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
                             'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                            'easy_calibration': False,
                             'calibration_circles_xaxis': True,
                             'camera_offset_coordinates': [200, 100],
                             'image_bot_origin_location': [0, 1],

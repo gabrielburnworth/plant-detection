@@ -108,6 +108,7 @@ class P2CorientationTest(unittest.TestCase):
         self.single_object = image_file('single_object.jpg', one_obj)
         self.calibration_data = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
                                  'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                                 'easy_calibration': False,
                                  'calibration_circles_xaxis': True,
                                  'camera_offset_coordinates': [200, 100],
                                  'image_bot_origin_location': [0, 1],

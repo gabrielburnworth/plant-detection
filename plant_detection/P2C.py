@@ -178,6 +178,7 @@ class Pixel2coord(object):
             except KeyError:
                 self.calibration_params[key] = self.defaults[key]
         calibration_keys = ['calibration_circles_xaxis',
+                            'easy_calibration',
                             'image_bot_origin_location',
                             'calibration_circle_separation',
                             'camera_offset_coordinates',
@@ -374,6 +375,10 @@ class Pixel2coord(object):
         warning_issued = False
         if self.debug:
             self.cparams.print_input()
+        if self.calibration_params['easy_calibration']:
+            log("ERROR: Method not yet supported.",
+                message_type='error', title='camera-calibration')
+            return True
         for i in range(0, self.calibration_params['calibration_iters']):
             self.image.initial_processing()
             self.image.find(calibration=True)  # find objects

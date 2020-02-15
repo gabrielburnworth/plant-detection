@@ -27,7 +27,8 @@ class Parameters(object):
                           'camera_offset_coordinates': [50, 100],
                           'calibration_iters': 3,
                           'total_rotation_angle': 0,
-                          'invert_hue_selection': True}
+                          'invert_hue_selection': True,
+                          'easy_calibration': False}
         self.array = None  # default
         self.kernel_type = 'ellipse'
         self.morph_type = 'close'
@@ -116,6 +117,11 @@ class Parameters(object):
                     ENV.save(prefix + 'calibration_along_axis', 'X')
                 else:
                     ENV.save(prefix + 'calibration_along_axis', 'Y')
+            elif 'easy_calibration' in label:
+                if value:
+                    ENV.save(prefix + 'easy_calibration', 'TRUE')
+                else:
+                    ENV.save(prefix + 'easy_calibration', 'FALSE')
             elif 'camera_z' in label:
                 ENV.save(prefix + 'camera_z', value)
             elif 'center_pixel_location' in label:
@@ -142,7 +148,7 @@ class Parameters(object):
             'blur', 'morph', 'iteration',
             'H_HI', 'H_LO', 'S_HI', 'S_LO', 'V_HI', 'V_LO']
         calibration_names = [
-            'total_rotation_angle',
+            'total_rotation_angle', 'easy_calibration',
             'invert_hue_selection', 'image_bot_origin_location',
             'coord_scale', 'camera_offset_y', 'camera_offset_x',
             'calibration_object_separation', 'calibration_along_axis',
@@ -216,6 +222,9 @@ class Parameters(object):
                     input_template['center_pixel_location'][1] = loaded_value
                 elif 'invert_hue_selection' in name:
                     invert_hue_selection = bool('true' in loaded_value.lower())
+                elif 'easy_calibration' in name:
+                    input_template['easy_calibration'] = bool(
+                        'true' in loaded_value.lower())
                 else:
                     for cname in calibration_names + common_app_var_names:
                         if cname in name:

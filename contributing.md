@@ -1,14 +1,8 @@
 # Contributing
 
 ## Setup (Dependency installation)
-#### python / OpenCV 3:
-`pip install -r requirements.txt`
-#### python / OpenCV 2 (Debian):
-`sudo apt-get install python-opencv python-numpy python-requests`
-#### python3 / OpenCV 3/4 (Debian):
 ```
-sudo apt-get install python3-numpy python3-requests
-pip install opencv-python
+pip install -r requirements.txt
 ```
 
 ## Supported dependency versions
@@ -27,9 +21,9 @@ _Build matrix in `.travis.yml`_
 ## Static code analysis
 _Settings are stored in `.landscape.yml`_
 ### Setup
-`sudo pip install prospector`
+`pip install prospector`
 ### Run
-`prospector`
+`python -m prospector`
 
 ## Test Suite
 _Can also be run via `python -m plant_detection.tests.tests`_
@@ -47,11 +41,11 @@ python -m plant_detection.P2C
 ## Test coverage
 _Settings stored in `.coveragerc`_
 ### Setup
-`sudo pip install coverage`
+`pip install coverage`
 ### Run
 ```
-coverage run -m unittest discover
-coverage html
+python -m coverage run -m unittest discover
+python -m coverage html
 ```
 open `coverage_html_report/index.html` in browser
 
@@ -60,11 +54,11 @@ _Settings stored in `.pre-commit-config.yaml`_
 ### Setup
 ```
 pip install pre-commit
-pre-commit install
+python -m pre_commit install
 ```
 ### Run
 ```
 git add .
-pre-commit run --all-files
+python -m pre_commit run --all-files
 git diff
 ```

@@ -59,7 +59,8 @@ class DBTest(unittest.TestCase):
             "radius": "50.0",
             "meta": {
                 "created_by": "plant-detection",
-                "color": "red"
+                "color": "red",
+                "type": "weed",
             }
         }
 
