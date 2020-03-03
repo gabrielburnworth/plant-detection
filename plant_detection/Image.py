@@ -75,7 +75,8 @@ class Image(object):
     def load(self, filename):
         """Load image from file."""
         self.images['original'] = cv2.imread(filename, 1)
-        self.plant_db.getcoordinates(test_coordinates=False)
+        if self.plant_db.coordinates is None:
+            self.plant_db.getcoordinates(test_coordinates=False)
         if self.plant_db.coordinates is None and self.plant_db.app:
             log("ERROR: Could not get image coordinates.",
                 message_type='error', title='take-photo')

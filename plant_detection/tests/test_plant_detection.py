@@ -595,7 +595,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 82 if USING_FT else 78)
+        check_file_length(self, 80 if USING_FT else 78)
 
     def test_condensed_text_output(self):
         """Test condensed text output"""
@@ -606,7 +606,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 14 if USING_FT else 10)
+        check_file_length(self, 12 if USING_FT else 10)
 
     def tearDown(self):
         self.outfile.close()
