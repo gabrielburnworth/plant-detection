@@ -51,16 +51,17 @@ class DBTest(unittest.TestCase):
              'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
                  'kind': 'coordinate', 'args': {'y': 1000.0, 'x': 800.0, 'z': 0}}}}]
         self.point_data = {
-            "pointer_type": "GenericPointer",
-            "name": "Weed",
-            "x": "1000.0",
-            "y": "825.0",
-            "z": 0,
-            "radius": "50.0",
-            "meta": {
-                "created_by": "plant-detection",
-                "color": "red",
-                "type": "weed",
+            'pointer_type': 'Weed',
+            'name': 'Weed',
+            'x': '1000.0',
+            'y': '825.0',
+            'z': 0,
+            'radius': '50.0',
+            'meta': {
+                'created_by': 'plant-detection',
+                'color': 'red',
+                'type': 'weed',
+                'removal_method': 'automatic',
             }
         }
 

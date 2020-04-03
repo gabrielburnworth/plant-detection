@@ -377,12 +377,15 @@ class DB(object):
         # payload
         plant_x, plant_y = round(point['x'], 2), round(point['y'], 2)
         plant_r = round(point['radius'], 2)
+        pointer_type = 'Weed' if 'weed' in name.lower() else 'GenericPointer'
+        removal_method = 'manual' if color == 'cyan' else 'automatic'
         meta_type = 'weed' if 'weed' in name.lower() else 'point'
         point_data = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
                       'radius': str(plant_r),
                       'meta': {'created_by': 'plant-detection',
-                               'color': color, 'type': meta_type},
-                      'name': name, 'pointer_type': 'GenericPointer'}
+                               'color': color, 'type': meta_type,
+                               'removal_method': removal_method},
+                      'name': name, 'pointer_type': pointer_type}
         return point_data
 
     def upload_point(self, point, name, id_list):
