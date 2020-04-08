@@ -484,7 +484,7 @@ class Image(object):
             bgr = {'red': (0, 0, 255),
                    'green': (0, 255, 0),
                    'blue': (255, 0, 0),
-                   'cyan': (255, 255, 0),
+                   'orange': (0, 170, 255),
                    'grey': (200, 200, 200)}
             if not already_pixels:
                 pixel_objects = p2c.convert(objects, to_='pixels')
@@ -523,7 +523,7 @@ class Image(object):
             # Mark safe-remove weeds
             safe_remove = [[_['x'], _['y'], _['radius']] for _
                            in self.plant_db.plants['safe_remove']]
-            _circle(safe_remove, 'cyan')
+            _circle(safe_remove, 'orange')
 
             # Mark weeder size for safe-remove weeds
             if weeder_safe_remove:
