@@ -383,9 +383,10 @@ class DB(object):
         point_data = {'x': str(plant_x), 'y': str(plant_y), 'z': 0,
                       'radius': str(plant_r),
                       'meta': {'created_by': 'plant-detection',
-                               'color': color, 'type': meta_type,
-                               'removal_method': removal_method},
+                               'color': color, 'type': meta_type},
                       'name': name, 'pointer_type': pointer_type}
+        if color in ['red', 'orange']:
+            point_data['meta']['removal_method'] = removal_method
         return point_data
 
     def upload_point(self, point, name, id_list):
