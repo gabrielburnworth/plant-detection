@@ -89,7 +89,8 @@ class Pixel2coord(object):
         else:  # load defaults
             self.calibration_params = self.defaults
 
-        self.set_calibration_input_params()
+        if not self.calibration_params['easy_calibration']:
+            self.set_calibration_input_params()
 
     def _load_inputs(self, get_inputs, error):
         # load only image processing input parameters
@@ -376,9 +377,20 @@ class Pixel2coord(object):
         if self.debug:
             self.cparams.print_input()
         if self.calibration_params['easy_calibration']:
-            log("ERROR: Method not yet supported.",
-                message_type='error', title='camera-calibration')
-            return True
+            from plant_detection.PatternCalibration import PatternCalibration
+            pattern_calibration = PatternCalibration(self.calibration_params)
+            result_flag = pattern_calibration.move_and_capture()
+            if not result_flag:
+                fail_flag = True
+                return fail_flag
+            result_flag = pattern_calibration.calibrate()
+            if not result_flag:
+                fail_flag = True
+                return fail_flag
+            self.image.images['marked'] = pattern_calibration.output_img
+            self.image.grid(self)
+            fail_flag = False
+            return fail_flag
         for i in range(0, self.calibration_params['calibration_iters']):
             self.image.initial_processing()
             self.image.find(calibration=True)  # find objects

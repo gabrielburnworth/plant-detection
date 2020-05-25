@@ -96,6 +96,7 @@ plant-detection
 │   ├── Image.py  - image processing
 │   ├── DB.py  - handle plant data
 │   ├── P2C.py  - pixel to coordinate conversion
+│   ├── PatternCalibration.py  - alternative calibration method
 │   ├── CeleryPy.py  - convert plant data to CeleryScript
 │   ├── Log.py - custom send_message wrapper
 │   ├── ENV.py  - environment variable save and load operations

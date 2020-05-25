@@ -17,13 +17,14 @@ CAMERA = (ENV.load('camera', get_json=False) or 'USB').upper()
 class Capture(object):
     """Capture image for Plant Detection."""
 
-    def __init__(self):
+    def __init__(self, directory=None):
         """Set initial attributes."""
         self.image = None
         self.ret = None
         self.camera_port = None
         self.image_captured = False
         self.silent = False
+        self.directory = directory
 
     def camera_check(self):
         """Check for camera at ports 0 and 1."""
@@ -43,14 +44,17 @@ class Capture(object):
 
     def save(self, filename_only=False, add_timestamp=True):
         """Save captured image."""
-        directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
-        try:
-            testfilename = directory + 'test_write.try_to_write'
-            testfile = open(testfilename, 'w')
-            testfile.close()
-            os.remove(testfilename)
-        except IOError:
-            directory = '/tmp/images/'
+        if self.directory is None:
+            directory = os.path.dirname(os.path.realpath(__file__)) + os.sep
+            try:
+                testfilename = directory + 'test_write.try_to_write'
+                testfile = open(testfilename, 'w')
+                testfile.close()
+                os.remove(testfilename)
+            except IOError:
+                directory = '/tmp/images/'
+        else:
+            directory = self.directory
         if add_timestamp:
             image_filename = directory + 'capture_{timestamp}.jpg'.format(
                 timestamp=int(time()))
