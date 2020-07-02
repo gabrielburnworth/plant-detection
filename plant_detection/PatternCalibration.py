@@ -149,6 +149,7 @@ class PatternCalibration(object):
                 message_type='error', title='camera-calibration')
             self.success_flag = False
         img = cv2.bitwise_not(img.copy())
+        img = cv2.medianBlur(img, 5)
         ret, centers = cv2.findCirclesGrid(
             img, self.pattern['size'], flags=self.pattern['type'])
         if not ret:
