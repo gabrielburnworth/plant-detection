@@ -56,7 +56,7 @@ class PatternCalibrationTest(unittest.TestCase):
             self.assertEqual(results['center_pixel_location'], [1000, 500])
             self.assertEqual(results['total_rotation_angle'], angle)
             self.assertEqual(results['camera_z'], 0)
-            self.assertEqual(results['coord_scale'], 0.3125)
+            self.assertEqual(results['coord_scale'], 0.25)
 
     def test_calculate_rotation(self):
         """Check rotation calculation."""

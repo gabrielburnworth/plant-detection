@@ -247,6 +247,14 @@ class PlantDetection(object):
                 self.p2c.calibration_params['total_rotation_angle'],
                 self.p2c.calibration_params['coord_scale']))
 
+        # Send calibration result log toast
+        if self.args['app']:
+            log('Camera calibration complete; setting pixel coordinate scale'
+                ' to {} and camera rotation to {} degrees.'.format(
+                    self.p2c.calibration_params['coord_scale'],
+                    self.p2c.calibration_params['total_rotation_angle']),
+                'success', 'Success', ['toast'], True)
+
         # Save calibration data
         if self.args['from_env_var']:
             # to environment variable

@@ -381,6 +381,7 @@ class Pixel2coord(object):
             if not result_flag:
                 fail_flag = True
                 return fail_flag
+            self.plant_db.getcoordinates()
             self.image.images['marked'] = pattern_calibration.output_img
             self.image.grid(self)
             fail_flag = False

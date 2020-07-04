@@ -94,6 +94,7 @@ class PatternCalibration(object):
         self.axis_points = None
         self.rotation_angles = []
         self.success_flag = True
+        self.relative_starting_position = None
 
     def count_circles(self):
         """Total number of circles in pattern."""
@@ -101,19 +102,27 @@ class PatternCalibration(object):
 
     def row_length(self):
         """Length of circle row in millimeters."""
-        return self.pattern['size'][0] * self.pattern['row_circle_separation']
+        return (self.pattern['size'][0] - 1) * self.pattern['row_circle_separation']
+
+    @staticmethod
+    def _move(amount):
+        if USE_FARMWARE_TOOLS:
+            device.move_relative(amount['x'], amount['y'], amount['z'], 100)
+        else:
+            CeleryPy.move_relative(
+                (amount['x'], amount['y'], amount['z']), speed=100)
 
     def move_and_capture(self):
         """Move the bot along x and y axes, take photos, and detect circles."""
-        for i, move in enumerate(RELATIVE_MOVEMENTS):
+        for i, movement in enumerate(RELATIVE_MOVEMENTS):
             if i > 0:
+                if self.relative_starting_position is None:
+                    self.relative_starting_position = {'x': 0, 'y': 0, 'z': 0}
                 log('Moving to next camera calibration photo location.',
                     message_type='info', title='camera-calibration')
-                if USE_FARMWARE_TOOLS:
-                    device.move_relative(move['x'], move['y'], move['z'], 100)
-                else:
-                    CeleryPy.move_relative(
-                        (move['x'], move['y'], move['z']), speed=100)
+                self._move(movement)
+                for axis in movement:
+                    self.relative_starting_position[axis] -= movement[axis]
             log('Taking camera calibration photo. ({}/3)'.format(i + 1),
                 message_type='info', title='camera-calibration')
             img_filename = self.capture()
@@ -125,7 +134,7 @@ class PatternCalibration(object):
                 coordinates = {'z': 0}
             img = cv2.imread(img_filename, 1)
             os.remove(img_filename)
-            ret, centers = self.find_pattern(img)
+            ret, centers = self.find_pattern(img, True)
             if not self.success_flag:
                 self.save_image(img, str(i + 1))
                 return self.success_flag
@@ -133,7 +142,15 @@ class PatternCalibration(object):
             self.dot_images[i]['found'] = ret
             self.dot_images[i]['image'] = img
             self.dot_images[i]['coordinates'] = coordinates
+        self.return_to_start()
         return self.success_flag
+
+    def return_to_start(self):
+        """Move back to starting position."""
+        if self.relative_starting_position is not None:
+            log('Returning to starting location...',
+                message_type='info', title='camera-calibration')
+            self._move(self.relative_starting_position)
 
     def get_initial_img_info(self):
         """Get initial image details."""
@@ -142,10 +159,10 @@ class PatternCalibration(object):
         self.center = (int(cols / 2), int(rows / 2))
         self.axis_points = [[self.center] * self.count_circles(), [], []]
 
-    def find_pattern(self, img):
+    def find_pattern(self, img, move_back=False):
         """Find calibration pattern circles in single image."""
         if img is None:
-            log("ERROR: Calibration failed. Image missing.",
+            log('ERROR: Calibration failed. Image missing.',
                 message_type='error', title='camera-calibration')
             self.success_flag = False
         img = cv2.bitwise_not(img.copy())
@@ -153,8 +170,10 @@ class PatternCalibration(object):
         ret, centers = cv2.findCirclesGrid(
             img, self.pattern['size'], flags=self.pattern['type'])
         if not ret:
-            log("ERROR: Calibration failed, calibration object not " +
-                "detected in image. Check recent photos.",
+            if move_back:
+                self.return_to_start()
+            log('ERROR: Calibration failed, calibration object not ' +
+                'detected in image. Check recent photos.',
                 message_type='error', title='camera-calibration')
             self.success_flag = False
         return ret, centers
