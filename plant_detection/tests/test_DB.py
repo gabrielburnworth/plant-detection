@@ -57,6 +57,7 @@ class DBTest(unittest.TestCase):
             'y': '825.0',
             'z': 0,
             'radius': '50.0',
+            'plant_stage': 'pending',
             'meta': {
                 'created_by': 'plant-detection',
                 'color': 'red',

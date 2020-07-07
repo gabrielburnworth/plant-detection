@@ -383,6 +383,7 @@ class DB(object):
                       'name': name, 'pointer_type': pointer_type}
         if color in ['red', 'orange']:
             point_data['meta']['removal_method'] = removal_method
+            point_data['plant_stage'] = 'pending'
         return point_data
 
     def upload_point(self, point, name, id_list):
