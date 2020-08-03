@@ -32,12 +32,12 @@ class ImageTest(unittest.TestCase):
 
     def test_image_size_reduction(self):
         """Reduce large image"""
-        large_image = np.zeros([1000, 2000, 3], np.uint8)
+        large_image = np.zeros([5000, 1000, 3], np.uint8)
         self.image.image_name = None
         self.image.save('large', image=large_image)
         self.image.load('large.jpg')
         new_height = self.image.images['current'].shape[0]
-        self.assertEqual(new_height, 600)
+        self.assertEqual(new_height, 4000)
 
     def tearDown(self):
         try:

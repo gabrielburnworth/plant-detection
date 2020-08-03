@@ -12,6 +12,7 @@ from plant_detection.Log import log
 
 CIRCLE_LINEWIDTH = 3
 CONTOUR_LINEWIDTH = 2
+MAX_HEIGHT = 4000
 
 
 class Image(object):
@@ -48,10 +49,10 @@ class Image(object):
 
     def _reduce(self):
         height, width = self.images['original'].shape[:2]
-        if height > 600:
+        if height > MAX_HEIGHT:
             self.images['output'] = cv2.resize(
                 self.images['original'],
-                (int(width * 600 / height), 600),
+                (int(width * MAX_HEIGHT / height), MAX_HEIGHT),
                 interpolation=cv2.INTER_AREA)
         else:
             self.images['output'] = self.images['original'].copy()
