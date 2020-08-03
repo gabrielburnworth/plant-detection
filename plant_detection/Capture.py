@@ -66,6 +66,8 @@ class Capture(object):
 
     def capture(self):
         """Take a photo."""
+        WIDTH = os.getenv('take_photo_width', '640')
+        HEIGHT = os.getenv('take_photo_height', '480')
         if 'NONE' in CAMERA:
             log('No camera selected. Choose a camera on the device page.',
                 message_type='error', title='take-photo')
@@ -74,7 +76,7 @@ class Capture(object):
             # With Raspberry Pi Camera:
             image_filename = self.save(filename_only=True)
             try:
-                retcode = call(['raspistill', '-w', '640', '-h', '480',
+                retcode = call(['raspistill', '-w', WIDTH, '-h', HEIGHT,
                                 '-o', image_filename])
             except OSError:
                 log('Raspberry Pi Camera not detected.',
@@ -90,18 +92,18 @@ class Capture(object):
                     sys.exit(0)
         else:  # With USB camera:
             self.camera_port = 0
-            # image_width = 1600
-            # image_height = 1200
+            image_width = int(WIDTH)
+            image_height = int(HEIGHT)
             discard_frames = 20
             self.camera_check()  # check for camera
             camera = cv2.VideoCapture(self.camera_port)
             sleep(0.1)
-            # try:
-            #     camera.set(cv2.CAP_PROP_FRAME_WIDTH, image_width)
-            #     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, image_height)
-            # except AttributeError:
-            #     camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, image_width)
-            #     camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, image_height)
+            try:
+                camera.set(cv2.CAP_PROP_FRAME_WIDTH, image_width)
+                camera.set(cv2.CAP_PROP_FRAME_HEIGHT, image_height)
+            except AttributeError:
+                camera.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, image_width)
+                camera.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, image_height)
             for _ in range(discard_frames):
                 camera.grab()
             self.ret, self.image = camera.read()
