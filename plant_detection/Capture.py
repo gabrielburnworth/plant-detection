@@ -75,9 +75,13 @@ class Capture(object):
         elif 'RPI' in CAMERA:
             # With Raspberry Pi Camera:
             image_filename = self.save(filename_only=True)
+            width = min(int(WIDTH), 4056)
+            height = min(int(HEIGHT), 3040)
+            size = ['-w', str(width), '-h', str(height)]
+            if height > 1500:
+                size = ['-md', '3']
             try:
-                retcode = call(['raspistill', '-w', WIDTH, '-h', HEIGHT,
-                                '-o', image_filename])
+                retcode = call(['raspistill'] + size + ['-o', image_filename])
             except OSError:
                 log('Raspberry Pi Camera not detected.',
                     message_type='error', title='take-photo')
