@@ -159,17 +159,68 @@ class PatternCalibration(object):
         self.center = (int(cols / 2), int(rows / 2))
         self.axis_points = [[self.center] * self.count_circles(), [], []]
 
-    def find_pattern(self, img, move_back=False):
+    @staticmethod
+    def preprocess(img, basic=False):
+        'Pre-process image in preparation for pattern detection.'
+        def _divide_size_by(factor):
+            height = img.shape[0]
+            num = int(height / factor)
+            return num + 1 if num % 2 == 0 else num
+        block_size = {
+            'blur': _divide_size_by(100),
+            'threshold': _divide_size_by(15),
+            'morph': _divide_size_by(50),
+        }
+
+        img = img.copy()
+        img = cv2.bitwise_not(img)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = cv2.medianBlur(img, block_size['blur'])
+
+        if basic:
+            return img
+
+        method = cv2.ADAPTIVE_THRESH_MEAN_C
+        thesh_type = cv2.THRESH_BINARY
+        blocksize = block_size['threshold']
+        img = cv2.adaptiveThreshold(img, 255, method, thesh_type, blocksize, 2)
+
+        kernel = np.ones((block_size['morph'], block_size['morph']), np.uint8)
+        img = cv2.morphologyEx(img, cv2.MORPH_DILATE, kernel, iterations=1)
+
+        img = cv2.medianBlur(img, block_size['blur'])
+        return img
+
+    def detect_circles(self, img, downsample=False):
+        'Detect pattern in image.'
+        pattern_size = self.pattern['size']
+        flags = self.pattern['type']
+        large = img.shape[0] > 1200
+        if large and downsample:
+            img = cv2.pyrDown(img)
+        ret, centers = cv2.findCirclesGrid(img, pattern_size, flags=flags)
+        if large and downsample and ret:
+            centers *= 2
+        return ret, centers
+
+    def find_pattern(self, img, move_back=False, save_output=None):
         """Find calibration pattern circles in single image."""
         if img is None:
             log('ERROR: Calibration failed. Image missing.',
                 message_type='error', title='camera-calibration')
             self.success_flag = False
-        img = cv2.bitwise_not(img.copy())
-        img = cv2.medianBlur(img, 5)
-        ret, centers = cv2.findCirclesGrid(
-            img, self.pattern['size'], flags=self.pattern['type'])
+        original = img.copy()
+        # first pass with basic pre-processing
+        img = self.preprocess(original, basic=True)
+        ret, centers = self.detect_circles(img)
         if not ret:
+            # second pass with heavier pre-processing
+            img = self.preprocess(original)
+            ret, centers = self.detect_circles(img, downsample=True)
+        if save_output is not None:
+            cv2.drawChessboardCorners(img, self.pattern['size'], centers, ret)
+            save_output(ret, img, original)
+        if not ret and save_output is None:
             if move_back:
                 self.return_to_start()
             log('ERROR: Calibration failed, calibration object not ' +
@@ -310,9 +361,10 @@ class PatternCalibration(object):
         return self.success_flag
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     calibration_results = {}
     pattern_calibration = PatternCalibration(calibration_results)
-    pattern_calibration.move_and_capture()
-    pattern_calibration.calibrate()
-    pattern_calibration.save_image()
+    success = pattern_calibration.move_and_capture()
+    if success:
+        pattern_calibration.calibrate()
+        pattern_calibration.save_image()

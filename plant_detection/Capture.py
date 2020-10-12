@@ -64,6 +64,10 @@ class Capture(object):
             cv2.imwrite(image_filename, self.image)
         return image_filename
 
+    def exit(self):
+        'Exit.'
+        sys.exit(0)
+
     def capture(self):
         """Take a photo."""
         WIDTH = os.getenv('take_photo_width', '640')
@@ -71,7 +75,7 @@ class Capture(object):
         if 'NONE' in CAMERA:
             log('No camera selected. Choose a camera on the device page.',
                 message_type='error', title='take-photo')
-            sys.exit(0)
+            self.exit()
         elif 'RPI' in CAMERA:
             # With Raspberry Pi Camera:
             image_filename = self.save(filename_only=True)
@@ -85,7 +89,7 @@ class Capture(object):
             except OSError:
                 log('Raspberry Pi Camera not detected.',
                     message_type='error', title='take-photo')
-                sys.exit(0)
+                self.exit()
             else:
                 if retcode == 0:
                     print('Image saved: {}'.format(image_filename))
@@ -93,7 +97,7 @@ class Capture(object):
                 else:
                     log('Problem getting image.',
                         message_type='error', title='take-photo')
-                    sys.exit(0)
+                    self.exit()
         else:  # With USB camera:
             self.camera_port = 0
             image_width = int(WIDTH)
@@ -115,7 +119,7 @@ class Capture(object):
             if not self.ret:
                 log('Problem getting image.',
                     message_type='error', title='take-photo')
-                sys.exit(0)
+                self.exit()
             self.image_captured = True
             return self.save()
 
