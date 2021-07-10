@@ -82,7 +82,8 @@ class PDTestJSONinput(unittest.TestCase):
             'WEED_DETECTOR_S_HI': 255,
             'WEED_DETECTOR_S_LO': 20,
             'WEED_DETECTOR_V_HI': 255,
-            'WEED_DETECTOR_V_LO': 20
+            'WEED_DETECTOR_V_LO': 20,
+            'WEED_DETECTOR_save_detected_plants': '"TRUE"',
         }
         for key, value in self.data.items():
             os.environ[key] = str(value)
@@ -92,7 +93,8 @@ class PDTestJSONinput(unittest.TestCase):
             'iterations': self.data['WEED_DETECTOR_iteration'],
             'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
             'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
-            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']]}
+            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']],
+            'save_detected_plants': True}
         self.pd = PlantDetection(image='plant_detection/soil_image.jpg',
                                  from_env_var=True,
                                  text_output=False, save=False)
@@ -347,6 +349,7 @@ class ENV_VAR(unittest.TestCase):
             'WEED_DETECTOR_S_LO': 20,
             'WEED_DETECTOR_V_HI': 255,
             'WEED_DETECTOR_V_LO': 20,
+            'WEED_DETECTOR_save_detected_plants': '"TRUE"',
             'CAMERA_CALIBRATION_blur': 5,
             'CAMERA_CALIBRATION_morph': 15,
             'CAMERA_CALIBRATION_iteration': 4,
@@ -376,7 +379,8 @@ class ENV_VAR(unittest.TestCase):
             'iterations': self.data['WEED_DETECTOR_iteration'],
             'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
             'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
-            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']]}
+            'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']],
+            'save_detected_plants': True}
         self.input_plants = {'plants': [{'y': 600, 'x': 200, 'radius': 100},
                                         {'y': 200, 'x': 900, 'radius': 120}]}
         self.calibration_input_params = {

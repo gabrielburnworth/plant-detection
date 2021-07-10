@@ -5,6 +5,7 @@ python:
   - "2.7"
   - "3.7"
   - "3.8"
+  - "3.9"
 env:
   - OPENCV_VERSION=2
   - OPENCV_VERSION=3
@@ -25,16 +26,22 @@ script:
 matrix:
   fast_finish: true
   exclude:
+    - env: OPENCV_VERSION=3
+      python: "2.7"
     - env: OPENCV_VERSION=2
       python: "3.7"
     - env: OPENCV_VERSION=2
       python: "3.8"
+    - env: OPENCV_VERSION=2
+      python: "3.9"
   include:
     - env: OPENCV_VERSION=4
       python: "3.8"
     - env: OPENCV_VERSION=4 FARMWARE_TOOLS=y
       python: "3.8"
   allow_failures:
+    - python: "2.7"
+    - python: "3.9"
     - env: OPENCV_VERSION=4
       python: "3.8"
     - env: OPENCV_VERSION=4 FARMWARE_TOOLS=y

@@ -46,6 +46,7 @@ def process_images(directory):
     count = 0
     for filename in img_files:
         img_path = directory + filename
+        print(img_path)
         if os.path.exists(img_path):
             img = cv2.imread(img_path)
             ret, _centers = pattern_calibration.find_pattern(

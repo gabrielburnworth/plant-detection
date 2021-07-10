@@ -403,13 +403,15 @@ class DB(object):
         self.api_response_error_collector(response)
         return id_list
 
-    def upload_plants(self):
+    def upload_plants(self, save_detected_plants=False):
         """Add plants to FarmBot Web App Farm Designer."""
         point_ids = []
         for plant in self.plants['remove']:
             point_ids = self.upload_point(plant, 'Weed', point_ids)
-        for plant in self.plants['save']:
-            point_ids = self.upload_point(plant, 'Detected Plant', point_ids)
+        if save_detected_plants:
+            for plant in self.plants['save']:
+                point_ids = self.upload_point(
+                    plant, 'Detected Plant', point_ids)
         # for plant in self.plants['known']:
         #     point_ids = self.upload_point(plant, 'Known Plant', point_ids)
         for plant in self.plants['safe_remove']:

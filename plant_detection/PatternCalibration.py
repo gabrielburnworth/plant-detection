@@ -198,7 +198,11 @@ class PatternCalibration(object):
         large = img.shape[0] > 1200
         if large and downsample:
             img = cv2.pyrDown(img)
-        ret, centers = cv2.findCirclesGrid(img, pattern_size, flags=flags)
+        try:
+            ret, centers = cv2.findCirclesGrid(img, pattern_size, flags=flags)
+        except Exception as exception:
+            print(exception)
+            ret, centers = False, None
         if large and downsample and ret:
             centers *= 2
         return ret, centers
@@ -246,7 +250,8 @@ class PatternCalibration(object):
                 to_dot = self.dot_images[k]['circles'][i][0]
                 prev_axis_index += 1
                 if k == 1:  # draw initial detected dots on initial image
-                    cv2.circle(self.output_img, tuple(from_dot), 10,
+                    center = (int(from_dot[0]), int(from_dot[1]))
+                    cv2.circle(self.output_img, center, 10,
                                ROW_COLORS[i // 5], -1)
                 # translate axis compass at each circle to image center
                 translated = self.translate_dot(from_dot, to_dot)

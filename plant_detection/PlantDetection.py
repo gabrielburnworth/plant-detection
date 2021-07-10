@@ -361,7 +361,9 @@ class PlantDetection(object):
         if self.args['output_celeryscript_points']:
             self.plant_db.output_celery_script()  # print points JSON to stdout
         if self.args['app']:
-            self.plant_db.upload_plants()  # add plants to FarmBot Web App
+            save_detected_plants = self.params.parameters['save_detected_plants']
+            # add detected weeds and points to FarmBot Web App
+            self.plant_db.upload_plants(save_detected_plants)
         if self.args['debug']:
             self.image.save_annotated('contours')
             self.image.images['current'] = self.image.images['marked']

@@ -18,7 +18,8 @@ class Parameters(object):
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         self.defaults = {'blur': 15, 'morph': 6, 'iterations': 4,
-                         'H': [30, 90], 'S': [50, 255], 'V': [50, 255]}
+                         'H': [30, 90], 'S': [50, 255], 'V': [50, 255],
+                         'save_detected_plants': False}
         self.cdefaults = {'blur': 5, 'morph': 5, 'iterations': 1,
                           'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
                           'calibration_circles_xaxis': True,
@@ -122,6 +123,11 @@ class Parameters(object):
                     ENV.save(prefix + 'easy_calibration', 'TRUE')
                 else:
                     ENV.save(prefix + 'easy_calibration', 'FALSE')
+            elif 'save_detected_plants' in label:
+                if value:
+                    ENV.save(prefix + 'save_detected_plants', 'TRUE')
+                else:
+                    ENV.save(prefix + 'save_detected_plants', 'FALSE')
             elif 'camera_z' in label:
                 ENV.save(prefix + 'camera_z', value)
             elif 'center_pixel_location' in label:
@@ -147,6 +153,7 @@ class Parameters(object):
         common_app_var_names = [
             'blur', 'morph', 'iteration',
             'H_HI', 'H_LO', 'S_HI', 'S_LO', 'V_HI', 'V_LO']
+        detection_opt_names = ['save_detected_plants']
         calibration_names = [
             'total_rotation_angle', 'easy_calibration',
             'invert_hue_selection', 'image_bot_origin_location',
@@ -154,7 +161,8 @@ class Parameters(object):
             'calibration_object_separation', 'calibration_along_axis',
             'camera_z', 'center_pixel_location_x', 'center_pixel_location_y']
         options_app_var_names = [
-            'WEED_DETECTOR_' + n for n in common_app_var_names]
+            'WEED_DETECTOR_' + n for n in (
+                common_app_var_names + detection_opt_names)]
         calibration_app_var_names = [
             'CAMERA_CALIBRATION_' + n for n in (
                 common_app_var_names + calibration_names)]
@@ -224,6 +232,9 @@ class Parameters(object):
                     invert_hue_selection = bool('true' in loaded_value.lower())
                 elif 'easy_calibration' in name:
                     input_template['easy_calibration'] = bool(
+                        'true' in loaded_value.lower())
+                elif 'save_detected_plants' in name:
+                    input_template['save_detected_plants'] = bool(
                         'true' in loaded_value.lower())
                 else:
                     for cname in calibration_names + common_app_var_names:
