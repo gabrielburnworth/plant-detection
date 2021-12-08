@@ -84,6 +84,9 @@ class PDTestJSONinput(unittest.TestCase):
             'WEED_DETECTOR_V_HI': 255,
             'WEED_DETECTOR_V_LO': 20,
             'WEED_DETECTOR_save_detected_plants': '"TRUE"',
+            'WEED_DETECTOR_use_bounds': '"TRUE"',
+            'WEED_DETECTOR_min_radius': 1,
+            'WEED_DETECTOR_max_radius': 100,
         }
         for key, value in self.data.items():
             os.environ[key] = str(value)
@@ -94,7 +97,9 @@ class PDTestJSONinput(unittest.TestCase):
             'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
             'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
             'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']],
-            'save_detected_plants': True}
+            'save_detected_plants': True,
+            'use_bounds': True, 'min_radius': 1, 'max_radius': 100,
+        }
         self.pd = PlantDetection(image='plant_detection/soil_image.jpg',
                                  from_env_var=True,
                                  text_output=False, save=False)
@@ -114,7 +119,10 @@ class PDTestNoJSONinput(unittest.TestCase):
 
     def setUp(self):
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
-                           'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+                           'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
+                           'save_detected_plants': False,
+                           'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                           }
         self.pd = PlantDetection(
             image='plant_detection/soil_image.jpg', text_output=False, save=False)
         self.pd.detect_plants()
@@ -129,46 +137,46 @@ class PDTestCalibration(unittest.TestCase):
     """Test calibration process"""
 
     def setUp(self):
-        self.calibration_json = {"blur": 5, "morph": 15, "calibration_iters": 3,
-                                 "H": [160, 20], "S": [100, 255], "V": [100, 255],
-                                 "easy_calibration": False,
-                                 "calibration_circles_xaxis": True,
-                                 "camera_offset_coordinates": [200, 100],
-                                 "image_bot_origin_location": [0, 1],
-                                 "calibration_circle_separation": 1000,
-                                 "invert_hue_selection": True}
-        self.pd = PlantDetection(image="plant_detection/p2c_test_objects.jpg",
-                                 calibration_img="plant_detection/p2c_test_calibration.jpg",
+        self.calibration_json = {'blur': 5, 'morph': 15, 'calibration_iters': 3,
+                                 'H': [160, 20], 'S': [100, 255], 'V': [100, 255],
+                                 'easy_calibration': False,
+                                 'calibration_circles_xaxis': True,
+                                 'camera_offset_coordinates': [200, 100],
+                                 'image_bot_origin_location': [0, 1],
+                                 'calibration_circle_separation': 1000,
+                                 'invert_hue_selection': True}
+        self.pd = PlantDetection(image='plant_detection/p2c_test_objects.jpg',
+                                 calibration_img='plant_detection/p2c_test_calibration.jpg',
                                  calibration_data=self.calibration_json,
                                  HSV_min=[160, 100, 100], HSV_max=[20, 255, 255],
                                  morph=15, blur=5, text_output=False, save=False)
         self.pd.calibrate()
         self.calibration_json.update({
-            "total_rotation_angle": 0.0,
-            "coord_scale": 1.7182,
-            "center_pixel_location": [465, 290]})
+            'total_rotation_angle': 0.0,
+            'coord_scale': 1.7182,
+            'center_pixel_location': [465, 290]})
         self.objects = [{'y': 300.69, 'x': 300.0, 'radius': 46.86},
                         {'y': 599.66, 'x': 897.94, 'radius': 46.86},
                         {'y': 800.68, 'x': 98.97, 'radius': 47.53}]
 
     def test_calibration_inputs(self):
         """Check calibration input parameters"""
-        calibration_input_keys = ["blur", "morph", "calibration_iters",
-                                  "H", "S", "V",
-                                  "easy_calibration",
-                                  "calibration_circles_xaxis",
-                                  "camera_offset_coordinates",
-                                  "image_bot_origin_location",
-                                  "calibration_circle_separation"]
+        calibration_input_keys = ['blur', 'morph', 'calibration_iters',
+                                  'H', 'S', 'V',
+                                  'easy_calibration',
+                                  'calibration_circles_xaxis',
+                                  'camera_offset_coordinates',
+                                  'image_bot_origin_location',
+                                  'calibration_circle_separation']
         self.assertEqual(
             subset(self.calibration_json, calibration_input_keys),
             subset(self.pd.p2c.calibration_params, calibration_input_keys))
 
     def test_calibration_results(self):
         """Check calibration results"""
-        calibration_results_keys = ["total_rotation_angle",
-                                    "coord_scale",
-                                    "center_pixel_location"]
+        calibration_results_keys = ['total_rotation_angle',
+                                    'coord_scale',
+                                    'center_pixel_location']
         static_results = subset(self.calibration_json,
                                 calibration_results_keys)
         test_results = subset(self.pd.p2c.calibration_params,
@@ -195,9 +203,15 @@ class PDTestArgs(unittest.TestCase):
 
     def setUp(self):
         self.default_input_params = {'blur': 5, 'morph': 5, 'iterations': 1,
-                                     'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+                                     'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
+                                     'save_detected_plants': False,
+                                     'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                                     }
         self.set_input_params = {'blur': 9, 'morph': 7, 'iterations': 3,
-                                 'H': [15, 85], 'S': [15, 245], 'V': [15, 245]}
+                                 'H': [15, 85], 'S': [15, 245], 'V': [15, 245],
+                                 'save_detected_plants': False,
+                                 'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                                 }
         self.default_func_args = {
             'image': None,
             'coordinates': False,
@@ -238,8 +252,8 @@ class PDTestArgs(unittest.TestCase):
             {'x': 200, 'y': 600, 'radius': 100},
             {'x': 900, 'y': 200, 'radius': 120}]
         self.func_args['array'] = [
-            {"size": 5, "kernel": 'ellipse', "type": 'erode', "iters": 2},
-            {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}]
+            {'size': 5, 'kernel': 'ellipse', 'type': 'erode', 'iters': 2},
+            {'size': 3, 'kernel': 'ellipse', 'type': 'dilate', 'iters': 8}]
         self.func_args['HSV_min'] = [
             self.set_input_params['H'][0],
             self.set_input_params['S'][0],
@@ -280,8 +294,8 @@ class PDTestOutput(unittest.TestCase):
                             'camera_offset_coordinates': [200, 100],
                             'image_bot_origin_location': [0, 1],
                             'calibration_circle_separation': 1000}
-        self.pd = PlantDetection(image="plant_detection/soil_image.jpg",
-                                 calibration_img="plant_detection/p2c_test_calibration.jpg",
+        self.pd = PlantDetection(image='plant_detection/soil_image.jpg',
+                                 calibration_img='plant_detection/p2c_test_calibration.jpg',
                                  calibration_data=self.calibration,
                                  known_plants=[{'x': 200, 'y': 600, 'radius': 100},
                                                {'x': 900, 'y': 200, 'radius': 120}],
@@ -290,7 +304,10 @@ class PDTestOutput(unittest.TestCase):
         self.pd.calibrate()
         self.pd.detect_plants()
         self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
-                             'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
+                             'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
+                             'save_detected_plants': False,
+                             'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                             }
         self.calibration.update({'total_rotation_angle': 0.0,
                                  'coord_scale': 1.7182,
                                  'center_pixel_location': [465, 290]})
@@ -350,6 +367,9 @@ class ENV_VAR(unittest.TestCase):
             'WEED_DETECTOR_V_HI': 255,
             'WEED_DETECTOR_V_LO': 20,
             'WEED_DETECTOR_save_detected_plants': '"TRUE"',
+            'WEED_DETECTOR_use_bounds': '"TRUE"',
+            'WEED_DETECTOR_min_radius': 1,
+            'WEED_DETECTOR_max_radius': 100,
             'CAMERA_CALIBRATION_blur': 5,
             'CAMERA_CALIBRATION_morph': 15,
             'CAMERA_CALIBRATION_iteration': 4,
@@ -380,7 +400,9 @@ class ENV_VAR(unittest.TestCase):
             'H': [self.data['WEED_DETECTOR_H_LO'], self.data['WEED_DETECTOR_H_HI']],
             'S': [self.data['WEED_DETECTOR_S_LO'], self.data['WEED_DETECTOR_S_HI']],
             'V': [self.data['WEED_DETECTOR_V_LO'], self.data['WEED_DETECTOR_V_HI']],
-            'save_detected_plants': True}
+            'save_detected_plants': True,
+            'use_bounds': True, 'min_radius': 1, 'max_radius': 100,
+        }
         self.input_plants = {'plants': [{'y': 600, 'x': 200, 'radius': 100},
                                         {'y': 200, 'x': 900, 'radius': 120}]}
         self.calibration_input_params = {
@@ -396,7 +418,7 @@ class ENV_VAR(unittest.TestCase):
 
     def test_set_inputs(self):
         """Set input environment variable"""
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             from_env_var=True,
                             text_output=False, save=False)
         pd.detect_plants()
@@ -405,13 +427,13 @@ class ENV_VAR(unittest.TestCase):
 
     def test_calibration_ENV_VAR(self):
         """Use calibration data environment variable"""
-        self.pd = PlantDetection(calibration_img="plant_detection/p2c_test_calibration.jpg",
+        self.pd = PlantDetection(calibration_img='plant_detection/p2c_test_calibration.jpg',
                                  from_env_var=True,
                                  text_output=False, save=False)
         self.pd.calibrate()
         compare_calibration_results(self)
 
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             from_env_var=True, coordinates=True,
                             text_output=False, save=False)
         pd.detect_plants()
@@ -428,7 +450,7 @@ class TestFromFile(unittest.TestCase):
         sys.stdout = self.outfile
         # Generate and save calibration data
         self.pd = PlantDetection(
-            calibration_img="plant_detection/p2c_test_calibration.jpg",
+            calibration_img='plant_detection/p2c_test_calibration.jpg',
             text_output=False, save=False)
         self.pd.calibrate()
         self.pd.p2c.save_calibration_parameters()
@@ -443,7 +465,7 @@ class TestFromFile(unittest.TestCase):
                                  'H': [30, 90], 'S': [20, 255], 'V': [20, 255]}
         pdx.params.save()
         # Load the set parameters
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             from_file=True, coordinates=True,
                             text_output=False, save=False)
         pd.detect_plants()
@@ -456,7 +478,7 @@ class TestFromFile(unittest.TestCase):
         pdx.params.parameters['H'] = [160, 20]
         pdx.params.save()
         # Load the set parameters
-        pd = PlantDetection(calibration_img="plant_detection/p2c_test_calibration.jpg",
+        pd = PlantDetection(calibration_img='plant_detection/p2c_test_calibration.jpg',
                             from_file=True,
                             text_output=False, save=False, debug=True)
         pd.calibrate()
@@ -474,9 +496,9 @@ class PDTestArray(unittest.TestCase):
     def test_array_detect_simple(self):
         """Detect plants using simple array input"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            array=[{"size": 5, "kernel": 'ellipse', "type": 'erode', "iters": 2},
-                   {"size": 3, "kernel": 'ellipse', "type": 'dilate', "iters": 8}],
+            image='plant_detection/soil_image.jpg',
+            array=[{'size': 5, 'kernel': 'ellipse', 'type': 'erode', 'iters': 2},
+                   {'size': 3, 'kernel': 'ellipse', 'type': 'dilate', 'iters': 8}],
             text_output=False, save=False)
         pd.detect_plants()
         object_count = 29
@@ -485,9 +507,9 @@ class PDTestArray(unittest.TestCase):
     def test_array_detect_debug(self):
         """Detect plants using array input and debug"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            array=[{"size": 5, "kernel": 'ellipse', "type": 'close', "iters": 2},
-                   {"size": 3, "kernel": 'ellipse', "type": 'open', "iters": 8}],
+            image='plant_detection/soil_image.jpg',
+            array=[{'size': 5, 'kernel': 'ellipse', 'type': 'close', 'iters': 2},
+                   {'size': 3, 'kernel': 'ellipse', 'type': 'open', 'iters': 8}],
             text_output=False, save=False, debug=True)
         pd.detect_plants()
         object_count = 25
@@ -500,7 +522,7 @@ class PDTestClumpBuster(unittest.TestCase):
     def setUp(self):
         """Test clump buster"""
         self.pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
+            image='plant_detection/soil_image.jpg',
             morph=10,
             text_output=False, save=False, clump_buster=True)
         self.pd.detect_plants()
@@ -515,7 +537,7 @@ class PDTestGreyOut(unittest.TestCase):
     """Test grey out option"""
 
     def setUp(self):
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             text_output=False, save=False,
                             grey_out=True)
         pd.detect_plants()
@@ -533,7 +555,7 @@ class PDTestCirclePlants(unittest.TestCase):
     """Test circle plants option"""
 
     def setUp(self):
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             text_output=False, save=False,
                             draw_contours=False,
                             circle_plants=True)
@@ -552,7 +574,7 @@ class PDTestDrawContours(unittest.TestCase):
     """Test draw contours option"""
 
     def setUp(self):
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             text_output=False, save=False,
                             draw_contours=True,
                             circle_plants=False)
@@ -577,7 +599,7 @@ class PDTestTextOutput(unittest.TestCase):
     def test_verbose_text_output_no_coordinates(self):
         """Test verbose text output without coordinate conversion"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
+            image='plant_detection/soil_image.jpg',
             save=False, print_all_json=True)
         pd.detect_plants()
         check_file_length(self, 71 if USING_FT else 69)
@@ -585,7 +607,7 @@ class PDTestTextOutput(unittest.TestCase):
     def test_condensed_text_output_no_coordinates(self):
         """Test condensed text output without coordinate conversion"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
+            image='plant_detection/soil_image.jpg',
             verbose=False,
             save=False, print_all_json=True)
         pd.detect_plants()
@@ -594,8 +616,8 @@ class PDTestTextOutput(unittest.TestCase):
     def test_verbose_text_output(self):
         """Test verbose text output"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            calibration_img="plant_detection/p2c_test_calibration.jpg",
+            image='plant_detection/soil_image.jpg',
+            calibration_img='plant_detection/p2c_test_calibration.jpg',
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
@@ -604,8 +626,8 @@ class PDTestTextOutput(unittest.TestCase):
     def test_condensed_text_output(self):
         """Test condensed text output"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            calibration_img="plant_detection/p2c_test_calibration.jpg",
+            image='plant_detection/soil_image.jpg',
+            calibration_img='plant_detection/p2c_test_calibration.jpg',
             verbose=False,
             save=False, print_all_json=True)
         pd.calibrate()
@@ -627,7 +649,7 @@ class PDTestDebugMode(unittest.TestCase):
 
     def test_debug_no_coordinates(self):
         """Test debug mode without coordinate conversion"""
-        pd = PlantDetection(image="plant_detection/soil_image.jpg",
+        pd = PlantDetection(image='plant_detection/soil_image.jpg',
                             text_output=False, save=False,
                             debug=True)
         pd.detect_plants()
@@ -636,8 +658,8 @@ class PDTestDebugMode(unittest.TestCase):
     def test_debug_with_coordinates(self):
         """Test debug mode with coordinate conversion"""
         pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            calibration_img="plant_detection/p2c_test_calibration.jpg",
+            image='plant_detection/soil_image.jpg',
+            calibration_img='plant_detection/p2c_test_calibration.jpg',
             text_output=False, save=False,
             debug=True)
         pd.calibrate()
@@ -663,13 +685,16 @@ class PDTestSafeRemove(unittest.TestCase):
                             'image_bot_origin_location': [0, 1],
                             'calibration_circle_separation': 1000}
         self.pd = PlantDetection(
-            image="plant_detection/soil_image.jpg",
-            calibration_img="plant_detection/p2c_test_calibration.jpg",
+            image='plant_detection/soil_image.jpg',
+            calibration_img='plant_detection/p2c_test_calibration.jpg',
             calibration_data=self.calibration,
             text_output=False, save=False)
         self.pd.calibrate()
-        self.input_params = {"blur": 15, "morph": 6, "iterations": 4,
-                             "H": [30, 90], "S": [20, 255], "V": [20, 255]}
+        self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
+                             'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
+                             'save_detected_plants': False,
+                             'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                             }
 
     def test_no_plants(self):
         """Check no plants in output"""

@@ -32,7 +32,10 @@ class DBTest(unittest.TestCase):
                                         [800, 1000, 50],
                                         [1090, 1000, 75],
                                         [900, 900, 50],
-                                        [1000, 1150, 50]
+                                        [1000, 1150, 50],
+                                        [700, 700, 0],
+                                        [600, 600, 1000],
+                                        [-100, -100, 10],
                                         ]
         self.remove = [{'radius': 50.0, 'x': 1000.0, 'y': 825.0},
                        {'radius': 50.0, 'x': 800.0, 'y': 1000.0}]
@@ -41,7 +44,11 @@ class DBTest(unittest.TestCase):
         self.save = [{'radius': 75.0, 'x': 1000.0, 'y': 1000.0},
                      {'radius': 75.0, 'x': 1090.0, 'y': 1000.0},
                      ]
-        self.db.identify()
+        self.db.identify({
+            'use_bounds': True,
+            'min_radius': 1,
+            'max_radius': 100,
+        })
         self.add_point = [{'body': [{'kind': 'pair', 'args': {
             'value': 'plant-detection', 'label': 'created_by'}}],
             'kind': 'add_point', 'args': {'radius': 50.0, 'location': {
@@ -98,7 +105,7 @@ class DBTest(unittest.TestCase):
         self.db.print_coordinates()
         self.outfile.close()
         self.outfile = open('db_text_output_test.txt', 'r')
-        self.assertEqual(sum(1 for line in self.outfile), 7)
+        self.assertGreaterEqual(sum(1 for line in self.outfile), 10)
 
     def test_cs_add_point(self):
         """Output Celery Script add_point"""
