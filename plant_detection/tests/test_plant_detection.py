@@ -15,6 +15,8 @@ try:
 except ImportError:
     USING_FT = False
 
+VIEW_OUTPUT = False
+
 
 def assert_dict_values_almost_equal(assertE, assertAE, object1, object2):
     def shape(objects):
@@ -60,7 +62,18 @@ def compare_calibration_results(self):
 def check_file_length(self, expected_length):
     self.outfile.close()
     self.outfile = open('text_output_test.txt', 'r')
-    self.assertEqual(sum(1 for line in self.outfile), expected_length)
+    if VIEW_OUTPUT:
+        sys.stdout = sys.__stdout__
+        print('~ BEGIN OUTPUT ~')
+        count = 0
+        for line in self.outfile:
+            print(' ' * 10 + line)
+            count += 1
+        print('~ END OUTPUT ({} lines) ~'.format(count))
+        sys.stdout = self.outfile
+    else:
+        count = sum(1 for line in self.outfile)
+    self.assertEqual(count, expected_length)
 
 
 def get_average_pixel_value(image):
@@ -121,7 +134,7 @@ class PDTestNoJSONinput(unittest.TestCase):
         self.parameters = {'blur': 5, 'morph': 5, 'iterations': 1,
                            'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
                            'save_detected_plants': False,
-                           'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                           'use_bounds': True, 'min_radius': 1.5, 'max_radius': 50,
                            }
         self.pd = PlantDetection(
             image='plant_detection/soil_image.jpg', text_output=False, save=False)
@@ -205,12 +218,12 @@ class PDTestArgs(unittest.TestCase):
         self.default_input_params = {'blur': 5, 'morph': 5, 'iterations': 1,
                                      'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
                                      'save_detected_plants': False,
-                                     'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                                     'use_bounds': True, 'min_radius': 1.5, 'max_radius': 50,
                                      }
         self.set_input_params = {'blur': 9, 'morph': 7, 'iterations': 3,
                                  'H': [15, 85], 'S': [15, 245], 'V': [15, 245],
                                  'save_detected_plants': False,
-                                 'use_bounds': False, 'min_radius': 0, 'max_radius': 0,
+                                 'use_bounds': True, 'min_radius': 1.5, 'max_radius': 50,
                                  }
         self.default_func_args = {
             'image': None,
@@ -302,6 +315,9 @@ class PDTestOutput(unittest.TestCase):
                                  blur=15, morph=6, iterations=4,
                                  text_output=False, save=False)
         self.pd.calibrate()
+        self.pd.params.parameters['use_bounds'] = False
+        self.pd.params.parameters['min_radius'] = 0
+        self.pd.params.parameters['max_radius'] = 0
         self.pd.detect_plants()
         self.input_params = {'blur': 15, 'morph': 6, 'iterations': 4,
                              'H': [30, 90], 'S': [20, 255], 'V': [20, 255],
@@ -621,7 +637,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 80 if USING_FT else 78)
+        check_file_length(self, 88 if USING_FT else 59)
 
     def test_condensed_text_output(self):
         """Test condensed text output"""
@@ -632,7 +648,7 @@ class PDTestTextOutput(unittest.TestCase):
             save=False, print_all_json=True)
         pd.calibrate()
         pd.detect_plants()
-        check_file_length(self, 12 if USING_FT else 10)
+        check_file_length(self, 39 if USING_FT else 10)
 
     def tearDown(self):
         self.outfile.close()
